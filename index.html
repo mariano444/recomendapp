@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aplauso — Reconocé quien te atendió bien</title>
+<title>Recomendapp — Reconocé quien te atendió bien</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Instrument+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 
@@ -551,7 +551,7 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 <nav class="topnav" id="topnav">
   <div class="logo" onclick="nav('home')">
     <div class="logo-gem"></div>
-    Aplauso
+    Recomendapp
   </div>
   <div class="nav-right" id="navRight"></div>
 </nav>
@@ -652,7 +652,7 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
   </section>
 
   <section class="feat-wrap">
-    <div class="eyebrow" style="margin-bottom:16px">Por qué Aplauso</div>
+    <div class="eyebrow" style="margin-bottom:16px">Por qué Recomendapp</div>
     <div class="section-h">Diseñado para que<br><em>funcione de verdad.</em></div>
     <div class="feat-grid" style="margin-top:52px">
       <div class="feat-card wide"><div class="feat-ico" style="width:64px;height:64px;font-size:30px;margin-bottom:0;flex-shrink:0">🏆</div><div><h4>Reconocimiento que se siente</h4><p>No es solo una estrella. Es un mensaje real, un nombre real y un aporte económico concreto. Quien lo recibe sabe exactamente cuánto valió para vos.</p></div></div>
@@ -676,18 +676,18 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 <div class="auth-wrap">
   <div class="auth-left">
     <div class="auth-left-orb"></div>
-    <div class="logo" style="align-self:flex-start"><div class="logo-gem"></div>Aplauso</div>
+    <div class="logo" style="align-self:flex-start"><div class="logo-gem"></div>Recomendapp</div>
     <div class="auth-left-quote">El reconocimiento<br>que das también<br><em>te define.</em></div>
-    <p class="auth-left-sub">Más de 2.800 profesionales ya reciben reconocimiento real con recompensa en Aplauso.</p>
+    <p class="auth-left-sub">Más de 2.800 profesionales ya reciben reconocimiento real con recompensa en Recomendapp.</p>
     <div class="auth-testimonial">
-      <p class="auth-test-text">"Desde que tengo mi perfil en Aplauso, mis clientes me mandan el link a otros. Es la mejor carta de presentación que tuve."</p>
+      <p class="auth-test-text">"Desde que tengo mi perfil en Recomendapp, mis clientes me mandan el link a otros. Es la mejor carta de presentación que tuve."</p>
       <div class="auth-test-author"><div class="avatar av-sm" style="background:linear-gradient(135deg,#5B8FCC,#3A6BAA)">LP</div><div><div class="auth-test-name">Laura Ponce</div><div class="auth-test-role">Nutricionista · Rosario</div></div></div>
     </div>
   </div>
   <div class="auth-right">
     <div class="auth-form-box">
       <h2>Bienvenido de nuevo</h2>
-      <p class="auth-sub">Ingresá a tu panel de Aplauso</p>
+      <p class="auth-sub">Ingresá a tu panel de Recomendapp</p>
       <button class="social-btn" onclick="loginWithGoogle()">
         <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z" fill="#EA4335"/></svg>
         Continuar con Google
@@ -714,7 +714,7 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 <div class="auth-wrap">
   <div class="auth-left">
     <div class="auth-left-orb"></div>
-    <div class="logo" style="align-self:flex-start"><div class="logo-gem"></div>Aplauso</div>
+    <div class="logo" style="align-self:flex-start"><div class="logo-gem"></div>Recomendapp</div>
     <div class="auth-left-quote">Tu trabajo <em>merece</em><br>ser reconocido.</div>
     <p class="auth-left-sub">Creá tu perfil en minutos. Sin tarjeta de crédito. Empezá a recibir reseñas con recompensa hoy.</p>
     <div class="auth-testimonial">
@@ -1193,7 +1193,7 @@ const CONFIG = {
   mpMode:        'sandbox',                         // 'sandbox' | 'production'
 
   // ─── APP ──────────────────────────────────────
-  appUrl:        '',
+  appUrl:        'https://recomendapp.netlify.app',
   profileSlug:   '',
 };
 
@@ -2192,7 +2192,7 @@ function renderProfile() {
   document.getElementById('pubName').textContent = profileName;
   document.getElementById('pubRole').textContent = profile.role || 'Profesional';
   document.getElementById('pubCity').textContent = profile.city ? profile.city + ', AR' : 'Argentina';
-  document.getElementById('pubBio').textContent = profile.bio || 'Perfil en Aplauso';
+  document.getElementById('pubBio').textContent = profile.bio || 'Perfil en Recomendapp';
   document.getElementById('pubTags').innerHTML = (profile.tags || []).map(t => `<span class="pub-tag">${t}</span>`).join('');
   const csProfileName = document.getElementById('csProfileName');
   if (csProfileName) csProfileName.textContent = profileName;
@@ -2737,11 +2737,11 @@ function doShare() {
   const targetName = STATE.viewedProfile?.name || STATE.user.name;
   const url = profileLink(targetSlug);
   if (navigator.share) {
-    navigator.share({ title:'Aplauso', text:'Mirá el perfil de ' + targetName, url });
+    navigator.share({ title:'Recomendapp', text:'Mirá el perfil de ' + targetName, url });
     return;
   }
   if (navigator.share) {
-    navigator.share({ title:'Aplauso', text:'Mirá el perfil de '+STATE.user.name, url });
+    navigator.share({ title:'Recomendapp', text:'Mirá el perfil de '+STATE.user.name, url });
   } else if (navigator.clipboard) {
     navigator.clipboard.writeText(url).then(() => toast('Enlace copiado ✓','success'));
   } else {
