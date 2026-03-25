@@ -87,8 +87,8 @@ serve(async (req) => {
       items: [
         {
           id: review.id,
-          title: `Aplauso para ${profile.nombre} ${profile.apellido || ""}`.trim(),
-          description: "Aplauso con resena publicada al aprobarse el pago",
+          title: `Recomendapp para ${profile.nombre} ${profile.apellido || ""}`.trim(),
+          description: "Resena publicada al aprobarse el pago",
           quantity: 1,
           currency_id: "ARS",
           unit_price: Number(amount),
