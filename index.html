@@ -517,8 +517,126 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 /* ANIMATIONS */
 @keyframes fadeUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
 
+/* VISUAL POLISH */
+.hero,
+.search-view,
+.dash-view,
+.settings-view,
+.form-view,
+.confirm-view {
+  background:
+    radial-gradient(circle at top left, rgba(148,184,240,.10), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(110,151,216,.08), transparent 26%),
+    linear-gradient(180deg, rgba(19,18,16,.98), rgba(12,11,10,1));
+}
+.card,
+.feat-card,
+.step-cell,
+.p-card,
+.dash-panel,
+.metric,
+.settings-panel,
+.forgot-card,
+.confirm-card,
+.form-body,
+.form-profile-header {
+  box-shadow: 0 18px 50px rgba(0,0,0,.22);
+}
+.hero-sub,
+.auth-left-sub,
+.auth-sub,
+.pub-bio,
+.p-card-bio,
+.d-rev-text,
+.field-hint {
+  color: rgba(240,235,226,.72);
+}
+.search-bar-wrap,
+.dash-top-right,
+.pub-action-row,
+.hero-actions {
+  align-items: center;
+}
+.search-bar-wrap .btn,
+.pub-action-row .btn,
+.dash-top-right .btn {
+  min-height: 46px;
+}
+.stats-bar,
+.confirm-summary,
+.link-copy-row,
+.mp-info-box {
+  backdrop-filter: blur(16px);
+}
+.pub-cover {
+  height: 300px;
+}
+.pub-body {
+  max-width: 840px;
+}
+.pub-name {
+  font-size: clamp(34px, 5vw, 54px);
+}
+.form-wrap {
+  max-width: 680px;
+}
+.form-profile-header {
+  padding: 24px 30px;
+}
+.form-prof-info .name {
+  font-size: 18px;
+}
+.form-prof-info .role {
+  font-size: 13px;
+}
+.form-body {
+  padding: 36px 40px 44px;
+}
+.search-inner,
+.settings-inner,
+.dash-inner {
+  max-width: 1120px;
+}
+.profile-grid {
+  gap: 18px;
+}
+.p-card {
+  padding: 28px;
+}
+.metric {
+  min-height: 160px;
+}
+
 /* RESPONSIVE */
 @media(max-width:900px) {
+  .topnav {
+    padding:14px 18px;
+    gap:10px;
+  }
+  .nav-right {
+    gap:8px;
+  }
+  .nav-link,
+  .nav-btn-ghost,
+  .nav-btn-amber {
+    padding-left:12px;
+    padding-right:12px;
+  }
+  .hero {
+    min-height:auto;
+    padding:120px 24px 56px;
+  }
+  .hero-h1 {
+    letter-spacing:-2px;
+  }
+  .hero-sub {
+    font-size:16px;
+    margin-bottom:28px;
+  }
+  .cta-banner {
+    margin:0 24px 72px;
+    padding:56px 32px;
+  }
   .auth-wrap { grid-template-columns:1fr; }
   .auth-left { display:none; }
   .auth-right { padding:60px 28px; }
@@ -528,10 +646,77 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
   .profile-grid { grid-template-columns:1fr; }
   .feat-card.wide { flex-direction:column; }
   .feat-grid { grid-template-columns:1fr; }
-  .topnav { padding:16px 20px; }
   .how-wrap, .feat-wrap { padding:60px 24px; }
+  .pub-cover { height:240px; }
+  .pub-top {
+    flex-direction:column;
+    align-items:flex-start;
+    gap:16px;
+  }
+  .pub-action-row {
+    width:100%;
+    flex-wrap:wrap;
+  }
+  .pub-action-row .btn {
+    flex:1 1 180px;
+  }
+  .search-bar-wrap {
+    flex-direction:column;
+  }
+  .search-bar-wrap .btn {
+    width:100%;
+  }
+  .dash-top {
+    flex-direction:column;
+    align-items:flex-start;
+    gap:16px;
+  }
+  .dash-top-right {
+    width:100%;
+    flex-wrap:wrap;
+  }
+  .dash-top-right .btn {
+    flex:1 1 180px;
+  }
 }
 @media(max-width:640px) {
+  .topnav {
+    padding:12px 14px;
+  }
+  .logo {
+    font-size:18px;
+  }
+  .nav-right {
+    display:none;
+  }
+  .hero {
+    padding:104px 18px 42px;
+  }
+  .hero-pill {
+    margin-bottom:24px;
+  }
+  .hero-h1 {
+    font-size: clamp(40px, 15vw, 64px);
+    line-height:.96;
+    margin-bottom:18px;
+  }
+  .hero-sub {
+    font-size:15px;
+    line-height:1.65;
+    margin-bottom:24px;
+  }
+  .hero-actions {
+    width:100%;
+    gap:10px;
+    margin-bottom:28px;
+  }
+  .hero-actions .btn {
+    width:100%;
+  }
+  .proof-row {
+    flex-direction:column;
+    text-align:center;
+  }
   .steps-grid { grid-template-columns:1fr; }
   .metrics-row { grid-template-columns:1fr 1fr; }
   .metrics-row .metric:last-child { grid-column:span 2; }
@@ -542,6 +727,66 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
   .form-body { padding:24px 22px; }
   .cta-banner { margin:0 24px 60px; padding:48px 32px; }
   .dash-tabs { width:100%; overflow-x:auto; }
+  .pub-body,
+  .dash-inner,
+  .search-inner,
+  .settings-inner {
+    padding-left:18px;
+    padding-right:18px;
+  }
+  .pub-cover {
+    height:200px;
+  }
+  .pub-name {
+    font-size:32px;
+  }
+  .stats-bar {
+    flex-direction:column;
+  }
+  .stat-cell {
+    border-right:none;
+    border-bottom:1px solid var(--border);
+  }
+  .stat-cell:last-child {
+    border-bottom:none;
+  }
+  .form-profile-header {
+    padding:18px 18px 16px;
+  }
+  .pay-chips {
+    flex-direction:column;
+  }
+  .pay-chip {
+    width:100%;
+    justify-content:center;
+  }
+  .modal {
+    padding:24px 20px;
+  }
+  .search-bar {
+    font-size:14px;
+  }
+}
+@media(max-width:480px) {
+  .amount-grid {
+    grid-template-columns:repeat(2,1fr);
+  }
+  .metrics-row {
+    grid-template-columns:1fr;
+  }
+  .metrics-row .metric:last-child {
+    grid-column:auto;
+  }
+  .dash-top-right .btn,
+  .pub-action-row .btn,
+  .confirm-btns .btn {
+    width:100%;
+  }
+  .bnav-tab {
+    flex:1 1 0;
+    padding:10px 8px;
+    font-size:11px;
+  }
 }
 </style>
 </head>
