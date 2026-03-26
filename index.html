@@ -1966,6 +1966,31 @@ async function fetchOwnReviews(profileId) {
   return (data || []).map(mapReviewRow);
 }
 
+async function refreshOwnProfileState(forceProfileRefresh = false) {
+  if (!sb || !STATE.user.id) return;
+
+  if (forceProfileRefresh) {
+    const { data: profile, error } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('id', STATE.user.id)
+      .single();
+
+    if (!error && profile) {
+      if (STATE.user.slug) delete STATE.profileCache[STATE.user.slug];
+      mergeUserProfile(profile);
+    }
+  }
+
+  STATE.reviews = await fetchOwnReviews(STATE.user.id);
+  delete STATE.publicReviewsCache[STATE.user.id];
+
+  if (!STATE.viewedProfile || STATE.viewedProfile.id === STATE.user.id || STATE.viewedProfile.slug === STATE.user.slug) {
+    STATE.viewedProfile = { ...STATE.user };
+    STATE.publicReviews = STATE.reviews.filter(r => r.published && r.paymentStatus === 'approved');
+  }
+}
+
 async function loadSearchProfiles() {
   if (STATE.directoryProfiles?.length) {
     if (document.getElementById('view-search')?.classList.contains('active')) renderSearch();
@@ -1990,8 +2015,12 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
   if (!sb || !slug) return;
   const isOwnProfile = STATE.loggedIn && slug === STATE.user.slug;
   if (isOwnProfile) {
-    STATE.viewedProfile = { ...STATE.user };
-    STATE.publicReviews = STATE.reviews.filter(r => r.published && r.paymentStatus === 'approved');
+    if (forceRefresh) {
+      await refreshOwnProfileState(true);
+    } else {
+      STATE.viewedProfile = { ...STATE.user };
+      STATE.publicReviews = STATE.reviews.filter(r => r.published && r.paymentStatus === 'approved');
+    }
     renderProfile();
     if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(slug));
     return;
@@ -3104,6 +3133,15 @@ async function confirmApprovedPayment(reviewId, paymentId, profileSlug) {
 
 async function syncApprovedReview(targetReviewId, targetSlug, attempts = 18, delayMs = 900) {
   if (!targetReviewId || !targetSlug) return null;
+  const isOwnProfile = STATE.loggedIn && targetSlug === STATE.user.slug;
+
+  if (isOwnProfile) {
+    await refreshOwnProfileState(true);
+    renderDashboard();
+    renderProfile();
+    return STATE.publicReviews.find(r => r.id === targetReviewId) || null;
+  }
+
   let publishedReview = null;
 
   for (let i = 0; i < attempts; i++) {
@@ -3145,10 +3183,13 @@ async function syncApprovedReview(targetReviewId, targetSlug, attempts = 18, del
     if (status === 'approved' || status === 'success') {
       const targetReviewId = reviewId || data.reviewId || '';
       const targetSlug = returnSlug || data.profileSlug || STATE.viewedProfile?.slug || '';
+      let confirmation = null;
       if (targetReviewId && paymentId && targetSlug) {
-        await confirmApprovedPayment(targetReviewId, paymentId, targetSlug);
+        confirmation = await confirmApprovedPayment(targetReviewId, paymentId, targetSlug);
       }
-      const publishedReview = await syncApprovedReview(targetReviewId, targetSlug);
+      const publishedReview = confirmation?.payment_status === 'approved'
+        ? await syncApprovedReview(targetReviewId, targetSlug, 4, 350)
+        : await syncApprovedReview(targetReviewId, targetSlug, 8, 500);
 
       document.getElementById('csAuthor').textContent = data.nombre;
       document.getElementById('csPago').textContent = 'MercadoPago';
