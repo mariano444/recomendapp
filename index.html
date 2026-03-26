@@ -3057,11 +3057,24 @@ async function waitForPublishedReview(reviewId, attempts = 12, delayMs = 1500) {
   return null;
 }
 
+async function confirmApprovedPayment(reviewId, paymentId, profileSlug) {
+  if (!sb || !reviewId || !paymentId || !profileSlug) return null;
+  const { data, error } = await sb.functions.invoke('mp-confirm-return', {
+    body: { reviewId, paymentId, profileSlug }
+  });
+  if (error) {
+    console.warn('No se pudo confirmar el pago en el retorno:', error.message || error);
+    return null;
+  }
+  return data;
+}
+
 (async function checkMpReturn() {
   const params = new URLSearchParams(window.location.search);
   const status = params.get('payment') || params.get('status');
   const reviewId = params.get('review_id') || '';
   const returnSlug = params.get('slug') || '';
+  const paymentId = params.get('payment_id') || params.get('collection_id') || '';
   const pending = sessionStorage.getItem('aplauso_pending');
 
   if (status && pending) {
@@ -3070,6 +3083,9 @@ async function waitForPublishedReview(reviewId, attempts = 12, delayMs = 1500) {
     if (status === 'approved' || status === 'success') {
       const targetReviewId = reviewId || data.reviewId || '';
       const targetSlug = returnSlug || data.profileSlug || STATE.viewedProfile?.slug || '';
+      if (targetReviewId && paymentId && targetSlug) {
+        await confirmApprovedPayment(targetReviewId, paymentId, targetSlug);
+      }
       const publishedReview = await waitForPublishedReview(targetReviewId);
 
       if (targetSlug) {
