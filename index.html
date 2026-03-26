@@ -3040,7 +3040,7 @@ if (sb) {
 /* ═══════════════════════════════════════════════════
    WEBHOOK POST-PAGO (si viene de MercadoPago)
 ═══════════════════════════════════════════════════ */
-async function waitForPublishedReview(reviewId, attempts = 12, delayMs = 1500) {
+async function waitForPublishedReview(reviewId, attempts = 10, delayMs = 800) {
   if (!sb || !reviewId) return null;
   for (let i = 0; i < attempts; i++) {
     const { data, error } = await sb
@@ -3077,8 +3077,13 @@ async function confirmApprovedPayment(reviewId, paymentId, profileSlug) {
   const paymentId = params.get('payment_id') || params.get('collection_id') || '';
   const pending = sessionStorage.getItem('aplauso_pending');
 
-  if (status && pending) {
-    const data = JSON.parse(pending);
+  if (status) {
+    const data = pending ? JSON.parse(pending) : {
+      nombre: 'Visitante',
+      amount: 0,
+      reviewId,
+      profileSlug: returnSlug,
+    };
 
     if (status === 'approved' || status === 'success') {
       const targetReviewId = reviewId || data.reviewId || '';
@@ -3097,20 +3102,20 @@ async function confirmApprovedPayment(reviewId, paymentId, profileSlug) {
 
       document.getElementById('csAuthor').textContent = data.nombre;
       document.getElementById('csPago').textContent = 'MercadoPago';
-      document.getElementById('csAmount').textContent = '$' + data.amount.toLocaleString('es-AR') + ' ARS';
+      document.getElementById('csAmount').textContent = data.amount ? ('$' + data.amount.toLocaleString('es-AR') + ' ARS') : 'Pago aprobado';
       renderProfile();
-      setTimeout(() => nav('confirm'), 200);
+      setTimeout(() => nav(publishedReview ? 'confirm' : 'profile'), 150);
       toast(
         publishedReview
           ? 'Pago aprobado y resena publicada'
-          : 'Pago aprobado. Estamos terminando de publicar la resena.',
+          : 'Pago aprobado. Actualizamos la resena en unos segundos.',
         'success'
       );
     } else {
       setTimeout(() => toast('El pago no fue aprobado. Intenta de nuevo.','error'), 300);
     }
 
-    sessionStorage.removeItem('aplauso_pending');
+    if (pending) sessionStorage.removeItem('aplauso_pending');
     const cleanPath = returnSlug ? window.location.pathname + '?slug=' + encodeURIComponent(returnSlug) : window.location.pathname;
     history.replaceState({}, '', cleanPath);
   }
@@ -3121,9 +3126,6 @@ async function confirmApprovedPayment(reviewId, paymentId, profileSlug) {
 ═══════════════════════════════════════════════════ */
 buildMarquee();
 updateNav();
-renderProfile();
-renderDashboard();
-renderSearch();
 bootstrapSupabaseData();
 </script>
 </body>
