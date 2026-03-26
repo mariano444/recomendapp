@@ -1700,6 +1700,9 @@ const STATE = {
   reviews: [],
   publicReviews: [],
   directoryProfiles: [],
+  profileCache: {},
+  publicReviewsCache: {},
+  searchDebounce: null,
 };
 
 const CHART_DATA = [
@@ -1934,8 +1937,11 @@ function mapProfileCard(row) {
   };
 }
 
-async function fetchPublicReviews(profileId) {
+async function fetchPublicReviews(profileId, forceRefresh = false) {
   if (!sb || !profileId) return [...STATE.publicReviews];
+  if (!forceRefresh && STATE.publicReviewsCache[profileId]) {
+    return STATE.publicReviewsCache[profileId].map(r => ({ ...r }));
+  }
   const { data, error } = await sb
     .from('reviews')
     .select('id, reviewer_nombre, is_anon, message, amount_cents, reply, created_at')
@@ -1944,7 +1950,9 @@ async function fetchPublicReviews(profileId) {
     .eq('payment_status', 'approved')
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data || []).map(mapReviewRow);
+  const mapped = (data || []).map(mapReviewRow);
+  STATE.publicReviewsCache[profileId] = mapped;
+  return mapped.map(r => ({ ...r }));
 }
 
 async function fetchOwnReviews(profileId) {
@@ -1959,6 +1967,10 @@ async function fetchOwnReviews(profileId) {
 }
 
 async function loadSearchProfiles() {
+  if (STATE.directoryProfiles?.length) {
+    if (document.getElementById('view-search')?.classList.contains('active')) renderSearch();
+    return;
+  }
   if (!sb) return;
   const { data, error } = await sb
     .from('profiles')
@@ -1974,7 +1986,7 @@ async function loadSearchProfiles() {
   if (document.getElementById('view-search')?.classList.contains('active')) renderSearch();
 }
 
-async function loadViewedProfileBySlug(slug, pushState = true) {
+async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = false) {
   if (!sb || !slug) return;
   const isOwnProfile = STATE.loggedIn && slug === STATE.user.slug;
   if (isOwnProfile) {
@@ -1985,11 +1997,18 @@ async function loadViewedProfileBySlug(slug, pushState = true) {
     return;
   }
 
-  const { data: profile, error } = await sb
-    .from('profiles')
-    .select('id, slug, nombre, apellido, role, city, bio, tags, total_earned, review_count, verified, allow_anon, min_amount, active, mp_alias, mp_cbu, avatar_url, cover_url')
-    .eq('slug', slug)
-    .single();
+  let profile = !forceRefresh ? STATE.profileCache[slug] : null;
+  let error = null;
+  if (!profile) {
+    const response = await sb
+      .from('profiles')
+      .select('id, slug, nombre, apellido, role, city, bio, tags, total_earned, review_count, verified, allow_anon, min_amount, active, mp_alias, mp_cbu, avatar_url, cover_url')
+      .eq('slug', slug)
+      .single();
+    profile = response.data;
+    error = response.error;
+    if (profile && !error) STATE.profileCache[slug] = profile;
+  }
 
   if (error || !profile) {
     toast('No encontramos ese perfil', 'error');
@@ -1997,7 +2016,7 @@ async function loadViewedProfileBySlug(slug, pushState = true) {
   }
 
   setViewedProfileFromProfile(profile);
-  STATE.publicReviews = await fetchPublicReviews(profile.id);
+  STATE.publicReviews = await fetchPublicReviews(profile.id, forceRefresh);
   renderProfile();
   if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(slug));
 }
@@ -2038,7 +2057,6 @@ async function hydrateUser(session, navigateToDashboard = false) {
 
 async function bootstrapSupabaseData() {
   if (!sb) return;
-  await loadSearchProfiles();
   const requestedSlug = new URLSearchParams(window.location.search).get('slug') || CONFIG.profileSlug;
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
@@ -2060,7 +2078,10 @@ function nav(viewId) {
   updateNav();
   if (viewId === 'dashboard') renderDashboard();
   if (viewId === 'profile')   renderProfile();
-  if (viewId === 'search')    renderSearch();
+  if (viewId === 'search') {
+    if (STATE.directoryProfiles?.length) renderSearch();
+    else loadSearchProfiles();
+  }
   if (viewId === 'settings')  loadSettingsForm();
   if (viewId === 'form') {
     renderFormHeader();
@@ -2377,7 +2398,10 @@ async function submitReview() {
         .single();
 
       if (error) throw error;
-      if (data?.published) STATE.publicReviews.unshift(mapReviewRow(data));
+      if (data?.published) {
+        delete STATE.publicReviewsCache[profileId];
+        STATE.publicReviews.unshift(mapReviewRow(data));
+      }
 
       document.getElementById('csAuthor').textContent = reviewerName;
       document.getElementById('csPago').textContent = STATE.selectedPay === 'mercadopago' ? '💳 MercadoPago' : STATE.selectedPay === 'transfer' ? '🏦 Transferencia' : '💰 Efectivo';
@@ -2530,7 +2554,10 @@ function submitReply() {
         return;
       }
       STATE.reviews = await fetchOwnReviews(STATE.user.id);
-      if (STATE.viewedProfile?.slug === STATE.user.slug) STATE.publicReviews = [...STATE.reviews].filter(r => r.published && r.paymentStatus === 'approved');
+      if (STATE.viewedProfile?.slug === STATE.user.slug) {
+        delete STATE.publicReviewsCache[STATE.user.id];
+        STATE.publicReviews = [...STATE.reviews].filter(r => r.published && r.paymentStatus === 'approved');
+      }
       toast('Respuesta publicada ✓','success');
       closeModal();
       renderDashboard();
@@ -2696,6 +2723,8 @@ function saveProfile() {
         toast(error.message || 'No se pudo actualizar el perfil','error');
         return;
       }
+      if (STATE.user.slug) delete STATE.profileCache[STATE.user.slug];
+      if (payload.slug && payload.slug !== STATE.user.slug) delete STATE.profileCache[payload.slug];
       mergeUserProfile(data);
       if (!STATE.viewedProfile || STATE.viewedProfile.id === STATE.user.id) STATE.viewedProfile = { ...STATE.user };
       toast('Perfil actualizado ✓','success');
@@ -2794,6 +2823,7 @@ async function savePaymentSettings() {
     return;
   }
 
+  if (STATE.user.slug) delete STATE.profileCache[STATE.user.slug];
   mergeUserProfile(data);
   if (!STATE.viewedProfile || STATE.viewedProfile.id === STATE.user.id) {
     STATE.viewedProfile = { ...STATE.user };
@@ -2943,7 +2973,10 @@ function renderSearch(query='') {
       </div>
     </div>`).join('');
 }
-function doSearch() { renderSearch(); }
+function doSearch() {
+  if (STATE.searchDebounce) clearTimeout(STATE.searchDebounce);
+  STATE.searchDebounce = setTimeout(() => renderSearch(), 120);
+}
 function setFilter(el, filter) {
   currentFilter = filter;
   document.querySelectorAll('.f-chip').forEach(c => c.classList.remove('act'));
@@ -3069,6 +3102,30 @@ async function confirmApprovedPayment(reviewId, paymentId, profileSlug) {
   return data;
 }
 
+async function syncApprovedReview(targetReviewId, targetSlug, attempts = 18, delayMs = 900) {
+  if (!targetReviewId || !targetSlug) return null;
+  let publishedReview = null;
+
+  for (let i = 0; i < attempts; i++) {
+    const latest = await waitForPublishedReview(targetReviewId, 1, delayMs);
+    if (latest) {
+      publishedReview = latest;
+      break;
+    }
+
+    if (i < attempts - 1) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+
+  await loadViewedProfileBySlug(targetSlug, false, true);
+  if (publishedReview && !STATE.publicReviews.some(r => r.id === publishedReview.id)) {
+    STATE.publicReviews.unshift(publishedReview);
+  }
+  renderProfile();
+  return publishedReview;
+}
+
 (async function checkMpReturn() {
   const params = new URLSearchParams(window.location.search);
   const status = params.get('payment') || params.get('status');
@@ -3091,19 +3148,11 @@ async function confirmApprovedPayment(reviewId, paymentId, profileSlug) {
       if (targetReviewId && paymentId && targetSlug) {
         await confirmApprovedPayment(targetReviewId, paymentId, targetSlug);
       }
-      const publishedReview = await waitForPublishedReview(targetReviewId);
-
-      if (targetSlug) {
-        await loadViewedProfileBySlug(targetSlug, false);
-      }
-      if (publishedReview && !STATE.publicReviews.some(r => r.id === publishedReview.id)) {
-        STATE.publicReviews.unshift(publishedReview);
-      }
+      const publishedReview = await syncApprovedReview(targetReviewId, targetSlug);
 
       document.getElementById('csAuthor').textContent = data.nombre;
       document.getElementById('csPago').textContent = 'MercadoPago';
       document.getElementById('csAmount').textContent = data.amount ? ('$' + data.amount.toLocaleString('es-AR') + ' ARS') : 'Pago aprobado';
-      renderProfile();
       setTimeout(() => nav(publishedReview ? 'confirm' : 'profile'), 150);
       toast(
         publishedReview
