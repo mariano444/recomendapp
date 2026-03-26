@@ -1904,11 +1904,8 @@ function setViewedProfileFromProfile(profile) {
 }
 
 function mapReviewRow(row) {
-  const nombre = (row.reviewer_nombre || '').trim();
-  const apellido = (row.reviewer_apellido || '').trim();
-  const fullName = row.is_anon ? 'Anónimo' : [nombre, apellido].filter(Boolean).join(' ').trim() || 'Visitante';
-  const initialsSource = [nombre, apellido].filter(Boolean).join(' ') || fullName;
-  const parts = initialsSource.split(/\s+/).filter(Boolean);
+  const fullName = (row.reviewer_nombre || 'Anónimo').trim();
+  const parts = fullName.split(/\s+/).filter(Boolean);
   return {
     id: row.id,
     name: row.is_anon ? 'Anónimo' : fullName,
@@ -1947,7 +1944,7 @@ async function fetchPublicReviews(profileId, forceRefresh = false) {
   }
   const { data, error } = await sb
     .from('reviews')
-    .select('id, reviewer_nombre, reviewer_apellido, is_anon, message, amount_cents, reply, created_at')
+    .select('id, reviewer_nombre, is_anon, message, amount_cents, reply, created_at')
     .eq('profile_id', profileId)
     .eq('published', true)
     .eq('payment_status', 'approved')
@@ -1962,7 +1959,7 @@ async function fetchOwnReviews(profileId) {
   if (!sb || !profileId) return [...STATE.reviews];
   const { data, error } = await sb
     .from('reviews')
-    .select('id, reviewer_nombre, reviewer_apellido, is_anon, message, amount_cents, reply, created_at, payment_status, published')
+    .select('id, reviewer_nombre, is_anon, message, amount_cents, reply, created_at, payment_status, published')
     .eq('profile_id', profileId)
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -2398,8 +2395,7 @@ async function submitReview() {
     sessionStorage.setItem('aplauso_pending', JSON.stringify({
       reviewId: pref.review_id || '',
       profileSlug: STATE.viewedProfile?.slug || STATE.user.slug || '',
-      nombre: STATE.isAnon ? 'Anónimo' : nombre,
-      apellido: STATE.isAnon ? '' : apellido,
+      nombre: STATE.isAnon ? 'Anónimo' : (nombre + ' ' + apellido).trim(),
       pay: '💳 MercadoPago',
       amount: STATE.selectedAmt,
       msg
@@ -2419,8 +2415,7 @@ async function submitReview() {
         .from('reviews')
         .insert({
           profile_id: profileId,
-          reviewer_nombre: STATE.isAnon ? 'Anónimo' : nombre,
-          reviewer_apellido: STATE.isAnon ? '' : apellido,
+          reviewer_nombre: reviewerName,
           is_anon: STATE.isAnon,
           message: msg,
           amount_cents: Math.round(STATE.selectedAmt * 100),
@@ -2428,7 +2423,7 @@ async function submitReview() {
           payment_status: STATE.selectedPay === 'mercadopago' ? 'pending' : 'approved',
           published: STATE.selectedPay === 'mercadopago' ? false : true,
         })
-        .select('id, reviewer_nombre, reviewer_apellido, is_anon, message, amount_cents, reply, created_at, payment_status, published')
+        .select('id, reviewer_nombre, is_anon, message, amount_cents, reply, created_at, payment_status, published')
         .single();
 
       if (error) throw error;
@@ -2460,7 +2455,7 @@ async function submitReview() {
   await new Promise(r => setTimeout(r, 1200));
   const newRev = {
     id: Date.now(),
-    name: STATE.isAnon ? 'Anónimo' : ((nombre + ' ' + apellido).trim() || 'Visitante'),
+    name: STATE.isAnon ? 'Anónimo' : (nombre ? nombre + ' ' + (apellido ? apellido.charAt(0)+'.' : '') : 'Visitante'),
     initials: STATE.isAnon ? '?' : ((nombre[0]||'')+(apellido[0]||'')).toUpperCase(),
     date: 'ahora mismo',
     amount: STATE.selectedAmt,
@@ -2471,7 +2466,7 @@ async function submitReview() {
   };
   STATE.reviews.unshift(newRev);
 
-  const displayName = STATE.isAnon ? 'Anónimo' : ((nombre + ' ' + apellido).trim() || 'Visitante');
+  const displayName = STATE.isAnon ? 'Anónimo' : (nombre + ' ' + apellido).trim() || 'Visitante';
   document.getElementById('csAuthor').textContent = displayName;
   document.getElementById('csPago').textContent = STATE.selectedPay === 'mercadopago' ? '💳 MercadoPago' : STATE.selectedPay === 'transfer' ? '🏦 Transferencia' : '💰 Efectivo';
   document.getElementById('csAmount').textContent = '$' + STATE.selectedAmt.toLocaleString('es-AR') + ' ✦';
@@ -3112,7 +3107,7 @@ async function waitForPublishedReview(reviewId, attempts = 10, delayMs = 800) {
   for (let i = 0; i < attempts; i++) {
     const { data, error } = await sb
       .from('reviews')
-      .select('id, reviewer_nombre, reviewer_apellido, is_anon, message, amount_cents, reply, created_at, payment_status, published')
+      .select('id, reviewer_nombre, is_anon, message, amount_cents, reply, created_at, payment_status, published')
       .eq('id', reviewId)
       .eq('published', true)
       .eq('payment_status', 'approved')
@@ -3180,7 +3175,6 @@ async function syncApprovedReview(targetReviewId, targetSlug, attempts = 18, del
   if (status) {
     const data = pending ? JSON.parse(pending) : {
       nombre: 'Visitante',
-      apellido: '',
       amount: 0,
       reviewId,
       profileSlug: returnSlug,
@@ -3193,39 +3187,20 @@ async function syncApprovedReview(targetReviewId, targetSlug, attempts = 18, del
       if (targetReviewId && paymentId && targetSlug) {
         confirmation = await confirmApprovedPayment(targetReviewId, paymentId, targetSlug);
       }
-      const syncAttempts = confirmation?.payment_status === 'approved' ? 12 : 18;
-      const syncDelay = confirmation?.payment_status === 'approved' ? 300 : 450;
-      const syncPromise = syncApprovedReview(targetReviewId, targetSlug, syncAttempts, syncDelay);
+      const publishedReview = confirmation?.payment_status === 'approved'
+        ? await syncApprovedReview(targetReviewId, targetSlug, 4, 350)
+        : await syncApprovedReview(targetReviewId, targetSlug, 8, 500);
 
-      const authorName = [data.nombre, data.apellido].filter(Boolean).join(' ').trim() || 'Visitante';
-      document.getElementById('csAuthor').textContent = authorName;
+      document.getElementById('csAuthor').textContent = data.nombre;
       document.getElementById('csPago').textContent = 'MercadoPago';
       document.getElementById('csAmount').textContent = data.amount ? ('$' + data.amount.toLocaleString('es-AR') + ' ARS') : 'Pago aprobado';
-
-      const confirmSub = document.querySelector('#view-confirm .c-sub');
-      const confirmBadge = document.querySelector('#view-confirm .badge.badge-green');
-      if (confirmSub) {
-        confirmSub.textContent = 'Tu pago fue aprobado. En unos minutos aparecerá la reseña publicada automáticamente.';
-      }
-      if (confirmBadge) {
-        confirmBadge.textContent = '✓ Pago aprobado';
-      }
-
-      nav('confirm');
-      toast('Pago aprobado. En unos minutos aparecerá la reseña.', 'success');
-
-      syncPromise.then((result) => {
-        if (result) {
-          if (confirmSub) {
-            confirmSub.textContent = 'Tu pago fue aprobado y la reseña ya quedó publicada.';
-          }
-          if (confirmBadge) {
-            confirmBadge.textContent = '✓ Reseña publicada';
-          }
-          toast('Reseña publicada ✓', 'success');
-          renderProfile();
-        }
-      }).catch((error) => console.warn('No se pudo sincronizar la reseña aprobada:', error));
+      setTimeout(() => nav(publishedReview ? 'confirm' : 'profile'), 150);
+      toast(
+        publishedReview
+          ? 'Pago aprobado y resena publicada'
+          : 'Pago aprobado. Actualizamos la resena en unos segundos.',
+        'success'
+      );
     } else {
       setTimeout(() => toast('El pago no fue aprobado. Intenta de nuevo.','error'), 300);
     }
