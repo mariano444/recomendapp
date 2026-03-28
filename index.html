@@ -2194,7 +2194,7 @@ async function createMpPreference() {
         body: {
           amount,
           profileSlug: STATE.viewedProfile?.slug || STATE.user.slug,
-          reviewerName: 'Anónimo',
+          reviewerName: STATE.isAnon ? 'Anónimo' : (document.getElementById('fNombre')?.value || 'Visitante'),
           message: document.getElementById('fMsg')?.value || '',
           appUrl: window.location.origin + window.location.pathname,
         }
