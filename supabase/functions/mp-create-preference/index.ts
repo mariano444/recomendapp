@@ -87,7 +87,7 @@ serve(async (req) => {
       items: [
         {
           id: review.id,
-          title: `Recomendapp}`.trim(),
+          title: `Recomendapp`.trim(),
           description: "Resena publicada al aprobarse el pago",
           quantity: 1,
           currency_id: "ARS",
