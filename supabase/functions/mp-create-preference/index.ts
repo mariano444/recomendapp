@@ -95,7 +95,7 @@ serve(async (req) => {
         },
       ],
       payer: {
-        name: reviewerName || "Anonimo",
+        name: {},
       },
       external_reference: review.id,
       notification_url: webhookUrl,
