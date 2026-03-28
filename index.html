@@ -2502,8 +2502,6 @@ function renderProfile() {
   const replied = reviews.filter(r => r.reply).length;
   document.getElementById('pubStats').innerHTML = `
     <div class="stat-cell"><span class="stat-v">${reviews.length}</span><div class="stat-l">Reseñas</div></div>
-    <div class="stat-cell"><span class="stat-v gold">${formatCurrency(total)}</span><div class="stat-l">Total recibido</div></div>
-    <div class="stat-cell"><span class="stat-v">${formatCurrency(avg)}</span><div class="stat-l">Promedio</div></div>
     <div class="stat-cell"><span class="stat-v">${reviews.length ? Math.round(replied/reviews.length*100) : 0}%</span><div class="stat-l">Respondidas</div></div>`;
   document.getElementById('revCount').textContent = reviews.length + ' reseñas · ordenadas por recientes';
   document.getElementById('pubReviews').innerHTML = reviews.map(r => revCardHTML(r, false)).join('');
