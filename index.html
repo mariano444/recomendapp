@@ -2194,7 +2194,7 @@ async function createMpPreference() {
         body: {
           amount,
           profileSlug: STATE.viewedProfile?.slug || STATE.user.slug,
-          reviewerName: STATE.isAnon ? 'Anónimo' : (document.getElementById('fNombre')?.value || 'Visitante'),
+          reviewerName: 'Anónimo',
           message: document.getElementById('fMsg')?.value || '',
           appUrl: window.location.origin + window.location.pathname,
         }
@@ -2925,7 +2925,7 @@ async function testMpConnection() {
 
 function copyWebhook() {
   const url = CONFIG.supabaseUrl.includes('TU-PROYECTO')
-    ? 'https://tu-proyecto.supabase.co/functions/v1/mp-webhook'
+    ? 'https://avwqmeberbjadrrlvaaa.supabase.co/functions/v1/mp-webhook'
     : CONFIG.supabaseUrl + '/functions/v1/mp-webhook';
   if (navigator.clipboard) {
     navigator.clipboard.writeText(url).then(() => toast('URL copiada ✓','success'));
