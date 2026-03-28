@@ -98,13 +98,13 @@ serve(async (req) => {
   const mpBody = {
     items: [{
       id:          review.id,
-      title:       `Reseña para ${profile.nombre} ${profile.apellido}`,
+      title:       `Recomendapp`,
       description: `Recompensa en Aplauso`,
       quantity:    1,
       currency_id: "ARS",
       unit_price:  amount,
     }],
-    payer: { name: reviewerName || "Anónimo" },
+    payer: {},
     external_reference: review.id,
     notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/mp-webhook`,
     back_urls: {
