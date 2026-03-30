@@ -10,6 +10,9 @@ Proyecto preparado para usar Supabase en producción con este frontend estático
 - `index.html`: frontend listo para desplegar como sitio estático
 - `schema.sql`: esquema SQL para Supabase
 - `supabase/functions/mp-create-preference/index.ts`: crea preferencias de MercadoPago
+- `supabase/functions/mp-confirm-return/index.ts`: confirma pagos de reseñas al volver de MercadoPago
+- `supabase/functions/mp-create-media-unlock/index.ts`: crea pagos para desbloquear contenido privado
+- `supabase/functions/mp-confirm-media-return/index.ts`: confirma desbloqueos al volver de MercadoPago
 - `supabase/functions/mp-webhook/index.ts`: procesa webhooks de MercadoPago
 
 ## Qué falta para dejarlo online real
@@ -21,6 +24,9 @@ Proyecto preparado para usar Supabase en producción con este frontend estático
    - `APP_URL`
 3. Desplegar las funciones:
    - `supabase functions deploy mp-create-preference`
+   - `supabase functions deploy mp-confirm-return`
+   - `supabase functions deploy mp-create-media-unlock`
+   - `supabase functions deploy mp-confirm-media-return`
    - `supabase functions deploy mp-webhook`
 4. Publicar `index.html` en tu hosting estático.
 5. En MercadoPago, configurar el webhook apuntando a:
