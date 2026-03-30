@@ -1506,7 +1506,11 @@ async function submitReview() {
       }
 
       document.getElementById('csAuthor').textContent = reviewerName;
-      document.getElementById('csPago').textContent = STATE.selectedPay === 'mercadopago' ? '?Y'? MercadoPago' : STATE.selectedPay === 'transfer' ? '?Y?? Transferencia' : '?Y'? Efectivo';
+      document.getElementById('csPago').textContent = STATE.selectedPay === 'mercadopago'
+        ? 'MercadoPago'
+        : STATE.selectedPay === 'transfer'
+          ? 'Transferencia'
+          : 'Efectivo';
       document.getElementById('csAmount').textContent = '$' + STATE.selectedAmt.toLocaleString('es-AR') + ' ';
       document.getElementById('fMsg').value = '';
       btn.disabled = false;
