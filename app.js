@@ -1,5 +1,5 @@
 /* ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.?
-   CONFIGURACI?"N ??" Reemplazar con valores reales
+   CONFIGURACION ??" Reemplazar con valores reales
 ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.? */
 const CONFIG = {
   // ?"??"??"? sb ?"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"?
@@ -402,11 +402,11 @@ function formatCurrency(amount=0) {
 }
 
 function formatDateLabel(value) {
-  if (!value) return 'reci?n';
+  if (!value) return 'recién';
   try {
     return new Date(value).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
   } catch {
-    return 'reci?n';
+    return 'recién';
   }
 }
 
@@ -574,11 +574,11 @@ function setViewedProfileFromProfile(profile) {
 }
 
 function mapReviewRow(row) {
-  const fullName = (row.reviewer_nombre || 'An?nimo').trim();
+  const fullName = (row.reviewer_nombre || 'Anónimo').trim();
   const parts = fullName.split(/\s+/).filter(Boolean);
   return {
     id: row.id,
-    name: row.is_anon ? 'An?nimo' : fullName,
+    name: row.is_anon ? 'Anónimo' : fullName,
     initials: row.is_anon ? '?' : ((parts[0]?.charAt(0) || '?') + (parts[1]?.charAt(0) || '')).toUpperCase(),
     date: formatDateLabel(row.created_at),
     amount: Math.round((row.amount_cents || 0) / 100),
@@ -865,9 +865,9 @@ function updateNav() {
         <div class="nav-user" onclick="toggleDD()" id="navAv">${STATE.user.initials}</div>
         <div class="nav-dropdown" id="navDD">
           <button class="dd-item" onclick="nav('profile');closeDD()">Ver mi perfil</button>
-          <button class="dd-item" onclick="nav('settings');closeDD()">Configuraci?n</button>
+          <button class="dd-item" onclick="nav('settings');closeDD()">Configuración</button>
           <div class="dd-sep"></div>
-          <button class="dd-item danger" onclick="doLogout()">Cerrar sesi?n</button>
+          <button class="dd-item danger" onclick="doLogout()">Cerrar sesión</button>
         </div>
       </div>`;
   } else {
@@ -913,9 +913,9 @@ async function renderMpBrick() {
     // Modo demo: sin brick, el bot?n simula
     brickContainer.innerHTML = `
       <div class="mp-info-box">
-        <span class="icon">??</span>
+        <span class="icon">Info</span>
         <div><strong>Pago con MercadoPago</strong>: al presionar el boton te vamos a redirigir al checkout para completar el pago.
-        <br><span class="auth-link" onclick="nav('settings');settTab(document.querySelector('.s-nav-item:nth-child(2)'),'stPagos')">Revisar credenciales ?</span></div>
+        <br><span class="auth-link" onclick="nav('settings');settTab(document.querySelector('.s-nav-item:nth-child(2)'),'stPagos')">Revisar credenciales</span></div>
       </div>`;
     return;
   }
@@ -935,7 +935,7 @@ async function createMpPreference() {
         body: {
           amount,
           profileSlug: STATE.viewedProfile?.slug || STATE.user.slug,
-          reviewerName: STATE.isAnon ? 'An?nimo' : ((document.getElementById('fNombre')?.value || '') + ' ' + (document.getElementById('fApellido')?.value || '')).trim(),
+          reviewerName: STATE.isAnon ? 'Anónimo' : ((document.getElementById('fNombre')?.value || '') + ' ' + (document.getElementById('fApellido')?.value || '')).trim(),
           message: document.getElementById('fMsg')?.value || '',
           appUrl: window.location.origin + window.location.pathname,
         }
@@ -985,13 +985,13 @@ async function doLogin() {
       const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
       if (error) { toast(error.message,'error'); return; }
       await hydrateUser(data.session, false);
-      toast('?Bienvenido de nuevo!','success');
+      toast('Bienvenido de nuevo','success');
       setTimeout(() => nav('dashboard'), 600);
     } catch(e) { toast('Error al iniciar sesi?n','error'); }
   } else {
     // Demo
     STATE.loggedIn = true;
-    toast('?Bienvenida de nuevo, Marcela!','success');
+    toast('Bienvenida de nuevo, Marcela','success');
     setTimeout(() => nav('dashboard'), 600);
   }
 }
@@ -1022,7 +1022,7 @@ async function doRegister() {
       if (error) { toast(error.message,'error'); return; }
       if (data.session) {
         await hydrateUser(data.session, false);
-        toast('?Perfil creado exitosamente!','success');
+        toast('Perfil creado exitosamente','success');
         setTimeout(() => nav('dashboard'), 600);
         return;
       }
@@ -1033,13 +1033,13 @@ async function doRegister() {
       STATE.user.name = nombre;
       STATE.user.lastName = apellido;
       STATE.user.initials = (nombre[0]+(apellido[0]||'')).toUpperCase();
-      toast('?Perfil creado exitosamente!','success');
+      toast('Perfil creado exitosamente','success');
       setTimeout(() => nav('dashboard'), 600);
     } catch(e) { toast('Error al crear cuenta','error'); }
   } else {
     STATE.loggedIn = true;
     STATE.user.name = nombre;
-    toast('?Perfil creado!','success');
+    toast('Perfil creado','success');
     setTimeout(() => nav('dashboard'), 600);
   }
 }
@@ -1129,7 +1129,7 @@ function renderRewardAdmin() {
   const list = document.getElementById('rewardAdminList');
   if (!list) return;
   if (!STATE.rewardItems.length) {
-    list.innerHTML = '<div class="gallery-admin-empty">Todav?a no cargaste recompensas por rese?a.</div>';
+    list.innerHTML = '<div class="gallery-admin-empty">Todavía no cargaste recompensas por reseña.</div>';
     return;
   }
   list.innerHTML = STATE.rewardItems.map(item => `
@@ -1137,7 +1137,7 @@ function renderRewardAdmin() {
       <div class="gallery-admin-thumb" style="${item.imageUrl ? `background-image:url('${item.imageUrl}')` : ''}"></div>
       <div>
         <div class="gallery-admin-title">${item.title}</div>
-        <div class="gallery-admin-meta">${item.description || 'Sin descripci?n'}<br>${item.active ? 'Activa y visible cuando corresponda' : 'Oculta'}</div>
+        <div class="gallery-admin-meta">${item.description || 'Sin descripción'}<br>${item.active ? 'Activa y visible cuando corresponda' : 'Oculta'}</div>
       </div>
       <div class="gallery-admin-actions">
         <button class="btn btn-ghost btn-sm" onclick="editRewardItem('${item.id}')">Editar</button>
@@ -1164,9 +1164,9 @@ function renderPublicRewards(items = STATE.publicRewardItems || []) {
         <div class="gallery-title-row">
           <div class="gallery-title">${item.title}</div>
         </div>
-        <div class="gallery-desc">${item.description || 'Se entrega luego de la aprobaci?n del pago de tu rese?a.'}</div>
+        <div class="gallery-desc">${item.description || 'Se entrega luego de la aprobación del pago de tu reseña.'}</div>
         <div class="gallery-cta">
-          <button class="btn btn-amber btn-sm" onclick="nav('form')">Quiero dejar mi rese?a</button>
+          <button class="btn btn-amber btn-sm" onclick="nav('form')">Quiero dejar mi reseña</button>
         </div>
       </div>
     </div>`).join('');
@@ -1445,14 +1445,14 @@ async function submitReview() {
   const nombre   = document.getElementById('fNombre')?.value?.trim() || '';
   const apellido = document.getElementById('fApellido')?.value?.trim() || '';
   const profileId = STATE.viewedProfile?.id;
-  if (!msg) { toast('Escrib? tu rese?a antes de continuar','error'); return; }
-  if (!STATE.selectedAmt || STATE.selectedAmt < 100) { toast('Seleccion? un monto v?lido','error'); return; }
+  if (!msg) { toast('Escribí tu reseña antes de continuar','error'); return; }
+  if (!STATE.selectedAmt || STATE.selectedAmt < 100) { toast('Seleccioná un monto válido','error'); return; }
 
   if (!profileId) { toast('No se pudo identificar el perfil destino','error'); return; }
   const btn = document.getElementById('submitBtn');
   const btnTxt = document.getElementById('submitBtnText');
   if (!STATE.isAnon && !nombre) {
-    toast('Sum? al menos tu nombre o activ? el modo an?nimo','error');
+    toast('Sumá al menos tu nombre o activá el modo anónimo','error');
     return;
   }
   btn.disabled = true;
@@ -1462,13 +1462,13 @@ async function submitReview() {
   const pk = getMpPublicKey();
   if (STATE.selectedPay === 'mercadopago') {
     const pref = await createMpPreference();
-    if (!pref) { btn.disabled = false; btnTxt.textContent = 'Pagar y publicar rese?a'; return; }
+    if (!pref) { btn.disabled = false; btnTxt.textContent = 'Pagar y publicar reseña'; return; }
 
     // Guardar datos temporales para mostrar en confirmaci?n post-pago
     sessionStorage.setItem('aplauso_pending', JSON.stringify({
       reviewId: pref.review_id || '',
       profileSlug: STATE.viewedProfile?.slug || STATE.user.slug || '',
-      nombre: STATE.isAnon ? 'An?nimo' : (nombre + ' ' + apellido).trim(),
+      nombre: STATE.isAnon ? 'Anónimo' : (nombre + ' ' + apellido).trim(),
       pay: 'MercadoPago',
       amount: STATE.selectedAmt,
       msg
@@ -1483,7 +1483,7 @@ async function submitReview() {
 
   if (sb) {
     try {
-      const reviewerName = STATE.isAnon ? 'An?nimo' : ((nombre + ' ' + apellido).trim() || 'Visitante');
+      const reviewerName = STATE.isAnon ? 'Anónimo' : ((nombre + ' ' + apellido).trim() || 'Visitante');
       const { data, error } = await sb
         .from('reviews')
         .insert({
@@ -1514,16 +1514,16 @@ async function submitReview() {
       document.getElementById('csAmount').textContent = '$' + STATE.selectedAmt.toLocaleString('es-AR') + ' ';
       document.getElementById('fMsg').value = '';
       btn.disabled = false;
-      btnTxt.textContent = 'Pagar y publicar rese?a';
-      toast(data?.published ? 'Rese?a guardada en la base' : 'Rese?a guardada pendiente de pago','success');
+      btnTxt.textContent = 'Pagar y publicar reseña';
+      toast(data?.published ? 'Reseña guardada en la base' : 'Reseña guardada pendiente de pago','success');
       renderProfile();
       nav('confirm');
       return;
     } catch(e) {
-      console.error('Error guardando rese?a:', e);
+      console.error('Error guardando reseña:', e);
       btn.disabled = false;
-      btnTxt.textContent = 'Pagar y publicar rese?a';
-      toast(e?.message || 'No se pudo guardar la rese?a','error');
+      btnTxt.textContent = 'Pagar y publicar reseña';
+      toast(e?.message || 'No se pudo guardar la reseña','error');
       return;
     }
   }
@@ -1532,7 +1532,7 @@ async function submitReview() {
   await new Promise(r => setTimeout(r, 1200));
   const newRev = {
     id: Date.now(),
-    name: STATE.isAnon ? 'An?nimo' : (nombre ? nombre + ' ' + (apellido ? apellido.charAt(0)+'.' : '') : 'Visitante'),
+    name: STATE.isAnon ? 'Anónimo' : (nombre ? nombre + ' ' + (apellido ? apellido.charAt(0)+'.' : '') : 'Visitante'),
     initials: STATE.isAnon ? '?' : ((nombre[0]||'')+(apellido[0]||'')).toUpperCase(),
     date: 'ahora mismo',
     amount: STATE.selectedAmt,
@@ -1543,7 +1543,7 @@ async function submitReview() {
   };
   STATE.reviews.unshift(newRev);
 
-  const displayName = STATE.isAnon ? 'An?nimo' : (nombre + ' ' + apellido).trim() || 'Visitante';
+  const displayName = STATE.isAnon ? 'Anónimo' : (nombre + ' ' + apellido).trim() || 'Visitante';
   document.getElementById('csAuthor').textContent = displayName;
   document.getElementById('csPago').textContent = STATE.selectedPay === 'mercadopago'
     ? 'MercadoPago'
@@ -1554,8 +1554,8 @@ async function submitReview() {
 
   document.getElementById('fMsg').value = '';
   btn.disabled = false;
-  btnTxt.textContent = 'Pagar y publicar rese?a';
-  toast('Rese?a publicada exitosamente','success');
+  btnTxt.textContent = 'Pagar y publicar reseña';
+  toast('Reseña publicada exitosamente','success');
   nav('confirm');
 }
 
@@ -1584,78 +1584,78 @@ function renderProfile() {
   document.getElementById('pubTags').innerHTML = (profile.tags || []).map(t => `<span class="pub-tag">${t}</span>`).join('');
   document.getElementById('pubQuickbar').innerHTML = `
     <div class="pub-quickbar-copy">
-      <strong>Dejar una rese?a lleva menos de 1 minuto.</strong>
-      <span>Escrib?s, eleg?s el monto y public?s.</span>
+      <strong>Dejar una reseña lleva menos de 1 minuto.</strong>
+      <span>Escribís, elegís el monto y publicás.</span>
     </div>
     <div class="pub-quickbar-actions">
-      <button class="btn btn-amber btn-sm" onclick="nav('form')">Dejar rese?a</button>
-      <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver rese?as</button>
+      <button class="btn btn-amber btn-sm" onclick="nav('form')">Dejar reseña</button>
+      <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
     </div>`;
   document.getElementById('pubReviewHero').innerHTML = `
     <div class="pub-review-spotlight">
-      <div class="eyebrow" style="margin-bottom:12px">Tu rese?a es la protagonista</div>
-      <h2>Tu rese?a ayuda a que otras personas conf?en.</h2>
-      <p>Reconoc? una buena experiencia de forma simple, clara y r?pida.</p>
+      <div class="eyebrow" style="margin-bottom:12px">Tu reseña es la protagonista</div>
+      <h2>Tu reseña ayuda a que otras personas confíen.</h2>
+      <p>Reconocé una buena experiencia de forma simple, clara y rápida.</p>
       <div class="pub-review-points">
-        <div class="pub-review-point"><strong>R?pido</strong><span>Se completa en pocos pasos.</span></div>
+        <div class="pub-review-point"><strong>Rápido</strong><span>Se completa en pocos pasos.</span></div>
         <div class="pub-review-point"><strong>Seguro</strong><span>Pago con Mercado Pago.</span></div>
-        <div class="pub-review-point"><strong>?til</strong><span>Le da m?s valor a la recomendaci?n.</span></div>
+        <div class="pub-review-point"><strong>Útil</strong><span>Le da más valor a la recomendación.</span></div>
       </div>
     </div>
     <div class="pub-review-card">
       <div>
-        <div class="pub-review-kicker">Acci?n principal</div>
-        <h3>Dej? tu rese?a ahora.</h3>
-        <p>Eleg? un monto, escrib? unas l?neas y listo.</p>
+        <div class="pub-review-kicker">Acción principal</div>
+        <h3>Dejá tu reseña ahora.</h3>
+        <p>Elegí un monto, escribí unas líneas y listo.</p>
         <div class="pub-review-mini-proof">
           <div><strong>Menos de 1 minuto.</strong></div>
-          <div><strong>An?nimo opcional.</strong></div>
-          <div><strong>Publicaci?n autom?tica.</strong></div>
+          <div><strong>Anónimo opcional.</strong></div>
+          <div><strong>Publicación automática.</strong></div>
         </div>
       </div>
       <div class="pub-review-actions">
-        <button class="btn btn-amber btn-md" onclick="nav('form')">Dejar rese?a ahora</button>
-        <button class="btn btn-surface btn-md" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver rese?as</button>
+        <button class="btn btn-amber btn-md" onclick="nav('form')">Dejar reseña ahora</button>
+        <button class="btn btn-surface btn-md" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
       </div>
     </div>`;
   document.getElementById('pubProofStrip').innerHTML = `
-    <div class="pub-proof-card"><div class="pub-proof-kicker">Rese?as</div><div class="pub-proof-value">${reviews.length}</div><div class="pub-proof-note">Publicadas</div></div>
-    <div class="pub-proof-card"><div class="pub-proof-kicker">Promedio</div><div class="pub-proof-value">${formatCurrency(avg || 0)}</div><div class="pub-proof-note">Por rese?a</div></div>
+    <div class="pub-proof-card"><div class="pub-proof-kicker">Reseñas</div><div class="pub-proof-value">${reviews.length}</div><div class="pub-proof-note">Publicadas</div></div>
+    <div class="pub-proof-card"><div class="pub-proof-kicker">Promedio</div><div class="pub-proof-value">${formatCurrency(avg || 0)}</div><div class="pub-proof-note">Por reseña</div></div>
     <div class="pub-proof-card"><div class="pub-proof-kicker">Respuestas</div><div class="pub-proof-value">${reviews.length ? Math.round(replied/reviews.length*100) : 0}%</div><div class="pub-proof-note">Respondidas</div></div>`;
   document.getElementById('pubCredGrid').innerHTML = `
     <div class="pub-cred-card">
-      <h3>Por qu? una rese?a con recompensa da m?s credibilidad</h3>
-      <p>Porque muestra una experiencia real y un reconocimiento genuino. Eso genera m?s confianza y tambi?n motiva a seguir haciendo un buen trabajo.</p>
+      <h3>Por qué una reseña con recompensa da más credibilidad</h3>
+      <p>Porque muestra una experiencia real y un reconocimiento genuino. Eso genera más confianza y también motiva a seguir haciendo un buen trabajo.</p>
       <div class="pub-cred-points">
-        <div class="pub-cred-point"><strong>M?s credibilidad</strong><span>Se siente m?s aut?ntica.</span></div>
-        <div class="pub-cred-point"><strong>M?s confianza</strong><span>Ayuda a decidir m?s r?pido.</span></div>
-        <div class="pub-cred-point"><strong>M?s motivaci?n</strong><span>Reconoce el esfuerzo real.</span></div>
+        <div class="pub-cred-point"><strong>Más credibilidad</strong><span>Se siente más auténtica.</span></div>
+        <div class="pub-cred-point"><strong>Más confianza</strong><span>Ayuda a decidir más rápido.</span></div>
+        <div class="pub-cred-point"><strong>Más motivación</strong><span>Reconoce el esfuerzo real.</span></div>
       </div>
     </div>
     <div class="pub-cred-card">
-      <h3>C?mo funciona</h3>
-      <p>Escrib?s tu rese?a, eleg?s el monto y pag?s. Cuando el pago se aprueba, se publica autom?ticamente.</p>
+      <h3>Cómo funciona</h3>
+      <p>Escribís tu reseña, elegís el monto y pagás. Cuando el pago se aprueba, se publica automáticamente.</p>
     </div>`;
   document.getElementById('pubTrustGrid').innerHTML = `
-    <div class="pub-trust-item"><strong>Claro</strong><span>La acci?n principal est? siempre visible.</span></div>
+    <div class="pub-trust-item"><strong>Claro</strong><span>La acción principal está siempre visible.</span></div>
     <div class="pub-trust-item"><strong>Seguro</strong><span>Pago protegido con Mercado Pago.</span></div>
-    <div class="pub-trust-item"><strong>Profesional</strong><span>Las rese?as ordenan la reputaci?n del perfil.</span></div>`;
+    <div class="pub-trust-item"><strong>Profesional</strong><span>Las reseñas ordenan la reputación del perfil.</span></div>`;
   document.getElementById('pubCtaPanel').innerHTML = `
     <div class="pub-cta-main">
-      <h3>Reconoc? una buena experiencia.</h3>
-      <p>Tu rese?a suma confianza y valor al perfil.</p>
+      <h3>Reconocé una buena experiencia.</h3>
+      <p>Tu reseña suma confianza y valor al perfil.</p>
       <div class="pub-cta-points">
         <span class="pub-cta-chip">Menos de 1 minuto</span>
-        <span class="pub-cta-chip">An?nimo si quer?s</span>
+        <span class="pub-cta-chip">Anónimo si querés</span>
         <span class="pub-cta-chip">Pago seguro con Mercado Pago</span>
       </div>
-      <button class="btn btn-amber btn-md" onclick="nav('form')">Dejar rese?a ahora</button>
+      <button class="btn btn-amber btn-md" onclick="nav('form')">Dejar reseña ahora</button>
     </div>
     <div class="pub-cta-side">
       <h3>Contacto</h3>
-      <p>${hasPhone ? 'Pod?s contactar al perfil por tel?fono o WhatsApp.' : 'Este perfil todav?a no agreg? un tel?fono p?blico.'}</p>
+      <p>${hasPhone ? 'Podés contactar al perfil por teléfono o WhatsApp.' : 'Este perfil todavía no agregó un teléfono público.'}</p>
       <div class="pub-contact-list">
-        <a class="pub-contact-btn${hasPhone ? '' : ' disabled'}" href="${hasPhone ? phoneLink(phone) : '#'}">${hasPhone ? `Llamar: ${phone}` : 'Tel?fono no disponible'}</a>
+        <a class="pub-contact-btn${hasPhone ? '' : ' disabled'}" href="${hasPhone ? phoneLink(phone) : '#'}">${hasPhone ? `Llamar: ${phone}` : 'Teléfono no disponible'}</a>
         <a class="pub-contact-btn${hasPhone ? '' : ' disabled'}" href="${hasPhone ? whatsAppLink(phone) : '#'}" target="_blank" rel="noopener">${hasPhone ? 'Contactar por WhatsApp' : 'WhatsApp no disponible'}</a>
       </div>
     </div>`;
@@ -1664,25 +1664,25 @@ function renderProfile() {
   renderFormHeader();
   setAvatarNode(document.getElementById('formProfileAvatar'), profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl);
   document.getElementById('pubStats').innerHTML = `
-    <div class="stat-cell"><span class="stat-v">${reviews.length}</span><div class="stat-l">Rese?as publicadas</div></div>
+    <div class="stat-cell"><span class="stat-v">${reviews.length}</span><div class="stat-l">Reseñas publicadas</div></div>
     <div class="stat-cell"><span class="stat-v gold">${formatCurrency(total || 0)}</span><div class="stat-l">Recompensas recibidas</div></div>
     <div class="stat-cell"><span class="stat-v">${reviews.length ? Math.round(replied/reviews.length*100) : 0}%</span><div class="stat-l">Respondidas</div></div>`;
-  document.getElementById('revCount').textContent = reviews.length + ' rese?as ? ordenadas por recientes';
+  document.getElementById('revCount').textContent = reviews.length + ' reseñas · ordenadas por recientes';
   document.getElementById('pubRewardsSection').style.display = rewardItems.length ? '' : 'none';
   document.getElementById('pubMediaSection').style.display = mediaItems.length ? '' : 'none';
   document.getElementById('pubReviews').innerHTML = reviews.length
     ? reviews.map(r => revCardHTML(r, false)).join('')
-    : `<div class="rev-card"><p class="rev-text">Todav?a no hay rese?as publicadas. La primera puede ser la tuya.</p><button class="btn btn-amber btn-sm" onclick="nav('form')">Escribir la primera rese?a</button></div>`;
+    : `<div class="rev-card"><p class="rev-text">Todavía no hay reseñas publicadas. La primera puede ser la tuya.</p><button class="btn btn-amber btn-sm" onclick="nav('form')">Escribir la primera reseña</button></div>`;
   renderPublicRewards(rewardItems);
   renderPublicMediaPreview(mediaItems);
   renderMediaVault();
   return;
   document.getElementById('pubStats').innerHTML = `
-    <div class="stat-cell"><span class="stat-v">${STATE.reviews.length}</span><div class="stat-l">Rese?as</div></div>
+    <div class="stat-cell"><span class="stat-v">${STATE.reviews.length}</span><div class="stat-l">Reseñas</div></div>
     <div class="stat-cell"><span class="stat-v gold">$${total.toLocaleString('es-AR')}</span><div class="stat-l">Total recibido</div></div>
     <div class="stat-cell"><span class="stat-v">$${avg.toLocaleString('es-AR')}</span><div class="stat-l">Promedio</div></div>
     <div class="stat-cell"><span class="stat-v">${STATE.reviews.length ? Math.round(replied/STATE.reviews.length*100) : 0}%</span><div class="stat-l">Respondidas</div></div>`;
-  document.getElementById('revCount').textContent = STATE.reviews.length + ' rese?as ? ordenadas por recientes';
+  document.getElementById('revCount').textContent = STATE.reviews.length + ' reseñas · ordenadas por recientes';
   document.getElementById('pubReviews').innerHTML = STATE.reviews.map(r => revCardHTML(r, false)).join('');
 }
 
@@ -1741,7 +1741,7 @@ function closeModal() {
 function submitReply() {
   if (sb && STATE.user.id) {
     const text = document.getElementById('replyText').value.trim();
-    if (!text) { toast('Escrib? tu respuesta','error'); return; }
+    if (!text) { toast('Escribí tu respuesta','error'); return; }
     (async () => {
       const { error } = await sb
         .from('reviews')
@@ -1764,7 +1764,7 @@ function submitReply() {
     return;
   }
   const text = document.getElementById('replyText').value.trim();
-  if (!text) { toast('Escrib? tu respuesta','error'); return; }
+  if (!text) { toast('Escribí tu respuesta','error'); return; }
   const rev = STATE.reviews.find(r => r.id === STATE.currentReplyId);
   if (rev) {
     rev.reply = text;
@@ -1824,7 +1824,7 @@ function renderDashboard() {
   if (af) af.innerHTML = STATE.reviews.slice(0,4).map(r => `
     <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
       <div class="avatar av-xs" style="background:${r.color||'#4F76B8'}">${r.initials}</div>
-      <div style="flex:1"><div style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">${r.name}</strong> dej? una rese?a</div><div style="font-size:11px;color:var(--text3)">${r.date}</div></div>
+      <div style="flex:1"><div style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">${r.name}</strong> dejó una reseña</div><div style="font-size:11px;color:var(--text3)">${r.date}</div></div>
       <span class="badge badge-amber" style="font-size:11px">$${(r.amount/1000).toFixed(r.amount%1000?1:0)}k</span>
     </div>`).join('');
 
@@ -1884,7 +1884,7 @@ function renderDashboard() {
 function dashTab(btn, tabId) {
   document.querySelectorAll('.d-tab').forEach(t => t.classList.remove('act'));
   btn.classList.add('act');
-  ['tabRese?as','tabAnalytics','tabPagos','tabPerfil'].forEach(id => {
+  ['tabReseñas','tabAnalytics','tabPagos','tabPerfil'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = id === tabId ? 'block' : 'none';
   });
@@ -2125,13 +2125,13 @@ async function saveMpCredentials() {
   CONFIG.mpMode = mode;
   initMP(pk);
   updateMpStatusBadge();
-  toast('Credenciales de MercadoPago guardadas para este perfil ?','success');
+  toast('Credenciales de MercadoPago guardadas para este perfil','success');
 }
 
 async function testMpConnection() {
   const pk = getMpPublicKey();
   if (!pk) { toast('Primero configur? la Public Key','error'); return; }
-  toast('Probando conexi?n...','info');
+  toast('Probando conexión...','info');
   setTimeout(() => {
     if (pk.startsWith('APP_USR-') || pk.startsWith('TEST-')) {
       toast('Public Key v?lida ? Conexi?n OK','success');
@@ -2185,7 +2185,7 @@ function settTab(btn, panelId) {
 }
 
 function confirmDelete() {
-  if (confirm('?Est?s segura de que quer?s eliminar tu cuenta? Esta acci?n es irreversible.')) {
+  if (confirm('¿Estás segura de que querés eliminar tu cuenta? Esta acción es irreversible.')) {
     STATE.loggedIn = false;
     toast('Cuenta eliminada','error');
     setTimeout(() => nav('home'), 800);
@@ -2215,7 +2215,7 @@ function renderSearch(query='') {
       </div>
       <p class="p-card-bio">${p.bio}</p>
       <div class="p-card-stats">
-        <div class="p-card-stat"><div class="v">${p.revs}</div><div class="l">rese?as</div></div>
+        <div class="p-card-stat"><div class="v">${p.revs}</div><div class="l">reseñas</div></div>
         <div class="p-card-stat"><div class="v" style="color:var(--amber)">$${(p.total/1000).toFixed(0)}k</div><div class="l">recibido</div></div>
       </div>
     </div>`).join('');
@@ -2286,7 +2286,7 @@ function selectPlan(plan) {
    MARQUEE
 ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.? */
 function buildMarquee() {
-  const items = ['Rese?as con impacto real','Recompensa obligatoria','Perfil p?blico profesional','Simple y transparente','MercadoPago integrado','Respuestas del profesional','Compartible al instante','An?nimo opcional','Checkout Pro nativo','sb backend'];
+  const items = ['Reseñas con impacto real','Recompensa obligatoria','Perfil público profesional','Simple y transparente','MercadoPago integrado','Respuestas del profesional','Compartible al instante','Anónimo opcional','Checkout Pro nativo','sb backend'];
   const html = [...items,...items].map(i => `<div class="m-item"><span class="star"></span>${i}</div>`).join('');
   document.getElementById('marqueeInner').innerHTML = html;
 }
