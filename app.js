@@ -1545,7 +1545,11 @@ async function submitReview() {
 
   const displayName = STATE.isAnon ? 'An?nimo' : (nombre + ' ' + apellido).trim() || 'Visitante';
   document.getElementById('csAuthor').textContent = displayName;
-  document.getElementById('csPago').textContent = STATE.selectedPay === 'mercadopago' ? '?Y'? MercadoPago' : STATE.selectedPay === 'transfer' ? '?Y?? Transferencia' : '?Y'? Efectivo';
+  document.getElementById('csPago').textContent = STATE.selectedPay === 'mercadopago'
+    ? 'MercadoPago'
+    : STATE.selectedPay === 'transfer'
+      ? 'Transferencia'
+      : 'Efectivo';
   document.getElementById('csAmount').textContent = '$' + STATE.selectedAmt.toLocaleString('es-AR') + ' ';
 
   document.getElementById('fMsg').value = '';
