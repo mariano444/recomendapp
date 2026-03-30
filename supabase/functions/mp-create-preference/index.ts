@@ -20,7 +20,10 @@ serve(async (req) => {
     const { amount, profileSlug, reviewerName, message, appUrl } = await req.json();
 
     if (!amount || Number(amount) < 100) {
-      return Response.json({ error: "Monto invalido. El minimo es $100 ARS." }, { status: 400, headers: corsHeaders });
+      return Response.json(
+        { error: "Monto invalido. El minimo es $100 ARS." },
+        { status: 400, headers: corsHeaders },
+      );
     }
 
     const { data: profile, error: profileError } = await supabase
@@ -30,11 +33,17 @@ serve(async (req) => {
       .single();
 
     if (profileError || !profile || !profile.active) {
-      return Response.json({ error: "Perfil no encontrado o inactivo." }, { status: 404, headers: corsHeaders });
+      return Response.json(
+        { error: "Perfil no encontrado o inactivo." },
+        { status: 404, headers: corsHeaders },
+      );
     }
 
     if (profile.min_amount && Number(amount) < Math.round(profile.min_amount / 100)) {
-      return Response.json({ error: "El monto es menor al minimo definido por el perfil." }, { status: 400, headers: corsHeaders });
+      return Response.json(
+        { error: "El monto es menor al minimo definido por el perfil." },
+        { status: 400, headers: corsHeaders },
+      );
     }
 
     const { data: paymentCredentials } = await supabase
@@ -74,7 +83,11 @@ serve(async (req) => {
     const originHeader = req.headers.get("origin") || "";
     const refererHeader = req.headers.get("referer") || "";
     const refererUrl = refererHeader ? new URL(refererHeader) : null;
-    const returnBase = appUrl || (refererUrl ? `${refererUrl.origin}${refererUrl.pathname}` : "") || originHeader || appUrlFromEnv;
+    const returnBase =
+      appUrl ||
+      (refererUrl ? `${refererUrl.origin}${refererUrl.pathname}` : "") ||
+      originHeader ||
+      appUrlFromEnv;
 
     if (!returnBase) {
       throw new Error("Falta configurar APP_URL o enviar appUrl desde el frontend");
@@ -88,7 +101,7 @@ serve(async (req) => {
         {
           id: review.id,
           title: "Recomendapp",
-          description: "Reseña publicada al aprobarse el pago",
+          description: "Resena publicada al aprobarse el pago",
           quantity: 1,
           currency_id: "ARS",
           unit_price: Number(amount),
@@ -144,7 +157,10 @@ serve(async (req) => {
       {
         review_id: review.id,
         preference_id: preference.id,
-        init_point: effectiveMpMode === "production" ? preference.init_point : (preference.sandbox_init_point || preference.init_point),
+        init_point:
+          effectiveMpMode === "production"
+            ? preference.init_point
+            : (preference.sandbox_init_point || preference.init_point),
       },
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
