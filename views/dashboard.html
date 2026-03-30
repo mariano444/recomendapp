@@ -1,0 +1,158 @@
+<div class="view" id="view-dashboard">
+<div class="dash-view">
+<div class="dash-inner">
+  <div class="dash-top">
+    <div class="dash-top-left">
+      <div class="avatar av-lg" id="dashAvatar">MA</div>
+      <div>
+        <div class="dash-title" id="dashTitle">Mi panel</div>
+        <div class="dash-subtitle" id="dashSubtitle">Psicóloga clínica · Buenos Aires</div>
+      </div>
+    </div>
+    <div class="dash-top-right">
+      <button class="btn btn-surface btn-sm" onclick="doShare()">Copiar enlace</button>
+      <button class="btn btn-amber btn-sm" onclick="nav('settings')">Configuraci?n</button>
+    </div>
+  </div>
+
+  <div class="metrics-row">
+    <div class="metric highlight"><div class="m-label">Total recaudado</div><div class="m-value" id="mTotal">$142.500</div><div class="m-sub up" id="mTotalSub">+ $18.000 este mes</div></div>
+    <div class="metric"><div class="m-label">Reseñas recibidas</div><div class="m-value" id="mReviews">38</div><div class="m-sub up">+ 5 esta semana</div></div>
+    <div class="metric"><div class="m-label">Recompensa promedio</div><div class="m-value" id="mAvg">$3.750</div><div class="m-sub">Por reseña</div></div>
+    <div class="metric"><div class="m-label">Sin responder</div><div class="m-value" style="color:var(--red)" id="pendingCount">3</div><div class="m-sub down">Requieren atención</div></div>
+  </div>
+
+  <div class="dash-tabs">
+    <button class="d-tab act" onclick="dashTab(this,'tabReseñas')">Reseñas</button>
+    <button class="d-tab" onclick="dashTab(this,'tabAnalytics')">Analytics</button>
+    <button class="d-tab" onclick="dashTab(this,'tabPagos')">Pagos</button>
+    <button class="d-tab" onclick="dashTab(this,'tabPerfil')">Editar perfil</button>
+  </div>
+
+  <div id="tabReseñas">
+    <div class="dash-grid">
+      <div class="dash-main">
+        <div class="dash-panel">
+          <div class="panel-title">?ltimas rese?as <span class="panel-title-right">Ver todas</span></div>
+          <div id="dashReviews"></div>
+        </div>
+      </div>
+      <div class="dash-side">
+        <div class="dash-panel">
+          <div class="panel-title">Enlace del perfil</div>
+          <div class="link-copy-row"><span id="profileLinkDisplay">Enlace del perfil</span><button class="link-copy-btn" onclick="doShare()">Copiar</button></div>
+          <button class="btn btn-amber btn-full" style="border-radius:var(--radius);font-size:13px;padding:12px" onclick="nav('form')">Vista del formulario -></button>
+        </div>
+        <div class="dash-panel">
+          <div class="panel-title">Actividad reciente</div>
+          <div id="activityFeed"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tabAnalytics" style="display:none">
+    <div class="dash-grid">
+      <div class="dash-panel"><div class="panel-title">Ingresos últimos 7 días</div><div class="chart-bars" id="chartBars"></div><div style="display:flex;justify-content:space-between;margin-top:8px" id="chartLabels"></div></div>
+      <div class="dash-panel"><div class="panel-title">Distribución de montos</div><div id="amtDistrib"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px">
+      <div class="dash-panel" style="text-align:center"><div class="m-label">Reseñas este mes</div><div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:var(--amber);margin-top:8px" id="analyticsMonthCount">12</div></div>
+      <div class="dash-panel" style="text-align:center"><div class="m-label">Tasa de respuesta</div><div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:var(--green);margin-top:8px" id="analyticsReplyRate">87%</div></div>
+      <div class="dash-panel" style="text-align:center"><div class="m-label">Vistas del perfil</div><div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:var(--text);margin-top:8px">248</div></div>
+    </div>
+  </div>
+
+  <div id="tabPagos" style="display:none">
+    <div class="dash-panel"><div class="panel-title">Historial de pagos</div><div id="payHistory"></div></div>
+  </div>
+
+  <div id="tabPerfil" style="display:none">
+    <div class="dash-grid">
+      <div class="dash-panel">
+        <div class="panel-title">Información del perfil</div>
+        <div class="two-col" style="margin-bottom:0">
+          <div class="field"><label class="field-label">Nombre</label><input class="field-input" value="" id="editNombre"></div>
+          <div class="field"><label class="field-label">Apellido</label><input class="field-input" value="" id="editApellido"></div>
+        </div>
+        <div class="field"><label class="field-label">Especialidad / Rubro</label><input class="field-input" value="Psicóloga clínica" id="editRole"></div>
+        <div class="field"><label class="field-label">Ciudad</label><input class="field-input" value="Buenos Aires" id="editCity"></div>
+        <div class="field"><label class="field-label">Teléfono público</label><input class="field-input" value="" id="editPhone" placeholder="+54 9 11 1234 5678"></div>
+        <div class="field"><label class="field-label">Descripción</label><textarea class="field-textarea" id="editBio">Acompañamiento terapéutico en adultos y adolescentes. Especializada en TCC y enfoque sistémico.</textarea></div>
+        <div class="field"><label class="field-label">Tags (separados por coma)</label><input class="field-input" value="TCC, Sistémico, Adultos, Adolescentes" id="editTags"></div>
+        <div class="field"><label class="field-label">Foto de perfil</label><input class="field-input" type="file" id="editAvatarFile" accept="image/*"></div>
+        <div class="field"><label class="field-label">Portada</label><input class="field-input" type="file" id="editCoverFile" accept="image/*"></div>
+        <button class="btn btn-amber btn-md" onclick="saveProfile()">Guardar cambios</button>
+
+        <div class="gallery-editor">
+          <div class="gallery-editor-head">
+            <div>
+              <div class="gallery-editor-title">Recompensas por reseña</div>
+              <div class="gallery-editor-sub">Estas recompensas no tienen precio y se entregan después de que se aprueba el pago de la reseña.</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field"><label class="field-label">Título</label><input class="field-input" id="rewardTitle" placeholder="Sesión bonus"></div>
+            <div class="field"><label class="field-label">Estado</label><select class="field-select field-input" id="rewardActive"><option value="true">Activa</option><option value="false">Oculta</option></select></div>
+          </div>
+          <div class="field"><label class="field-label">Descripción</label><textarea class="field-textarea" id="rewardDescription" placeholder="Qué recibe la persona después de dejar su reseña y aprobarse el pago."></textarea></div>
+          <div class="two-col">
+            <div class="field"><label class="field-label">Imagen</label><input class="field-input" type="file" id="rewardImageFile" accept="image/*"></div>
+            <div class="field"><label class="field-label">O URL de imagen</label><input class="field-input" id="rewardImageUrl" placeholder="https://..."></div>
+          </div>
+          <div class="gallery-admin-actions">
+            <button class="btn btn-amber btn-md" onclick="saveRewardItem()">Guardar recompensa</button>
+            <button class="btn btn-ghost btn-md" onclick="resetRewardForm()">Limpiar</button>
+          </div>
+          <div class="gallery-admin-list" id="rewardAdminList"></div>
+        </div>
+
+        <div class="gallery-editor" style="margin-top:18px">
+          <div class="gallery-editor-head">
+            <div>
+              <div class="gallery-editor-title">Galería de imágenes</div>
+              <div class="gallery-editor-sub">Subí una imagen o un combo. Las públicas se muestran abiertas; las privadas aparecen bloqueadas y se desbloquean después del pago.</div>
+            </div>
+          </div>
+          <div class="two-col">
+            <div class="field"><label class="field-label">Título</label><input class="field-input" id="mediaTitle" placeholder="Pack inspiración"></div>
+            <div class="field"><label class="field-label">Precio</label><input class="field-input" id="mediaPrice" type="number" placeholder="2500"></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><label class="field-label">Visibilidad</label><select class="field-select field-input" id="mediaVisibility"><option value="public">Pública</option><option value="private">Privada</option></select></div>
+            <div class="field"><label class="field-label">Tipo</label><select class="field-select field-input" id="mediaIsCombo"><option value="false">Imagen individual</option><option value="true">Combo de imágenes</option></select></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><label class="field-label">Estado</label><select class="field-select field-input" id="mediaActive"><option value="true">Activa</option><option value="false">Oculta</option></select></div>
+            <div class="field"><label class="field-label">Archivo / URL final</label><input class="field-input" id="mediaDownloadUrl" placeholder="https://..."></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><label class="field-label">Formato</label><select class="field-select field-input" id="mediaKind"><option value="image">Imagen</option><option value="video">Video</option><option value="pdf">PDF</option><option value="file">Archivo</option></select></div>
+            <div class="field"><label class="field-label">Acceso</label><select class="field-select field-input" id="mediaAllowDownload"><option value="true">Permitir descarga</option><option value="false">Solo ver / abrir</option></select></div>
+          </div>
+          <div class="field"><label class="field-label">Descripción</label><textarea class="field-textarea" id="mediaDescription" placeholder="Explicá qué incluye, si es una imagen única o un combo, y qué obtiene quien desbloquea."></textarea></div>
+          <div class="two-col">
+            <div class="field"><label class="field-label">Vista previa</label><input class="field-input" type="file" id="mediaPreviewFile" accept="image/*"></div>
+            <div class="field"><label class="field-label">O URL de preview</label><input class="field-input" id="mediaPreviewUrl" placeholder="https://..."></div>
+          </div>
+          <div class="gallery-admin-actions">
+            <button class="btn btn-amber btn-md" onclick="saveMediaItem()">Guardar imagen / combo</button>
+            <button class="btn btn-ghost btn-md" onclick="resetMediaForm()">Limpiar</button>
+          </div>
+          <div class="gallery-admin-list" id="mediaAdminList"></div>
+        </div>
+      </div>
+      <div class="dash-side">
+        <div class="dash-panel">
+          <div class="panel-title">Config. de reseñas</div>
+          <div class="switch-row" onclick="toggleSwitch('swAnon')" style="margin-bottom:10px"><div class="switch-row-left"><span class="switch-row-icon">An?nimo</span><div><div class="switch-row-title">Permitir anónimas</div><div class="switch-row-sub">Reseñas sin nombre</div></div></div><div class="switch-track on" id="swAnon"><div class="switch-knob"></div></div></div>
+          <div class="switch-row" onclick="toggleSwitch('swMinAmt')" style="margin-bottom:10px"><div class="switch-row-left"><span class="switch-row-icon">Pago</span><div><div class="switch-row-title">Monto mínimo</div><div class="switch-row-sub">$500 por reseña</div></div></div><div class="switch-track" id="swMinAmt"><div class="switch-knob"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- SETTINGS -->
