@@ -236,6 +236,29 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .hero-sub { font-size:17px; color:var(--text2); max-width:560px; line-height:1.7; margin-bottom:44px; }
 .hero-actions { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:52px; }
 .proof-row { display:flex; align-items:center; gap:14px; }
+.hero-showcase { width:min(1100px,100%); margin-top:34px; display:grid; grid-template-columns:1.15fr .85fr; gap:18px; align-items:stretch; }
+.hero-panel { background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02)); border:1px solid var(--border); border-radius:28px; padding:24px; box-shadow:0 28px 80px rgba(0,0,0,.28); text-align:left; backdrop-filter:blur(12px); }
+.hero-panel-main { position:relative; overflow:hidden; }
+.hero-panel-main::before { content:''; position:absolute; inset:auto -10% -40% auto; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle,rgba(110,151,216,.18) 0%,transparent 72%); pointer-events:none; }
+.hero-panel-kicker { font-size:11px; letter-spacing:1.8px; text-transform:uppercase; color:var(--amber); margin-bottom:12px; }
+.hero-panel-title { font-family:'Playfair Display',serif; font-size:32px; line-height:1.05; margin-bottom:12px; }
+.hero-panel-sub { font-size:14px; color:var(--text2); line-height:1.7; max-width:520px; }
+.hero-metrics { margin-top:22px; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.hero-metric { padding:14px 16px; border-radius:18px; background:rgba(12,11,10,.22); border:1px solid rgba(255,255,255,.06); }
+.hero-metric-value { font-family:'Playfair Display',serif; font-size:28px; color:var(--text); }
+.hero-metric-label { font-size:12px; color:var(--text2); margin-top:4px; line-height:1.4; }
+.hero-side-stack { display:grid; gap:16px; }
+.hero-mini-card { padding:18px 18px 16px; border-radius:22px; background:linear-gradient(180deg,rgba(110,151,216,.10),rgba(110,151,216,.04)); border:1px solid rgba(110,151,216,.18); }
+.hero-mini-card h3 { font-size:18px; margin-bottom:8px; }
+.hero-mini-card p { font-size:13px; color:var(--text2); line-height:1.6; margin-bottom:12px; }
+.hero-mini-list { display:flex; flex-wrap:wrap; gap:8px; }
+.hero-mini-pill { padding:8px 10px; border-radius:999px; background:rgba(12,11,10,.24); border:1px solid rgba(255,255,255,.06); font-size:11px; color:var(--text2); }
+.hero-review-card { background:var(--bg3); border:1px solid var(--border); border-radius:22px; padding:18px; }
+.hero-review-top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.hero-review-name { font-size:14px; font-weight:700; }
+.hero-review-role { font-size:12px; color:var(--text3); margin-top:2px; }
+.hero-review-copy { font-size:14px; color:var(--text2); line-height:1.7; }
+.hero-review-amount { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; background:var(--amber-soft); border:1px solid rgba(110,151,216,.24); color:var(--amber); font-size:12px; font-weight:700; }
 .proof-avs { display:flex; }
 .proof-av { width:32px; height:32px; border-radius:50%; border:2px solid var(--bg); margin-left:-8px; first-child{ margin-left:0; } display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#fff; }
 .proof-txt { font-size:14px; color:var(--text2); }
@@ -658,6 +681,16 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     font-size:16px;
     margin-bottom:28px;
   }
+  .hero-showcase,
+  .hero-metrics {
+    grid-template-columns:1fr;
+  }
+  .hero-panel {
+    padding:20px;
+  }
+  .hero-panel-title {
+    font-size:28px;
+  }
   .cta-banner {
     margin:0 24px 72px;
     padding:56px 32px;
@@ -738,6 +771,17 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     width:100%;
     gap:10px;
     margin-bottom:28px;
+  }
+  .hero-showcase {
+    gap:14px;
+    margin-top:26px;
+  }
+  .hero-panel-title {
+    font-size:24px;
+  }
+  .hero-mini-card,
+  .hero-review-card {
+    padding:16px;
   }
   .hero-actions .btn {
     width:100%;
@@ -915,6 +959,39 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
         <div class="proof-av" style="background:#9B6A9E">K</div>
       </div>
       <span class="proof-txt">+<strong>2.840 reseñas</strong> publicadas este mes</span>
+    </div>
+    <div class="hero-showcase">
+      <div class="hero-panel hero-panel-main">
+        <div class="hero-panel-kicker">Para profesionales y negocios</div>
+        <div class="hero-panel-title">Tu perfil público convierte agradecimiento en prueba social.</div>
+        <p class="hero-panel-sub">Mostrá reseñas reales, montos visibles y respuestas públicas en una sola página lista para compartir por WhatsApp, Instagram o donde quieras.</p>
+        <div class="hero-metrics">
+          <div class="hero-metric"><div class="hero-metric-value">1 min</div><div class="hero-metric-label">para dejar una reseña con pago incluido</div></div>
+          <div class="hero-metric"><div class="hero-metric-value">100%</div><div class="hero-metric-label">visible cuando el pago queda aprobado</div></div>
+          <div class="hero-metric"><div class="hero-metric-value">24/7</div><div class="hero-metric-label">perfil listo para recibir reconocimiento</div></div>
+        </div>
+      </div>
+      <div class="hero-side-stack">
+        <div class="hero-mini-card">
+          <h3>Más persuasivo para quien visita tu perfil</h3>
+          <p>La persona entiende rápido qué hacer: leer reseñas, confiar, contactarte y dejar su propio reconocimiento.</p>
+          <div class="hero-mini-list">
+            <span class="hero-mini-pill">Perfil compartible</span>
+            <span class="hero-mini-pill">WhatsApp directo</span>
+            <span class="hero-mini-pill">Reseña con recompensa</span>
+          </div>
+        </div>
+        <div class="hero-review-card">
+          <div class="hero-review-top">
+            <div>
+              <div class="hero-review-name">Laura Ponce</div>
+              <div class="hero-review-role">Nutricionista · Rosario</div>
+            </div>
+            <span class="hero-review-amount">✦ $4.000</span>
+          </div>
+          <div class="hero-review-copy">"Ahora tengo un perfil que mis clientes comparten solos. Se entiende rápido, da confianza y las reseñas publicadas pesan mucho más."</div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -3280,9 +3357,10 @@ async function waitForPublishedReview(reviewId, attempts = 10, delayMs = 800) {
 }
 
 async function confirmApprovedPayment(reviewId, paymentId, profileSlug) {
-  if (!sb || !reviewId || !paymentId || !profileSlug) return null;
+  const merchantOrderId = new URLSearchParams(window.location.search).get('merchant_order_id') || '';
+  if (!sb || !reviewId || (!paymentId && !merchantOrderId) || !profileSlug) return null;
   const { data, error } = await sb.functions.invoke('mp-confirm-return', {
-    body: { reviewId, paymentId, profileSlug }
+    body: { reviewId, paymentId, merchantOrderId, profileSlug }
   });
   if (error) {
     console.warn('No se pudo confirmar el pago en el retorno:', error.message || error);
@@ -3291,7 +3369,7 @@ async function confirmApprovedPayment(reviewId, paymentId, profileSlug) {
   return data;
 }
 
-async function syncApprovedReview(targetReviewId, targetSlug, attempts = 18, delayMs = 900) {
+async function syncApprovedReview(targetReviewId, targetSlug, attempts = 24, delayMs = 1200) {
   if (!targetReviewId || !targetSlug) return null;
   const isOwnProfile = STATE.loggedIn && targetSlug === STATE.user.slug;
 
@@ -3329,7 +3407,7 @@ async function syncApprovedReview(targetReviewId, targetSlug, attempts = 18, del
   const status = params.get('payment') || params.get('status');
   const reviewId = params.get('review_id') || '';
   const returnSlug = params.get('slug') || '';
-  const paymentId = params.get('payment_id') || params.get('collection_id') || '';
+  const paymentId = params.get('payment_id') || params.get('collection_id') || params.get('data.id') || '';
   const pending = sessionStorage.getItem('aplauso_pending');
 
   if (status) {
@@ -3348,8 +3426,8 @@ async function syncApprovedReview(targetReviewId, targetSlug, attempts = 18, del
         confirmation = await confirmApprovedPayment(targetReviewId, paymentId, targetSlug);
       }
       const publishedReview = confirmation?.payment_status === 'approved'
-        ? await syncApprovedReview(targetReviewId, targetSlug, 4, 350)
-        : await syncApprovedReview(targetReviewId, targetSlug, 8, 500);
+        ? await syncApprovedReview(targetReviewId, targetSlug, 18, 700)
+        : await syncApprovedReview(targetReviewId, targetSlug, 24, 1200);
 
       document.getElementById('csAuthor').textContent = data.nombre;
       document.getElementById('csPago').textContent = 'MercadoPago';
