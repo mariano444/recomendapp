@@ -1697,6 +1697,12 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
           </select>
         </div>
 
+        <div class="s-section-title">Detalle del pago</div>
+        <div class="field">
+          <input class="field-input" id="stMpCheckoutLabel" maxlength="60" placeholder="Recomendapp">
+          <div class="field-hint">Texto base del checkout. Si lo dejás vacío, usamos <strong>Recomendapp</strong>.</div>
+        </div>
+
         <div class="s-section-title">Datos para cobrar</div>
         <div class="field">
           <input class="field-input" id="stMpAliasCobro" placeholder="Alias CVU/CBU">
@@ -2095,8 +2101,8 @@ const CHART_DATA = [
 function loadMpConfig() {
   try {
     const raw = localStorage.getItem('aplauso_mp_config');
-    return raw ? JSON.parse(raw) : { publicKey: '', accessToken: '', mode: 'sandbox', profileId: null };
-  } catch { return { publicKey: '', accessToken: '', mode: 'sandbox', profileId: null }; }
+    return raw ? JSON.parse(raw) : { publicKey: '', accessToken: '', mode: 'sandbox', checkoutLabel: 'Recomendapp', profileId: null };
+  } catch { return { publicKey: '', accessToken: '', mode: 'sandbox', checkoutLabel: 'Recomendapp', profileId: null }; }
 }
 
 function saveMpConfigToStorage(cfg) {
@@ -2115,7 +2121,7 @@ async function loadStoredMpConfig(force = false) {
 
   const { data, error } = await sb
     .from('profile_payment_credentials')
-    .select('profile_id, mp_public_key, mp_access_token, mp_mode')
+    .select('profile_id, mp_public_key, mp_access_token, mp_mode, mp_checkout_label')
     .eq('profile_id', STATE.user.id)
     .single();
 
@@ -2123,7 +2129,7 @@ async function loadStoredMpConfig(force = false) {
     if (!/0 rows|no rows/i.test(error.message || '')) {
       console.warn('No se pudieron cargar las credenciales de MercadoPago:', error.message);
     }
-    STATE.mpConfig = { publicKey: '', accessToken: '', mode: 'sandbox', profileId: STATE.user.id };
+    STATE.mpConfig = { publicKey: '', accessToken: '', mode: 'sandbox', checkoutLabel: 'Recomendapp', profileId: STATE.user.id };
     saveMpConfigToStorage(STATE.mpConfig);
     return STATE.mpConfig;
   }
@@ -2132,6 +2138,7 @@ async function loadStoredMpConfig(force = false) {
     publicKey: data?.mp_public_key || '',
     accessToken: data?.mp_access_token || '',
     mode: data?.mp_mode || 'production',
+    checkoutLabel: data?.mp_checkout_label || 'Recomendapp',
     profileId: data?.profile_id || STATE.user.id,
   };
   CONFIG.mpPublicKey = STATE.mpConfig.publicKey;
@@ -3690,6 +3697,7 @@ async function loadSettingsForm() {
   const pkEl = document.getElementById('stMpPublicKey');
   const atEl = document.getElementById('stMpAccessToken');
   const modeEl = document.getElementById('stMpMode');
+  const checkoutLabelEl = document.getElementById('stMpCheckoutLabel');
   const aliasEl = document.getElementById('stMpAliasCobro');
   const cbuEl = document.getElementById('stMpCbuCobro');
   const minEl = document.getElementById('stMinAmount');
@@ -3697,6 +3705,7 @@ async function loadSettingsForm() {
   if (pkEl) pkEl.value = cfg.publicKey || '';
   if (atEl) atEl.value = cfg.accessToken || '';
   if (modeEl) modeEl.value = cfg.mode || 'sandbox';
+  if (checkoutLabelEl) checkoutLabelEl.value = cfg.checkoutLabel || 'Recomendapp';
   if (aliasEl) aliasEl.value = STATE.user.mpAlias || '';
   if (cbuEl) cbuEl.value = STATE.user.mpCbu || '';
   if (minEl) minEl.value = Math.round((STATE.user.minAmount || 0) / 100);
@@ -3807,6 +3816,7 @@ async function saveMpCredentials() {
   const pk   = document.getElementById('stMpPublicKey')?.value?.trim();
   const at   = document.getElementById('stMpAccessToken')?.value?.trim();
   const mode = document.getElementById('stMpMode')?.value;
+  const checkoutLabel = document.getElementById('stMpCheckoutLabel')?.value?.trim() || 'Recomendapp';
   if (!pk || !at) { toast('Complet? Public Key y Access Token','error'); return; }
   if (!pk.startsWith('APP_USR-') && !pk.startsWith('TEST-')) {
     toast('La Public Key no parece v?lida','error'); return;
@@ -3831,6 +3841,7 @@ async function saveMpCredentials() {
     mp_public_key: pk,
     mp_access_token: at,
     mp_mode: mode,
+    mp_checkout_label: checkoutLabel,
   };
 
   const query = existing
@@ -3843,7 +3854,7 @@ async function saveMpCredentials() {
     return;
   }
 
-  STATE.mpConfig = { publicKey: pk, accessToken: at, mode, profileId: STATE.user.id };
+  STATE.mpConfig = { publicKey: pk, accessToken: at, mode, checkoutLabel, profileId: STATE.user.id };
   saveMpConfigToStorage(STATE.mpConfig);
   CONFIG.mpPublicKey = pk;
   CONFIG.mpMode = mode;
@@ -3884,7 +3895,7 @@ function saveMpConfig() {
   const at   = document.getElementById('mpAccessTokenInput')?.value?.trim();
   const mode = document.getElementById('mpModeSelect')?.value;
   if (!pk || !at) { toast('Completá ambos campos','error'); return; }
-  STATE.mpConfig = { publicKey: pk, accessToken: at, mode };
+  STATE.mpConfig = { publicKey: pk, accessToken: at, mode, checkoutLabel: STATE.mpConfig.checkoutLabel || 'Recomendapp' };
   saveMpConfigToStorage(STATE.mpConfig);
   CONFIG.mpPublicKey = pk;
   initMP(pk);
