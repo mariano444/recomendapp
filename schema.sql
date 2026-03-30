@@ -151,6 +151,7 @@ CREATE TABLE IF NOT EXISTS profile_payment_credentials (
   mp_public_key    TEXT,
   mp_access_token  TEXT NOT NULL,
   mp_mode          TEXT NOT NULL DEFAULT 'production',
+  mp_checkout_label TEXT NOT NULL DEFAULT 'Recomendapp',
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT profile_payment_credentials_provider_check CHECK (provider = 'mercadopago'),
