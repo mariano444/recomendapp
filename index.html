@@ -340,6 +340,32 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .pub-proof-kicker { font-size:11px; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
 .pub-proof-value { font-family:'Playfair Display',serif; font-size:28px; font-weight:900; color:var(--text); }
 .pub-proof-note { font-size:12px; color:var(--text2); margin-top:4px; line-height:1.5; }
+.pub-trust-grid { display:grid; grid-template-columns:1.05fr .95fr; gap:16px; margin:0 0 24px; }
+.pub-story-card,
+.pub-trust-card { border-radius:26px; padding:24px; position:relative; overflow:hidden; }
+.pub-story-card {
+  background:
+    radial-gradient(circle at top right, rgba(110,151,216,.16) 0%, transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+  border:1px solid rgba(110,151,216,.18);
+}
+.pub-trust-card {
+  background:linear-gradient(180deg, rgba(12,11,10,.46), rgba(255,255,255,.02));
+  border:1px solid var(--border);
+}
+.pub-story-card h3,
+.pub-trust-card h3 { font-family:'Playfair Display',serif; font-size:28px; line-height:1.05; margin-bottom:10px; }
+.pub-story-card p,
+.pub-trust-card p { font-size:14px; color:var(--text2); line-height:1.7; }
+.pub-story-highlights { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:18px; }
+.pub-highlight-pill { padding:14px 16px; border-radius:18px; background:rgba(12,11,10,.24); border:1px solid rgba(255,255,255,.06); }
+.pub-highlight-pill strong { display:block; font-size:14px; color:var(--text); margin-bottom:4px; }
+.pub-highlight-pill span { font-size:12px; color:var(--text2); line-height:1.5; }
+.pub-trust-list { display:grid; gap:12px; margin-top:18px; }
+.pub-trust-item { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:18px; background:rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.06); }
+.pub-trust-dot { width:10px; height:10px; border-radius:50%; background:var(--amber); box-shadow:0 0 0 6px rgba(110,151,216,.12); margin-top:6px; flex-shrink:0; }
+.pub-trust-copy strong { display:block; font-size:14px; color:var(--text); margin-bottom:3px; }
+.pub-trust-copy span { font-size:12px; color:var(--text2); line-height:1.55; }
 .pub-cta-panel { display:grid; grid-template-columns:1.3fr .9fr; gap:16px; margin:0 0 24px; }
 .pub-cta-main,.pub-cta-side { background:linear-gradient(180deg,rgba(110,151,216,.10),rgba(110,151,216,.04)); border:1px solid rgba(110,151,216,.20); border-radius:var(--radius-xl); padding:22px 24px; }
 .pub-cta-main h3,.pub-cta-side h3 { font-family:'Playfair Display',serif; font-size:24px; margin-bottom:8px; }
@@ -350,6 +376,13 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .pub-contact-btn { display:flex; align-items:center; justify-content:center; gap:10px; min-height:48px; padding:0 16px; border-radius:var(--radius); background:var(--bg2); border:1px solid var(--border); color:var(--text); font-size:14px; font-weight:700; text-decoration:none; transition:all .2s; }
 .pub-contact-btn:hover { border-color:var(--border2); background:var(--bg3); }
 .pub-contact-btn.disabled { color:var(--text3); pointer-events:none; }
+.pub-why-panel { margin:22px 0 28px; padding:24px; border-radius:26px; background:linear-gradient(180deg,rgba(110,151,216,.10),rgba(255,255,255,.02)); border:1px solid rgba(110,151,216,.16); }
+.pub-why-title { font-family:'Playfair Display',serif; font-size:28px; line-height:1.05; margin-bottom:10px; }
+.pub-why-sub { font-size:14px; color:var(--text2); line-height:1.7; max-width:760px; margin-bottom:18px; }
+.pub-why-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+.pub-why-card { padding:18px; border-radius:20px; background:rgba(12,11,10,.18); border:1px solid rgba(255,255,255,.06); }
+.pub-why-card h4 { font-size:15px; margin-bottom:8px; }
+.pub-why-card p { font-size:13px; color:var(--text2); line-height:1.65; }
 .pub-gallery-wrap { margin:28px 0 18px; }
 .pub-gallery-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
 .pub-gallery-title { font-family:'Playfair Display',serif; font-size:30px; font-weight:800; line-height:1.05; }
@@ -357,6 +390,7 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .pub-gallery-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
 .gallery-card { background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015)); border:1px solid var(--border); border-radius:24px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.18); }
 .gallery-media { aspect-ratio:4/3; background:linear-gradient(135deg,#1d2738,#0f1722); background-size:cover; background-position:center; position:relative; }
+.gallery-media-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; color:#fff; background:linear-gradient(180deg,rgba(12,11,10,.16),rgba(12,11,10,.48)); }
 .gallery-badge-row { position:absolute; top:14px; left:14px; right:14px; display:flex; justify-content:space-between; gap:8px; }
 .gallery-pill { display:inline-flex; align-items:center; gap:6px; padding:7px 10px; border-radius:999px; font-size:11px; font-weight:700; background:rgba(12,11,10,.72); border:1px solid rgba(255,255,255,.08); color:#fff; backdrop-filter:blur(10px); }
 .gallery-card-body { padding:18px; }
@@ -364,6 +398,7 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .gallery-title { font-size:16px; font-weight:800; color:var(--text); }
 .gallery-price { font-family:'Playfair Display',serif; font-size:24px; color:var(--amber); white-space:nowrap; }
 .gallery-desc { font-size:13px; color:var(--text2); line-height:1.65; margin-bottom:14px; min-height:42px; }
+.gallery-state-note { font-size:12px; color:var(--text3); line-height:1.55; margin-bottom:12px; }
 .gallery-cta { display:flex; gap:10px; flex-wrap:wrap; }
 .gallery-empty { padding:24px; border-radius:20px; border:1px dashed var(--border2); background:rgba(255,255,255,.02); color:var(--text2); line-height:1.65; }
 .stats-bar { display:flex; gap:0; margin:28px 0; background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
@@ -743,8 +778,10 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     flex-wrap:wrap;
   }
   .pub-proof-strip,
+  .pub-trust-grid,
   .pub-cta-panel,
-  .pub-gallery-grid {
+  .pub-gallery-grid,
+  .pub-why-grid {
     grid-template-columns:1fr;
   }
   .pub-action-row .btn {
@@ -840,6 +877,9 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
   }
   .pub-name {
     font-size:32px;
+  }
+  .pub-story-highlights {
+    grid-template-columns:1fr;
   }
   .stats-bar {
     flex-direction:column;
@@ -1222,6 +1262,8 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     <p class="pub-bio" id="pubBio">Acompañamiento terapéutico en adultos y adolescentes. Especializada en TCC y enfoque sistémico. Más de 12 años de experiencia clínica y formación continua.</p>
     <div class="pub-tags" id="pubTags"></div>
     <div class="pub-proof-strip" id="pubProofStrip"></div>
+    <div class="pub-trust-grid" id="pubTrustGrid"></div>
+    <div class="pub-why-panel" id="pubWhyPanel"></div>
     <div class="stats-bar" id="pubStats"></div>
     <div class="pub-cta-panel" id="pubCtaPanel"></div>
     <div class="pub-gallery-wrap" id="pubRewardsSection">
@@ -1237,7 +1279,7 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
       <div class="pub-gallery-head">
         <div>
           <div class="pub-gallery-title">Galería y contenido desbloqueable</div>
-          <div class="pub-gallery-sub">Algunas imágenes pueden ser públicas y otras privadas. Las privadas se desbloquean pagando su precio y luego quedan disponibles para descarga.</div>
+          <div class="pub-gallery-sub">Podés publicar imágenes, videos, PDFs u otros archivos. El perfil decide cuáles se ven gratis, cuáles requieren pago y si el contenido se descarga o solo se visualiza desde la página.</div>
         </div>
         <button class="btn btn-amber btn-md" onclick="nav('media')">Ver galería completa</button>
       </div>
@@ -1259,8 +1301,8 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     <div class="pub-gallery-head" style="margin-bottom:24px">
       <div>
         <div class="eyebrow" style="margin-bottom:10px">Galería</div>
-        <div class="pub-gallery-title">Imágenes públicas y privadas</div>
-        <div class="pub-gallery-sub">Las públicas se pueden ver al instante. Las privadas aparecen bloqueadas hasta que se aprueba el pago de desbloqueo, y después quedan listas para descargar.</div>
+        <div class="pub-gallery-title">Contenido público y desbloqueable</div>
+        <div class="pub-gallery-sub">Las piezas públicas se ven al instante. Las privadas se habilitan cuando se aprueba el pago, y después pueden descargarse o visualizarse según lo que haya definido el perfil.</div>
       </div>
       <div class="pub-action-row">
         <button class="btn btn-surface btn-sm" onclick="nav('profile')">← Volver al perfil</button>
@@ -1351,8 +1393,8 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
         <div id="transferInfoText">Este perfil todavía no configuró sus datos de cobro.</div>
       </div>
 
-      <!-- Contenedor MercadoPago Bricks (se muestra al elegir MP) 
-      <div id="mp-brick-container"></div>-->
+      <!-- Contenedor MercadoPago Bricks / info checkout -->
+      <div id="mp-brick-container"></div>
 
       <button class="form-submit" id="submitBtn" onclick="submitReview()">
         <span id="submitBtnText">✦ Pagar y publicar reseña</span>
@@ -1515,7 +1557,11 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
           </div>
           <div class="two-col">
             <div class="field"><label class="field-label">Estado</label><select class="field-select field-input" id="mediaActive"><option value="true">Activa</option><option value="false">Oculta</option></select></div>
-            <div class="field"><label class="field-label">Archivo descargable / URL final</label><input class="field-input" id="mediaDownloadUrl" placeholder="https://..."></div>
+            <div class="field"><label class="field-label">Archivo / URL final</label><input class="field-input" id="mediaDownloadUrl" placeholder="https://..."></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><label class="field-label">Formato</label><select class="field-select field-input" id="mediaKind"><option value="image">Imagen</option><option value="video">Video</option><option value="pdf">PDF</option><option value="file">Archivo</option></select></div>
+            <div class="field"><label class="field-label">Acceso</label><select class="field-select field-input" id="mediaAllowDownload"><option value="true">Permitir descarga</option><option value="false">Solo ver / abrir</option></select></div>
           </div>
           <div class="field"><label class="field-label">Descripción</label><textarea class="field-textarea" id="mediaDescription" placeholder="Explicá qué incluye, si es una imagen única o un combo, y qué obtiene quien desbloquea."></textarea></div>
           <div class="two-col">
@@ -1846,12 +1892,19 @@ function createSbCompat(url, key) {
     from(table) { return new QueryBuilder(table); },
     functions: {
       async invoke(name, { body } = {}) {
-        const res = await fetch(`${url}/functions/v1/${name}`, {
-          method: 'POST',
-          headers: authHeaders(),
-          body: JSON.stringify(body || {}),
-        });
-        return parseResponse(res);
+        try {
+          const res = await fetch(`${url}/functions/v1/${name}`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify(body || {}),
+          });
+          return parseResponse(res);
+        } catch (error) {
+          return {
+            data: null,
+            error: { message: error?.message || 'No se pudo conectar con la función' }
+          };
+        }
       }
     },
     auth: {
@@ -2121,6 +2174,8 @@ function mapMediaItem(row) {
     description: row.description || '',
     previewUrl: row.preview_url || '',
     downloadUrl: row.download_url || '',
+    mediaKind: row.media_kind || 'image',
+    allowDownload: row.allow_download !== false,
     priceCents: row.price_cents || 0,
     isCombo: !!row.is_combo,
     visibility: row.visibility || 'public',
@@ -2320,7 +2375,7 @@ async function fetchMediaItems(profileId, isOwner = false) {
   if (!sb || !profileId) return [];
   let query = sb
     .from('profile_media_items')
-    .select('id, title, description, preview_url, download_url, price_cents, is_combo, visibility, active, sort_order')
+    .select('id, title, description, preview_url, download_url, media_kind, allow_download, price_cents, is_combo, visibility, active, sort_order')
     .eq('profile_id', profileId)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
@@ -2537,16 +2592,21 @@ function initFormMp() {
   renderFormHeader();
   if (pk && mpInstance === null) initMP(pk);
   // Reset brick al entrar al form
-  document.getElementById('mp-brick-container').innerHTML = '';
+  const brickContainer = document.getElementById('mp-brick-container');
+  if (!brickContainer) return;
+  brickContainer.innerHTML = '';
   mpBrick = null;
   if (STATE.selectedPay === 'mercadopago') renderMpBrick();
 }
 
 async function renderMpBrick() {
+  const brickContainer = document.getElementById('mp-brick-container');
+  if (!brickContainer) return;
+  const pk = getMpPublicKey();
   const hasCredentials = !!STATE.mpConfig.accessToken;
   if (!hasCredentials) {
     // Modo demo: sin brick, el botón simula
-    document.getElementById('mp-brick-container').innerHTML = `
+    brickContainer.innerHTML = `
       <div class="mp-info-box">
         <span class="icon">??</span>
         <div><strong>Pago con MercadoPago</strong>: al presionar el boton te vamos a redirigir al checkout para completar el pago.
@@ -2555,7 +2615,7 @@ async function renderMpBrick() {
     return;
   }
   if (mpInstance === null) initMP(pk);
-  document.getElementById('mp-brick-container').innerHTML = '<div id="mp-wallet-brick"></div>';
+  brickContainer.innerHTML = '<div id="mp-wallet-brick"></div>';
   // El brick real se crea al construir la preferencia
 }
 
@@ -2729,11 +2789,15 @@ function selPay(el, method) {
   const transferText = document.getElementById('transferInfoText');
   if (method === 'mercadopago') {
     if (transferBox) transferBox.style.display = 'none';
-    brick.style.display = '';
-    renderMpBrick();
+    if (brick) {
+      brick.style.display = '';
+      renderMpBrick();
+    }
   } else {
-    brick.style.display = 'none';
-    brick.innerHTML = '';
+    if (brick) {
+      brick.style.display = 'none';
+      brick.innerHTML = '';
+    }
     if (transferBox) {
       if (method === 'transfer') {
         const alias = STATE.viewedProfile?.mpAlias || 'Sin alias configurado';
@@ -2807,16 +2871,32 @@ function isMediaUnlocked(item) {
   return item.visibility === 'public' || (STATE.unlockedMediaIds || []).includes(item.id);
 }
 
+function mediaKindLabel(kind='image') {
+  if (kind === 'video') return 'Video';
+  if (kind === 'pdf') return 'PDF';
+  if (kind === 'file') return 'Archivo';
+  return 'Imagen';
+}
+
 function renderMediaCards(items, allowPay = true) {
   return items.map(item => {
     const unlocked = isMediaUnlocked(item);
     const locked = item.visibility === 'private' && !unlocked;
     const bgStyle = item.previewUrl ? `background-image:url('${item.previewUrl}');${locked ? 'filter:blur(8px) brightness(.65);transform:scale(1.04);' : ''}` : '';
+    const overlay = item.previewUrl
+      ? ''
+      : `<div class="gallery-media-overlay">${mediaKindLabel(item.mediaKind)}</div>`;
+    const stateNote = locked
+      ? 'Se habilita cuando el pago queda aprobado.'
+      : item.downloadUrl
+        ? (item.allowDownload ? 'Disponible para descarga directa desde esta misma página.' : 'Disponible para visualización online desde esta misma página.')
+        : 'El perfil todavía no cargó el enlace final de acceso.';
     return `
       <div class="gallery-card">
         <div class="gallery-media" style="${bgStyle}">
+          ${overlay}
           <div class="gallery-badge-row">
-            <span class="gallery-pill">${item.isCombo ? 'Combo' : 'Imagen'}</span>
+            <span class="gallery-pill">${item.isCombo ? `Combo · ${mediaKindLabel(item.mediaKind)}` : mediaKindLabel(item.mediaKind)}</span>
             <span class="gallery-pill">${locked ? 'Bloqueada' : (item.visibility === 'public' ? 'Pública' : 'Desbloqueada')}</span>
           </div>
         </div>
@@ -2826,12 +2906,13 @@ function renderMediaCards(items, allowPay = true) {
             <div class="gallery-price">${galleryPriceLabel(item.priceCents)}</div>
           </div>
           <div class="gallery-desc">${item.description || 'Contenido disponible en la galería.'}</div>
+          <div class="gallery-state-note">${stateNote}</div>
           <div class="gallery-cta">
             ${locked && allowPay
               ? `<button class="btn btn-amber btn-sm" onclick="purchaseMediaItem('${item.id}')">Desbloquear</button>`
               : ''}
             ${!locked && item.downloadUrl
-              ? `<a class="btn btn-surface btn-sm" href="${item.downloadUrl}" download target="_blank" rel="noopener">Descargar</a>`
+              ? `<a class="btn btn-surface btn-sm" href="${item.downloadUrl}" ${item.allowDownload ? 'download' : 'target="_blank" rel="noopener"'}>${item.allowDownload ? 'Descargar' : 'Ver contenido'}</a>`
               : ''}
             ${!locked && !item.downloadUrl
               ? `<button class="btn btn-surface btn-sm" disabled>Sin descarga cargada</button>`
@@ -2929,6 +3010,8 @@ function resetMediaForm() {
   ['mediaTitle','mediaPrice','mediaDescription','mediaPreviewUrl','mediaDownloadUrl'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const previewFile = document.getElementById('mediaPreviewFile');
   if (previewFile) previewFile.value = '';
+  document.getElementById('mediaKind').value = 'image';
+  document.getElementById('mediaAllowDownload').value = 'true';
   document.getElementById('mediaVisibility').value = 'public';
   document.getElementById('mediaIsCombo').value = 'false';
   document.getElementById('mediaActive').value = 'true';
@@ -2946,7 +3029,7 @@ function renderMediaAdmin() {
       <div class="gallery-admin-thumb" style="${item.previewUrl ? `background-image:url('${item.previewUrl}')` : ''}"></div>
       <div>
         <div class="gallery-admin-title">${item.title}</div>
-        <div class="gallery-admin-meta">${item.description || 'Sin descripción'}<br>${galleryPriceLabel(item.priceCents)} · ${item.isCombo ? 'Combo' : 'Imagen'} · ${item.visibility === 'public' ? 'Pública' : 'Privada'} · ${item.active ? 'Activa' : 'Oculta'}</div>
+        <div class="gallery-admin-meta">${item.description || 'Sin descripción'}<br>${galleryPriceLabel(item.priceCents)} · ${item.isCombo ? 'Combo' : mediaKindLabel(item.mediaKind)} · ${item.visibility === 'public' ? 'Pública' : 'Privada'} · ${item.allowDownload ? 'Descargable' : 'Solo visualización'} · ${item.active ? 'Activa' : 'Oculta'}</div>
       </div>
       <div class="gallery-admin-actions">
         <button class="btn btn-ghost btn-sm" onclick="editMediaItem('${item.id}')">Editar</button>
@@ -2964,6 +3047,8 @@ function editMediaItem(id) {
   document.getElementById('mediaDescription').value = item.description || '';
   document.getElementById('mediaPreviewUrl').value = item.previewUrl || '';
   document.getElementById('mediaDownloadUrl').value = item.downloadUrl || '';
+  document.getElementById('mediaKind').value = item.mediaKind || 'image';
+  document.getElementById('mediaAllowDownload').value = String(item.allowDownload !== false);
   document.getElementById('mediaVisibility').value = item.visibility || 'public';
   document.getElementById('mediaIsCombo').value = String(!!item.isCombo);
   document.getElementById('mediaActive').value = String(item.active !== false);
@@ -2983,6 +3068,8 @@ async function saveMediaItem() {
     description,
     preview_url,
     download_url: document.getElementById('mediaDownloadUrl')?.value?.trim() || '',
+    media_kind: document.getElementById('mediaKind')?.value || 'image',
+    allow_download: (document.getElementById('mediaAllowDownload')?.value || 'true') === 'true',
     price_cents: Math.max(0, (parseInt(document.getElementById('mediaPrice')?.value || '0', 10) || 0) * 100),
     is_combo: (document.getElementById('mediaIsCombo')?.value || 'false') === 'true',
     visibility: document.getElementById('mediaVisibility')?.value || 'public',
@@ -3186,10 +3273,37 @@ function renderProfile() {
     <div class="pub-proof-card"><div class="pub-proof-kicker">Reseñas</div><div class="pub-proof-value">${reviews.length}</div><div class="pub-proof-note">Reconocimientos publicados y visibles.</div></div>
     <div class="pub-proof-card"><div class="pub-proof-kicker">Recompensa promedio</div><div class="pub-proof-value">${formatCurrency(avg || 0)}</div><div class="pub-proof-note">Monto que suele acompañar cada reseña.</div></div>
     <div class="pub-proof-card"><div class="pub-proof-kicker">Respuesta</div><div class="pub-proof-value">${reviews.length ? Math.round(replied/reviews.length*100) : 0}%</div><div class="pub-proof-note">De las reseñas recibidas ya fueron respondidas.</div></div>`;
+  document.getElementById('pubTrustGrid').innerHTML = `
+    <div class="pub-story-card">
+      <div class="eyebrow" style="margin-bottom:10px">Perfil</div>
+      <h3>Un espacio pensado para conocer mejor a ${profile.name || 'este perfil'} antes de dejar tu reseña.</h3>
+      <p>Acá no solo ves comentarios: también entendés el contexto del trabajo, la calidad percibida por otras personas y, si el perfil lo habilita, el contenido o los beneficios que entrega como agradecimiento.</p>
+      <div class="pub-story-highlights">
+        <div class="pub-highlight-pill"><strong>Más contexto</strong><span>La reseña se siente más útil cuando sabés a quién estás recomendando y por qué.</span></div>
+        <div class="pub-highlight-pill"><strong>Más intención</strong><span>Una recompensa hace visible que hubo una experiencia real que valió la pena reconocer.</span></div>
+      </div>
+    </div>
+    <div class="pub-trust-card">
+      <div class="eyebrow" style="margin-bottom:10px">Confianza</div>
+      <h3>Qué le transmite confianza a quien llega por primera vez.</h3>
+      <div class="pub-trust-list">
+        <div class="pub-trust-item"><span class="pub-trust-dot"></span><div class="pub-trust-copy"><strong>Señales concretas</strong><span>Reseñas, respuestas, recompensas y contenido organizado en un solo lugar.</span></div></div>
+        <div class="pub-trust-item"><span class="pub-trust-dot"></span><div class="pub-trust-copy"><strong>Reconocimiento con valor</strong><span>Cuando alguien paga y deja una reseña, el reconocimiento gana peso y credibilidad frente a otras personas.</span></div></div>
+        <div class="pub-trust-item"><span class="pub-trust-dot"></span><div class="pub-trust-copy"><strong>Acción simple</strong><span>Todo el proceso está preparado para hacerse rápido, con pago seguro y publicación al aprobarse.</span></div></div>
+      </div>
+    </div>`;
+  document.getElementById('pubWhyPanel').innerHTML = `
+    <div class="pub-why-title">Por qué una reseña con recompensa tiene más impacto que un comentario común</div>
+    <div class="pub-why-sub">Una reseña acompañada por una recompensa transmite que hubo una buena experiencia y que la persona quiso reconocerla de verdad. Eso eleva la percepción de calidad, mejora la credibilidad del perfil y genera más ganas de seguir dando un buen servicio.</div>
+    <div class="pub-why-grid">
+      <div class="pub-why-card"><h4>Más credibilidad</h4><p>No parece una opinión dejada al pasar. Se percibe como un reconocimiento genuino y meditado.</p></div>
+      <div class="pub-why-card"><h4>Más motivación para mejorar</h4><p>Quien recibe el reconocimiento entiende que su trabajo tuvo valor y se compromete a sostener o elevar ese nivel.</p></div>
+      <div class="pub-why-card"><h4>Más claridad para decidir</h4><p>Las personas que llegan al perfil entienden mejor la experiencia, la calidad del servicio y el tipo de vínculo que genera.</p></div>
+    </div>`;
   document.getElementById('pubCtaPanel').innerHTML = `
     <div class="pub-cta-main">
-      <h3>Tu experiencia puede ayudar a la próxima persona a decidirse.</h3>
-      <p>Dejá una reseña breve, concreta y con impacto. Cuando el pago queda aprobado, tu reconocimiento se publica y gana mucho más peso que un comentario común.</p>
+      <h3>Tu experiencia puede ser la señal que necesita la próxima persona para confiar.</h3>
+      <p>Dejá una reseña breve, concreta y útil. Cuando el pago se aprueba, se publica automáticamente y se convierte en una prueba social visible que fortalece este perfil.</p>
       <div class="pub-cta-points">
         <span class="pub-cta-chip">Menos de 1 minuto</span>
         <span class="pub-cta-chip">Anónimo si querés</span>
@@ -3198,8 +3312,8 @@ function renderProfile() {
       <button class="btn btn-amber btn-md" onclick="nav('form')">Dejar reseña ahora</button>
     </div>
     <div class="pub-cta-side">
-      <h3>Antes de dejar tu reseña</h3>
-      <p>${hasPhone ? 'Si querés hablar antes de dejar tu reseña, podés contactar al perfil por teléfono o WhatsApp.' : 'Este perfil todavía no agregó un teléfono de contacto público.'}</p>
+      <h3>Antes o después de dejar tu reseña</h3>
+      <p>${hasPhone ? 'Si querés hacer una consulta, validar información o agradecer de forma directa, podés contactar al perfil por teléfono o WhatsApp.' : 'Este perfil todavía no agregó un teléfono de contacto público.'}</p>
       <div class="pub-contact-list">
         <a class="pub-contact-btn${hasPhone ? '' : ' disabled'}" href="${hasPhone ? phoneLink(phone) : '#'}">${hasPhone ? `Llamar: ${phone}` : 'Teléfono no disponible'}</a>
         <a class="pub-contact-btn${hasPhone ? '' : ' disabled'}" href="${hasPhone ? whatsAppLink(phone) : '#'}" target="_blank" rel="noopener">${hasPhone ? 'Contactar por WhatsApp' : 'WhatsApp no disponible'}</a>
