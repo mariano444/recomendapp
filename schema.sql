@@ -14,6 +14,7 @@ CREATE TYPE payment_method AS ENUM ('mercadopago', 'card', 'transfer', 'cash');
 CREATE TYPE plan_type AS ENUM ('free', 'pro');
 CREATE TYPE gallery_visibility AS ENUM ('public', 'private');
 CREATE TYPE media_unlock_status AS ENUM ('pending', 'approved', 'rejected', 'cancelled');
+CREATE TYPE media_kind AS ENUM ('image', 'video', 'pdf', 'file');
 
 -- ─── TABLA: profiles ──────────────────────────────────────────
 -- Extiende auth.users de Supabase Auth
@@ -202,6 +203,8 @@ CREATE TABLE IF NOT EXISTS profile_media_items (
   description      TEXT NOT NULL DEFAULT '',
   preview_url      TEXT,
   download_url     TEXT,
+  media_kind       media_kind NOT NULL DEFAULT 'image',
+  allow_download   BOOLEAN NOT NULL DEFAULT TRUE,
   price_cents      BIGINT NOT NULL DEFAULT 0,
   is_combo         BOOLEAN NOT NULL DEFAULT FALSE,
   visibility       gallery_visibility NOT NULL DEFAULT 'public',
