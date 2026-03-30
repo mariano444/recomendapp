@@ -81,10 +81,18 @@ serve(async (req) => {
     }
 
     const payment = await paymentResponse.json();
+    const flowType = payment.metadata?.flow_type || "review";
     const reviewId = payment.external_reference || payment.metadata?.review_id;
+    const unlockId = payment.external_reference || payment.metadata?.unlock_id;
     const status = payment.status || "pending";
 
-    if (reviewId) {
+    if (flowType === "media_unlock" && unlockId) {
+      await supabase.rpc("mark_media_unlock_paid", {
+        p_unlock_id: unlockId,
+        p_status: status,
+        p_mp_payment_id: String(paymentId),
+      });
+    } else if (reviewId) {
       await supabase.rpc("publish_review_payment", {
         p_review_id: reviewId,
         p_status: status,
