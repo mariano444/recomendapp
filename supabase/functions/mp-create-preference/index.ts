@@ -87,16 +87,14 @@ serve(async (req) => {
       items: [
         {
           id: review.id,
-          title: `Recomendapp`.trim(),
-          description: "Resena publicada al aprobarse el pago",
+          title: "Recomendapp",
+          description: "Reseña publicada al aprobarse el pago",
           quantity: 1,
           currency_id: "ARS",
           unit_price: Number(amount),
         },
       ],
-      payer: {
-        name: {},
-      },
+      statement_descriptor: "Recomendapp",
       external_reference: review.id,
       notification_url: webhookUrl,
       back_urls: {
