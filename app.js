@@ -852,6 +852,8 @@ function nav(viewId) {
   runViewLifecycle(viewId);
 }
 
+window.nav = nav;
+
 function updateNav() {
   const nr = document.getElementById('navRight');
   if (!nr) return;
@@ -1467,7 +1469,7 @@ async function submitReview() {
       reviewId: pref.review_id || '',
       profileSlug: STATE.viewedProfile?.slug || STATE.user.slug || '',
       nombre: STATE.isAnon ? 'An?nimo' : (nombre + ' ' + apellido).trim(),
-      pay: '?Y'? MercadoPago',
+      pay: 'MercadoPago',
       amount: STATE.selectedAmt,
       msg
     }));
