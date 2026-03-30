@@ -6,6 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function normalizeCheckoutLabel(value?: string | null) {
+  const cleaned = (value || "").replace(/\s+/g, " ").trim();
+  return (cleaned || "Recomendapp").slice(0, 60);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -48,12 +53,13 @@ serve(async (req) => {
 
     const { data: paymentCredentials } = await supabase
       .from("profile_payment_credentials")
-      .select("mp_access_token, mp_mode")
+      .select("mp_access_token, mp_mode, mp_checkout_label")
       .eq("profile_id", profile.id)
       .maybeSingle();
 
     const mpAccessToken = paymentCredentials?.mp_access_token || fallbackMpAccessToken;
     const effectiveMpMode = paymentCredentials?.mp_mode || fallbackMpMode;
+    const checkoutLabel = normalizeCheckoutLabel(paymentCredentials?.mp_checkout_label);
 
     if (!mpAccessToken) {
       throw new Error("Este perfil todavia no configuro su Access Token de MercadoPago");
@@ -100,14 +106,14 @@ serve(async (req) => {
       items: [
         {
           id: review.id,
-          title: "Dejar resena",
-          description: "Pago para publicar una resena",
+          title: checkoutLabel,
+          description: checkoutLabel,
           quantity: 1,
           currency_id: "ARS",
           unit_price: Number(amount),
         },
       ],
-      statement_descriptor: "RESENA",
+      statement_descriptor: "RECOMENDAPP",
       binary_mode: true,
       external_reference: review.id,
       notification_url: webhookUrl,
@@ -121,6 +127,7 @@ serve(async (req) => {
         review_id: review.id,
         profile_id: profile.id,
         profile_slug: profile.slug,
+        checkout_label: checkoutLabel,
       },
     };
 
