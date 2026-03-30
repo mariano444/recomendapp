@@ -335,6 +335,18 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .pub-bio { font-size:15px; color:var(--text2); line-height:1.75; margin-bottom:20px; max-width:600px; }
 .pub-tags { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:28px; }
 .pub-tag { padding:6px 14px; border-radius:100px; background:var(--bg2); border:1px solid var(--border); font-size:12px; font-weight:600; color:var(--text2); }
+.pub-quickbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0 0 20px; padding:14px 16px; border-radius:22px; background:rgba(255,255,255,.03); border:1px solid var(--border); backdrop-filter:blur(14px); position:sticky; top:92px; z-index:20; }
+.pub-quickbar-copy strong { display:block; font-size:14px; color:var(--text); margin-bottom:3px; }
+.pub-quickbar-copy span { font-size:12px; color:var(--text2); line-height:1.5; }
+.pub-quickbar-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.pub-journey { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:0 0 24px; }
+.pub-journey-card { padding:18px 18px 16px; border-radius:22px; background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015)); border:1px solid var(--border); }
+.pub-journey-step { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--amber-soft); border:1px solid rgba(110,151,216,.24); color:var(--amber); font-size:12px; font-weight:800; margin-bottom:10px; }
+.pub-journey-card h4 { font-size:16px; margin-bottom:7px; color:var(--text); }
+.pub-journey-card p { font-size:13px; color:var(--text2); line-height:1.6; }
+.pub-section-head { display:flex; align-items:end; justify-content:space-between; gap:16px; margin:26px 0 14px; }
+.pub-section-title { font-family:'Playfair Display',serif; font-size:28px; line-height:1.05; }
+.pub-section-sub { font-size:13px; color:var(--text2); line-height:1.6; max-width:560px; margin-top:6px; }
 .pub-review-hero { display:grid; grid-template-columns:1.15fr .85fr; gap:18px; margin:0 0 26px; align-items:stretch; }
 .pub-review-spotlight,
 .pub-review-card { border-radius:28px; padding:24px; position:relative; overflow:hidden; }
@@ -807,6 +819,7 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     flex-wrap:wrap;
   }
   .pub-proof-strip,
+  .pub-journey,
   .pub-review-hero,
   .pub-trust-grid,
   .pub-cta-panel,
@@ -815,6 +828,17 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     grid-template-columns:1fr;
   }
   .pub-action-row .btn {
+    flex:1 1 180px;
+  }
+  .pub-quickbar {
+    position:static;
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  .pub-quickbar-actions {
+    width:100%;
+  }
+  .pub-quickbar-actions .btn {
     flex:1 1 180px;
   }
   .search-bar-wrap {
@@ -907,6 +931,10 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
   }
   .pub-name {
     font-size:32px;
+  }
+  .pub-section-head {
+    flex-direction:column;
+    align-items:flex-start;
   }
   .pub-review-spotlight,
   .pub-review-card {
@@ -1301,7 +1329,9 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     </div>
     <p class="pub-bio" id="pubBio">Acompañamiento terapéutico en adultos y adolescentes. Especializada en TCC y enfoque sistémico. Más de 12 años de experiencia clínica y formación continua.</p>
     <div class="pub-tags" id="pubTags"></div>
+    <div class="pub-quickbar" id="pubQuickbar"></div>
     <div class="pub-review-hero" id="pubReviewHero"></div>
+    <div class="pub-journey" id="pubJourney"></div>
     <div class="pub-proof-strip" id="pubProofStrip"></div>
     <div class="pub-trust-grid" id="pubTrustGrid"></div>
     <div class="pub-why-panel" id="pubWhyPanel"></div>
@@ -1326,8 +1356,11 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
       </div>
       <div class="pub-gallery-grid" id="pubMediaPreviewGrid"></div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;margin-top:8px">
-      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700">Reseñas recibidas</div>
+    <div class="pub-section-head">
+      <div>
+        <div class="pub-section-title">Reseñas recibidas</div>
+        <div class="pub-section-sub">La prueba social principal del perfil. Acá se ve la experiencia real de quienes ya dejaron su reconocimiento.</div>
+      </div>
       <div style="font-size:12px;color:var(--text3)" id="revCount"></div>
     </div>
     <div id="pubReviews"></div>
@@ -3317,6 +3350,15 @@ function renderProfile() {
   document.getElementById('pubVerified').style.display = isVerified ? '' : 'none';
   document.getElementById('pubBio').textContent = profile.bio || 'Perfil en Recomendapp';
   document.getElementById('pubTags').innerHTML = (profile.tags || []).map(t => `<span class="pub-tag">${t}</span>`).join('');
+  document.getElementById('pubQuickbar').innerHTML = `
+    <div class="pub-quickbar-copy">
+      <strong>Dejar una reseña es rápido, claro y seguro.</strong>
+      <span>Elegís un monto, escribís tu experiencia y el reconocimiento se publica cuando el pago queda aprobado.</span>
+    </div>
+    <div class="pub-quickbar-actions">
+      <button class="btn btn-amber btn-sm" onclick="nav('form')">Dejar reseña</button>
+      <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
+    </div>`;
   document.getElementById('pubReviewHero').innerHTML = `
     <div class="pub-review-spotlight">
       <div class="eyebrow" style="margin-bottom:12px">Tu reseña es la protagonista</div>
@@ -3343,6 +3385,22 @@ function renderProfile() {
         <button class="btn btn-amber btn-md" onclick="nav('form')">Dejar reseña ahora</button>
         <button class="btn btn-surface btn-md" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas primero</button>
       </div>
+    </div>`;
+  document.getElementById('pubJourney').innerHTML = `
+    <div class="pub-journey-card">
+      <div class="pub-journey-step">1</div>
+      <h4>Contá tu experiencia</h4>
+      <p>Escribí una reseña breve, concreta y útil. Lo importante es que ayude a entender qué valor te aportó este perfil.</p>
+    </div>
+    <div class="pub-journey-card">
+      <div class="pub-journey-step">2</div>
+      <h4>Elegí el monto</h4>
+      <p>La recompensa hace que el reconocimiento tenga más peso, más credibilidad y más impacto para quien lo recibe y para quien lo lee.</p>
+    </div>
+    <div class="pub-journey-card">
+      <div class="pub-journey-step">3</div>
+      <h4>Pagá y publicá</h4>
+      <p>Cuando el pago queda aprobado, la reseña se publica y pasa a formar parte visible de la reputación del perfil.</p>
     </div>`;
   document.getElementById('pubProofStrip').innerHTML = `
     <div class="pub-proof-card"><div class="pub-proof-kicker">Reseñas</div><div class="pub-proof-value">${reviews.length}</div><div class="pub-proof-note">Reconocimientos publicados y visibles.</div></div>
