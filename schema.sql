@@ -12,6 +12,8 @@ CREATE EXTENSION IF NOT EXISTS unaccent;
 CREATE TYPE payment_status AS ENUM ('pending', 'approved', 'rejected', 'cancelled', 'in_process', 'refunded');
 CREATE TYPE payment_method AS ENUM ('mercadopago', 'card', 'transfer', 'cash');
 CREATE TYPE plan_type AS ENUM ('free', 'pro');
+CREATE TYPE gallery_visibility AS ENUM ('public', 'private');
+CREATE TYPE media_unlock_status AS ENUM ('pending', 'approved', 'rejected', 'cancelled');
 
 -- ─── TABLA: profiles ──────────────────────────────────────────
 -- Extiende auth.users de Supabase Auth
@@ -22,6 +24,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   slug          TEXT UNIQUE NOT NULL,           -- ej: marcela-andres
   role          TEXT NOT NULL DEFAULT '',
   city          TEXT NOT NULL DEFAULT '',
+  telefono      TEXT,
   bio           TEXT NOT NULL DEFAULT '',
   tags          TEXT[] NOT NULL DEFAULT '{}',
   avatar_url    TEXT,
@@ -171,6 +174,92 @@ CREATE INDEX idx_analytics_profile_id ON analytics_events(profile_id);
 CREATE INDEX idx_analytics_event_type ON analytics_events(event_type);
 CREATE INDEX idx_analytics_created_at ON analytics_events(created_at DESC);
 
+-- ─── TABLA: profile_reward_items ─────────────────────────────
+CREATE TABLE IF NOT EXISTS profile_reward_items (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  profile_id    UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title         TEXT NOT NULL,
+  description   TEXT NOT NULL DEFAULT '',
+  image_url     TEXT,
+  active        BOOLEAN NOT NULL DEFAULT TRUE,
+  sort_order    INTEGER NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TRIGGER profile_reward_items_updated_at
+  BEFORE UPDATE ON profile_reward_items
+  FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
+CREATE INDEX idx_profile_reward_items_profile_id ON profile_reward_items(profile_id);
+CREATE INDEX idx_profile_reward_items_active ON profile_reward_items(active);
+
+-- ─── TABLA: profile_media_items ──────────────────────────────
+CREATE TABLE IF NOT EXISTS profile_media_items (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  profile_id       UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title            TEXT NOT NULL,
+  description      TEXT NOT NULL DEFAULT '',
+  preview_url      TEXT,
+  download_url     TEXT,
+  price_cents      BIGINT NOT NULL DEFAULT 0,
+  is_combo         BOOLEAN NOT NULL DEFAULT FALSE,
+  visibility       gallery_visibility NOT NULL DEFAULT 'public',
+  active           BOOLEAN NOT NULL DEFAULT TRUE,
+  sort_order       INTEGER NOT NULL DEFAULT 0,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TRIGGER profile_media_items_updated_at
+  BEFORE UPDATE ON profile_media_items
+  FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
+CREATE INDEX idx_profile_media_items_profile_id ON profile_media_items(profile_id);
+CREATE INDEX idx_profile_media_items_visibility ON profile_media_items(visibility);
+
+-- ─── TABLA: media_unlocks ────────────────────────────────────
+CREATE TABLE IF NOT EXISTS media_unlocks (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  media_item_id   UUID NOT NULL REFERENCES profile_media_items(id) ON DELETE CASCADE,
+  profile_id      UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  payment_status  media_unlock_status NOT NULL DEFAULT 'pending',
+  mp_payment_id   TEXT,
+  mp_preference_id TEXT,
+  amount_cents    BIGINT NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TRIGGER media_unlocks_updated_at
+  BEFORE UPDATE ON media_unlocks
+  FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
+CREATE INDEX idx_media_unlocks_media_item_id ON media_unlocks(media_item_id);
+CREATE INDEX idx_media_unlocks_payment_status ON media_unlocks(payment_status);
+
+-- ─── TABLA: profile_gallery_items ────────────────────────────
+CREATE TABLE IF NOT EXISTS profile_gallery_items (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  profile_id    UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title         TEXT NOT NULL,
+  description   TEXT NOT NULL DEFAULT '',
+  image_url     TEXT,
+  price_cents   BIGINT NOT NULL DEFAULT 0,
+  is_combo      BOOLEAN NOT NULL DEFAULT FALSE,
+  visibility    gallery_visibility NOT NULL DEFAULT 'public',
+  sort_order    INTEGER NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TRIGGER profile_gallery_items_updated_at
+  BEFORE UPDATE ON profile_gallery_items
+  FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
+CREATE INDEX idx_profile_gallery_items_profile_id ON profile_gallery_items(profile_id);
+CREATE INDEX idx_profile_gallery_items_visibility ON profile_gallery_items(visibility);
+
 -- ─── VISTAS ───────────────────────────────────────────────────
 -- Vista: estadísticas de perfil (últimos 30 días)
 CREATE OR REPLACE VIEW profile_stats_30d AS
@@ -223,6 +312,10 @@ ALTER TABLE mp_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mp_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profile_payment_credentials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profile_reward_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profile_media_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE media_unlocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profile_gallery_items ENABLE ROW LEVEL SECURITY;
 
 -- profiles: lectura pública de perfiles activos
 CREATE POLICY "public_read_profiles"
@@ -312,6 +405,90 @@ CREATE POLICY "service_manage_payment_credentials"
   ON profile_payment_credentials FOR ALL
   USING (auth.role() = 'service_role');
 
+CREATE POLICY "public_read_reward_items"
+  ON profile_reward_items FOR SELECT
+  USING (active = TRUE);
+
+CREATE POLICY "owner_read_reward_items"
+  ON profile_reward_items FOR SELECT
+  TO authenticated
+  USING (profile_id = auth.uid());
+
+CREATE POLICY "owner_insert_reward_items"
+  ON profile_reward_items FOR INSERT
+  TO authenticated
+  WITH CHECK (profile_id = auth.uid());
+
+CREATE POLICY "owner_update_reward_items"
+  ON profile_reward_items FOR UPDATE
+  TO authenticated
+  USING (profile_id = auth.uid())
+  WITH CHECK (profile_id = auth.uid());
+
+CREATE POLICY "owner_delete_reward_items"
+  ON profile_reward_items FOR DELETE
+  TO authenticated
+  USING (profile_id = auth.uid());
+
+CREATE POLICY "public_read_media_items"
+  ON profile_media_items FOR SELECT
+  USING (active = TRUE);
+
+CREATE POLICY "owner_read_media_items"
+  ON profile_media_items FOR SELECT
+  TO authenticated
+  USING (profile_id = auth.uid());
+
+CREATE POLICY "owner_insert_media_items"
+  ON profile_media_items FOR INSERT
+  TO authenticated
+  WITH CHECK (profile_id = auth.uid());
+
+CREATE POLICY "owner_update_media_items"
+  ON profile_media_items FOR UPDATE
+  TO authenticated
+  USING (profile_id = auth.uid())
+  WITH CHECK (profile_id = auth.uid());
+
+CREATE POLICY "owner_delete_media_items"
+  ON profile_media_items FOR DELETE
+  TO authenticated
+  USING (profile_id = auth.uid());
+
+CREATE POLICY "owner_read_media_unlocks"
+  ON media_unlocks FOR SELECT
+  TO authenticated
+  USING (profile_id = auth.uid());
+
+CREATE POLICY "service_manage_media_unlocks"
+  ON media_unlocks FOR ALL
+  USING (auth.role() = 'service_role');
+
+CREATE POLICY "public_read_gallery_items"
+  ON profile_gallery_items FOR SELECT
+  USING (visibility = 'public');
+
+CREATE POLICY "owner_read_gallery_items"
+  ON profile_gallery_items FOR SELECT
+  TO authenticated
+  USING (profile_id = auth.uid());
+
+CREATE POLICY "owner_insert_gallery_items"
+  ON profile_gallery_items FOR INSERT
+  TO authenticated
+  WITH CHECK (profile_id = auth.uid());
+
+CREATE POLICY "owner_update_gallery_items"
+  ON profile_gallery_items FOR UPDATE
+  TO authenticated
+  USING (profile_id = auth.uid())
+  WITH CHECK (profile_id = auth.uid());
+
+CREATE POLICY "owner_delete_gallery_items"
+  ON profile_gallery_items FOR DELETE
+  TO authenticated
+  USING (profile_id = auth.uid());
+
 -- ─── TRIGGER: nuevo usuario → crear perfil ────────────────────
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
@@ -361,6 +538,7 @@ GRANT SELECT ON profiles TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON reviews TO anon, authenticated;
 GRANT SELECT, INSERT ON analytics_events TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON profile_payment_credentials TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON profile_gallery_items TO authenticated;
 GRANT ALL ON mp_preferences TO service_role;
 GRANT ALL ON mp_notifications TO service_role;
 GRANT ALL ON profile_payment_credentials TO service_role;
@@ -395,4 +573,21 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION publish_review_payment(UUID, TEXT, TEXT) TO service_role;
+
+CREATE OR REPLACE FUNCTION mark_media_unlock_paid(
+  p_unlock_id UUID,
+  p_status TEXT,
+  p_mp_payment_id TEXT DEFAULT NULL
+)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE media_unlocks
+  SET payment_status = p_status::media_unlock_status,
+      mp_payment_id = COALESCE(p_mp_payment_id, mp_payment_id),
+      updated_at = NOW()
+  WHERE id = p_unlock_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION mark_media_unlock_paid(UUID, TEXT, TEXT) TO service_role;
 -- ═══════════════════════════════════════════════════════════════
