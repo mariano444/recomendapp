@@ -381,32 +381,10 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .pub-proof-kicker { font-size:11px; letter-spacing:1.2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
 .pub-proof-value { font-family:'Playfair Display',serif; font-size:28px; font-weight:900; color:var(--text); }
 .pub-proof-note { font-size:12px; color:var(--text2); margin-top:4px; line-height:1.5; }
-.pub-trust-grid { display:grid; grid-template-columns:1.05fr .95fr; gap:16px; margin:0 0 24px; }
-.pub-story-card,
-.pub-trust-card { border-radius:26px; padding:24px; position:relative; overflow:hidden; }
-.pub-story-card {
-  background:
-    radial-gradient(circle at top right, rgba(110,151,216,.16) 0%, transparent 34%),
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
-  border:1px solid rgba(110,151,216,.18);
-}
-.pub-trust-card {
-  background:linear-gradient(180deg, rgba(12,11,10,.46), rgba(255,255,255,.02));
-  border:1px solid var(--border);
-}
-.pub-story-card h3,
-.pub-trust-card h3 { font-family:'Playfair Display',serif; font-size:28px; line-height:1.05; margin-bottom:10px; }
-.pub-story-card p,
-.pub-trust-card p { font-size:14px; color:var(--text2); line-height:1.7; }
-.pub-story-highlights { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:18px; }
-.pub-highlight-pill { padding:14px 16px; border-radius:18px; background:rgba(12,11,10,.24); border:1px solid rgba(255,255,255,.06); }
-.pub-highlight-pill strong { display:block; font-size:14px; color:var(--text); margin-bottom:4px; }
-.pub-highlight-pill span { font-size:12px; color:var(--text2); line-height:1.5; }
-.pub-trust-list { display:grid; gap:12px; margin-top:18px; }
-.pub-trust-item { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:18px; background:rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.06); }
-.pub-trust-dot { width:10px; height:10px; border-radius:50%; background:var(--amber); box-shadow:0 0 0 6px rgba(110,151,216,.12); margin-top:6px; flex-shrink:0; }
-.pub-trust-copy strong { display:block; font-size:14px; color:var(--text); margin-bottom:3px; }
-.pub-trust-copy span { font-size:12px; color:var(--text2); line-height:1.55; }
+.pub-trust-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:0 0 24px; }
+.pub-trust-item { padding:18px; border-radius:22px; background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015)); border:1px solid var(--border); }
+.pub-trust-item strong { display:block; font-size:15px; color:var(--text); margin-bottom:6px; }
+.pub-trust-item span { font-size:13px; color:var(--text2); line-height:1.55; }
 .pub-cta-panel { display:grid; grid-template-columns:1.3fr .9fr; gap:16px; margin:0 0 24px; }
 .pub-cta-main,.pub-cta-side { background:linear-gradient(180deg,rgba(110,151,216,.10),rgba(110,151,216,.04)); border:1px solid rgba(110,151,216,.20); border-radius:var(--radius-xl); padding:22px 24px; }
 .pub-cta-main h3,.pub-cta-side h3 { font-family:'Playfair Display',serif; font-size:24px; margin-bottom:8px; }
@@ -417,13 +395,13 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .pub-contact-btn { display:flex; align-items:center; justify-content:center; gap:10px; min-height:48px; padding:0 16px; border-radius:var(--radius); background:var(--bg2); border:1px solid var(--border); color:var(--text); font-size:14px; font-weight:700; text-decoration:none; transition:all .2s; }
 .pub-contact-btn:hover { border-color:var(--border2); background:var(--bg3); }
 .pub-contact-btn.disabled { color:var(--text3); pointer-events:none; }
-.pub-why-panel { margin:22px 0 28px; padding:24px; border-radius:26px; background:linear-gradient(180deg,rgba(110,151,216,.10),rgba(255,255,255,.02)); border:1px solid rgba(110,151,216,.16); }
-.pub-why-title { font-family:'Playfair Display',serif; font-size:28px; line-height:1.05; margin-bottom:10px; }
-.pub-why-sub { font-size:14px; color:var(--text2); line-height:1.7; max-width:760px; margin-bottom:18px; }
-.pub-why-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
-.pub-why-card { padding:18px; border-radius:20px; background:rgba(12,11,10,.18); border:1px solid rgba(255,255,255,.06); }
-.pub-why-card h4 { font-size:15px; margin-bottom:8px; }
-.pub-why-card p { font-size:13px; color:var(--text2); line-height:1.65; }
+.pub-why-panel { margin:18px 0 24px; padding:18px 20px; border-radius:24px; background:linear-gradient(180deg,rgba(110,151,216,.08),rgba(255,255,255,.02)); border:1px solid rgba(110,151,216,.14); }
+.pub-why-title { font-family:'Playfair Display',serif; font-size:24px; line-height:1.05; margin-bottom:8px; }
+.pub-why-sub { font-size:13px; color:var(--text2); line-height:1.65; max-width:760px; margin-bottom:14px; }
+.pub-why-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.pub-why-card { padding:16px; border-radius:18px; background:rgba(12,11,10,.16); border:1px solid rgba(255,255,255,.05); }
+.pub-why-card h4 { font-size:14px; margin-bottom:6px; }
+.pub-why-card p { font-size:12px; color:var(--text2); line-height:1.55; }
 .pub-gallery-wrap { margin:28px 0 18px; }
 .pub-gallery-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
 .pub-gallery-title { font-family:'Playfair Display',serif; font-size:30px; font-weight:800; line-height:1.05; }
@@ -449,18 +427,18 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .stat-v { font-family:'Playfair Display',serif; font-size:26px; font-weight:900; color:var(--text); letter-spacing:-1px; display:block; }
 .stat-v.gold { color:var(--amber); }
 .stat-l { font-size:11px; color:var(--text3); margin-top:4px; font-weight:500; }
-.rev-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px 26px; margin-bottom:12px; transition:border-color .2s, background .2s; }
+.rev-card { background:var(--bg2); border:1px solid var(--border); border-radius:22px; padding:18px 20px; margin-bottom:12px; transition:border-color .2s, background .2s; }
 .rev-card:hover { border-color:var(--border2); background:var(--bg3); }
-.rev-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+.rev-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
 .rev-left { display:flex; align-items:center; gap:12px; }
-.rev-av-txt { width:44px; height:44px; border-radius:50%; background:var(--surface); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:16px; font-weight:700; color:var(--amber); flex-shrink:0; }
+.rev-av-txt { width:40px; height:40px; border-radius:50%; background:var(--surface); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:15px; font-weight:700; color:var(--amber); flex-shrink:0; }
 .rev-name { font-size:14px; font-weight:600; color:var(--text); }
 .rev-date { font-size:12px; color:var(--text3); margin-top:2px; }
-.rev-amount { display:flex; align-items:center; gap:5px; background:var(--amber-soft); border:1px solid rgba(110,151,216,.24); border-radius:100px; padding:5px 14px; font-size:13px; font-weight:700; color:var(--amber); }
-.rev-text { font-size:14px; color:var(--text2); line-height:1.75; }
-.rev-reply { margin-top:14px; padding:13px 17px; background:var(--surface); border-radius:var(--radius-sm); border-left:2px solid var(--amber); }
+.rev-amount { display:flex; align-items:center; gap:5px; background:var(--amber-soft); border:1px solid rgba(110,151,216,.24); border-radius:100px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--amber); }
+.rev-text { font-size:13px; color:var(--text2); line-height:1.7; }
+.rev-reply { margin-top:12px; padding:12px 14px; background:var(--surface); border-radius:14px; border-left:2px solid var(--amber); }
 .rev-reply-label { font-size:11px; font-weight:700; color:var(--amber); letter-spacing:.8px; text-transform:uppercase; margin-bottom:4px; }
-.rev-reply-text { font-size:13px; color:var(--text2); line-height:1.6; }
+.rev-reply-text { font-size:12px; color:var(--text2); line-height:1.55; }
 
 /* ════════════════════════════════════════════
    FORM
@@ -936,6 +914,10 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     flex-direction:column;
     align-items:flex-start;
   }
+  .rev-header {
+    flex-direction:column;
+    align-items:flex-start;
+  }
   .pub-review-spotlight,
   .pub-review-card {
     padding:20px;
@@ -1334,7 +1316,6 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     <div class="pub-journey" id="pubJourney"></div>
     <div class="pub-proof-strip" id="pubProofStrip"></div>
     <div class="pub-trust-grid" id="pubTrustGrid"></div>
-    <div class="pub-why-panel" id="pubWhyPanel"></div>
     <div class="stats-bar" id="pubStats"></div>
     <div class="pub-cta-panel" id="pubCtaPanel"></div>
     <div class="pub-gallery-wrap" id="pubRewardsSection">
@@ -3352,8 +3333,8 @@ function renderProfile() {
   document.getElementById('pubTags').innerHTML = (profile.tags || []).map(t => `<span class="pub-tag">${t}</span>`).join('');
   document.getElementById('pubQuickbar').innerHTML = `
     <div class="pub-quickbar-copy">
-      <strong>Dejar una reseña es rápido, claro y seguro.</strong>
-      <span>Elegís un monto, escribís tu experiencia y el reconocimiento se publica cuando el pago queda aprobado.</span>
+      <strong>Dejar una reseña lleva menos de 1 minuto.</strong>
+      <span>Escribís, elegís el monto y publicás.</span>
     </div>
     <div class="pub-quickbar-actions">
       <button class="btn btn-amber btn-sm" onclick="nav('form')">Dejar reseña</button>
@@ -3362,81 +3343,58 @@ function renderProfile() {
   document.getElementById('pubReviewHero').innerHTML = `
     <div class="pub-review-spotlight">
       <div class="eyebrow" style="margin-bottom:12px">Tu reseña es la protagonista</div>
-      <h2>Ayudá a que este perfil inspire confianza desde la primera impresión.</h2>
-      <p>Una reseña clara, sincera y acompañada por una recompensa no solo reconoce una buena experiencia: también le muestra a otras personas que acá hubo valor real, intención genuina y un servicio que merece ser recomendado.</p>
+      <h2>Tu reseña ayuda a que otras personas confíen.</h2>
+      <p>Reconocé una buena experiencia de forma simple, clara y rápida.</p>
       <div class="pub-review-points">
-        <div class="pub-review-point"><strong>Más persuasión</strong><span>La próxima persona entiende rápido por qué vale la pena confiar.</span></div>
-        <div class="pub-review-point"><strong>Más credibilidad</strong><span>El reconocimiento pagado tiene más peso que un comentario informal.</span></div>
-        <div class="pub-review-point"><strong>Más motivación</strong><span>Quien recibe la reseña siente el impacto y busca seguir mejorando.</span></div>
+        <div class="pub-review-point"><strong>Rápido</strong><span>Se completa en pocos pasos.</span></div>
+        <div class="pub-review-point"><strong>Seguro</strong><span>Pago con Mercado Pago.</span></div>
+        <div class="pub-review-point"><strong>Útil</strong><span>Le da más valor a la recomendación.</span></div>
       </div>
     </div>
     <div class="pub-review-card">
       <div>
         <div class="pub-review-kicker">Acción principal</div>
-        <h3>Dejar una reseña toma menos de 1 minuto.</h3>
-        <p>Elegís el monto, escribís unas líneas y el reconocimiento se publica cuando el pago queda aprobado.</p>
+        <h3>Dejá tu reseña ahora.</h3>
+        <p>Elegí un monto, escribí unas líneas y listo.</p>
         <div class="pub-review-mini-proof">
-          <div><strong>Rápido y claro.</strong> Todo está enfocado en que puedas reseñar sin fricción.</div>
-          <div><strong>Seguro.</strong> El pago se procesa con Mercado Pago.</div>
-          <div><strong>Flexible.</strong> Podés publicar con tu nombre o de forma anónima.</div>
+          <div><strong>Menos de 1 minuto.</strong></div>
+          <div><strong>Anónimo opcional.</strong></div>
+          <div><strong>Publicación automática.</strong></div>
         </div>
       </div>
       <div class="pub-review-actions">
         <button class="btn btn-amber btn-md" onclick="nav('form')">Dejar reseña ahora</button>
-        <button class="btn btn-surface btn-md" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas primero</button>
+        <button class="btn btn-surface btn-md" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
       </div>
     </div>`;
   document.getElementById('pubJourney').innerHTML = `
     <div class="pub-journey-card">
       <div class="pub-journey-step">1</div>
-      <h4>Contá tu experiencia</h4>
-      <p>Escribí una reseña breve, concreta y útil. Lo importante es que ayude a entender qué valor te aportó este perfil.</p>
+      <h4>Escribí</h4>
+      <p>Contá tu experiencia.</p>
     </div>
     <div class="pub-journey-card">
       <div class="pub-journey-step">2</div>
       <h4>Elegí el monto</h4>
-      <p>La recompensa hace que el reconocimiento tenga más peso, más credibilidad y más impacto para quien lo recibe y para quien lo lee.</p>
+      <p>Definí tu reconocimiento.</p>
     </div>
     <div class="pub-journey-card">
       <div class="pub-journey-step">3</div>
       <h4>Pagá y publicá</h4>
-      <p>Cuando el pago queda aprobado, la reseña se publica y pasa a formar parte visible de la reputación del perfil.</p>
+      <p>La reseña se publica al aprobarse.</p>
     </div>`;
   document.getElementById('pubProofStrip').innerHTML = `
-    <div class="pub-proof-card"><div class="pub-proof-kicker">Reseñas</div><div class="pub-proof-value">${reviews.length}</div><div class="pub-proof-note">Reconocimientos publicados y visibles.</div></div>
-    <div class="pub-proof-card"><div class="pub-proof-kicker">Recompensa promedio</div><div class="pub-proof-value">${formatCurrency(avg || 0)}</div><div class="pub-proof-note">Monto que suele acompañar cada reseña.</div></div>
-    <div class="pub-proof-card"><div class="pub-proof-kicker">Respuesta</div><div class="pub-proof-value">${reviews.length ? Math.round(replied/reviews.length*100) : 0}%</div><div class="pub-proof-note">De las reseñas recibidas ya fueron respondidas.</div></div>`;
+    <div class="pub-proof-card"><div class="pub-proof-kicker">Reseñas</div><div class="pub-proof-value">${reviews.length}</div><div class="pub-proof-note">Publicadas</div></div>
+    <div class="pub-proof-card"><div class="pub-proof-kicker">Promedio</div><div class="pub-proof-value">${formatCurrency(avg || 0)}</div><div class="pub-proof-note">Por reseña</div></div>
+    <div class="pub-proof-card"><div class="pub-proof-kicker">Respuestas</div><div class="pub-proof-value">${reviews.length ? Math.round(replied/reviews.length*100) : 0}%</div><div class="pub-proof-note">Respondidas</div></div>`;
   document.getElementById('pubTrustGrid').innerHTML = `
-    <div class="pub-story-card">
-      <div class="eyebrow" style="margin-bottom:10px">Perfil</div>
-      <h3>Un espacio pensado para conocer mejor a ${profile.name || 'este perfil'} antes de dejar tu reseña.</h3>
-      <p>Acá no solo ves comentarios: también entendés el contexto del trabajo, la calidad percibida por otras personas y, si el perfil lo habilita, el contenido o los beneficios que entrega como agradecimiento.</p>
-      <div class="pub-story-highlights">
-        <div class="pub-highlight-pill"><strong>Más contexto</strong><span>La reseña se siente más útil cuando sabés a quién estás recomendando y por qué.</span></div>
-        <div class="pub-highlight-pill"><strong>Más intención</strong><span>Una recompensa hace visible que hubo una experiencia real que valió la pena reconocer.</span></div>
-      </div>
-    </div>
-    <div class="pub-trust-card">
-      <div class="eyebrow" style="margin-bottom:10px">Confianza</div>
-      <h3>Qué le transmite confianza a quien llega por primera vez.</h3>
-      <div class="pub-trust-list">
-        <div class="pub-trust-item"><span class="pub-trust-dot"></span><div class="pub-trust-copy"><strong>Señales concretas</strong><span>Reseñas, respuestas, recompensas y contenido organizado en un solo lugar.</span></div></div>
-        <div class="pub-trust-item"><span class="pub-trust-dot"></span><div class="pub-trust-copy"><strong>Reconocimiento con valor</strong><span>Cuando alguien paga y deja una reseña, el reconocimiento gana peso y credibilidad frente a otras personas.</span></div></div>
-        <div class="pub-trust-item"><span class="pub-trust-dot"></span><div class="pub-trust-copy"><strong>Acción simple</strong><span>Todo el proceso está preparado para hacerse rápido, con pago seguro y publicación al aprobarse.</span></div></div>
-      </div>
-    </div>`;
-  document.getElementById('pubWhyPanel').innerHTML = `
-    <div class="pub-why-title">Por qué una reseña con recompensa tiene más impacto que un comentario común</div>
-    <div class="pub-why-sub">Una reseña acompañada por una recompensa transmite que hubo una buena experiencia y que la persona quiso reconocerla de verdad. Eso eleva la percepción de calidad, mejora la credibilidad del perfil y genera más ganas de seguir dando un buen servicio.</div>
-    <div class="pub-why-grid">
-      <div class="pub-why-card"><h4>Más credibilidad</h4><p>No parece una opinión dejada al pasar. Se percibe como un reconocimiento genuino y meditado.</p></div>
-      <div class="pub-why-card"><h4>Más motivación para mejorar</h4><p>Quien recibe el reconocimiento entiende que su trabajo tuvo valor y se compromete a sostener o elevar ese nivel.</p></div>
-      <div class="pub-why-card"><h4>Más claridad para decidir</h4><p>Las personas que llegan al perfil entienden mejor la experiencia, la calidad del servicio y el tipo de vínculo que genera.</p></div>
-    </div>`;
+    <div class="pub-trust-item"><strong>Claro</strong><span>Todo está enfocado en la reseña.</span></div>
+    <div class="pub-trust-item"><strong>Seguro</strong><span>Pago protegido con Mercado Pago.</span></div>
+    <div class="pub-trust-item"><strong>Profesional</strong><span>Las reseñas ordenan la reputación del perfil.</span></div>`;
   document.getElementById('pubCtaPanel').innerHTML = `
     <div class="pub-cta-main">
-      <h3>Tu experiencia puede ser la señal que necesita la próxima persona para confiar.</h3>
-      <p>Dejá una reseña breve, concreta y útil. Cuando el pago se aprueba, se publica automáticamente y se convierte en una prueba social visible que fortalece este perfil.</p>
+      <h3>Reconocé una buena experiencia.</h3>
+      <p>Tu reseña suma confianza y valor al perfil.</p>
       <div class="pub-cta-points">
         <span class="pub-cta-chip">Menos de 1 minuto</span>
         <span class="pub-cta-chip">Anónimo si querés</span>
@@ -3445,8 +3403,8 @@ function renderProfile() {
       <button class="btn btn-amber btn-md" onclick="nav('form')">Dejar reseña ahora</button>
     </div>
     <div class="pub-cta-side">
-      <h3>Antes o después de dejar tu reseña</h3>
-      <p>${hasPhone ? 'Si querés hacer una consulta, validar información o agradecer de forma directa, podés contactar al perfil por teléfono o WhatsApp.' : 'Este perfil todavía no agregó un teléfono de contacto público.'}</p>
+      <h3>Contacto</h3>
+      <p>${hasPhone ? 'Podés contactar al perfil por teléfono o WhatsApp.' : 'Este perfil todavía no agregó un teléfono público.'}</p>
       <div class="pub-contact-list">
         <a class="pub-contact-btn${hasPhone ? '' : ' disabled'}" href="${hasPhone ? phoneLink(phone) : '#'}">${hasPhone ? `Llamar: ${phone}` : 'Teléfono no disponible'}</a>
         <a class="pub-contact-btn${hasPhone ? '' : ' disabled'}" href="${hasPhone ? whatsAppLink(phone) : '#'}" target="_blank" rel="noopener">${hasPhone ? 'Contactar por WhatsApp' : 'WhatsApp no disponible'}</a>
