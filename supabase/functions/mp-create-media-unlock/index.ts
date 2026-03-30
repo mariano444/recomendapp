@@ -96,14 +96,14 @@ serve(async (req) => {
       items: [
         {
           id: mediaItem.id,
-          title: "Desbloquear imagen",
-          description: mediaItem.title || "Acceso a contenido privado",
+          title: "Acceso a contenido",
+          description: mediaItem.title || "Desbloqueo de contenido privado",
           quantity: 1,
           currency_id: "ARS",
           unit_price: Math.round((mediaItem.price_cents || 0) / 100),
         },
       ],
-      statement_descriptor: "RESENA",
+      statement_descriptor: "CONTENIDO",
       binary_mode: true,
       external_reference: unlock.id,
       notification_url: webhookUrl,
