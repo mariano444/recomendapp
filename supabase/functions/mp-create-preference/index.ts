@@ -100,14 +100,15 @@ serve(async (req) => {
       items: [
         {
           id: review.id,
-          title: "Reseña",
-          description: "Publicacion de resena con recompensa",
+          title: "Dejar resena",
+          description: "Pago para publicar una resena",
           quantity: 1,
           currency_id: "ARS",
           unit_price: Number(amount),
         },
       ],
       statement_descriptor: "RESENA",
+      binary_mode: true,
       external_reference: review.id,
       notification_url: webhookUrl,
       back_urls: {
