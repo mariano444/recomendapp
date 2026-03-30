@@ -15,9 +15,9 @@ serve(async (req) => {
     const fallbackMpAccessToken = Deno.env.get("MP_ACCESS_TOKEN") || "";
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    const { reviewId, paymentId, profileSlug } = await req.json();
-    if (!reviewId || !paymentId || !profileSlug) {
-      return Response.json({ error: "Faltan reviewId, paymentId o profileSlug" }, { status: 400, headers: corsHeaders });
+    const { reviewId, paymentId, merchantOrderId, profileSlug } = await req.json();
+    if (!reviewId || (!paymentId && !merchantOrderId) || !profileSlug) {
+      return Response.json({ error: "Faltan reviewId, paymentId/merchantOrderId o profileSlug" }, { status: 400, headers: corsHeaders });
     }
 
     const { data: profile, error: profileError } = await supabase
@@ -45,7 +45,29 @@ serve(async (req) => {
       return Response.json({ error: "El perfil no tiene Access Token configurado" }, { status: 400, headers: corsHeaders });
     }
 
-    const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+    let resolvedPaymentId = paymentId ? String(paymentId) : "";
+
+    if (!resolvedPaymentId && merchantOrderId) {
+      const merchantOrderResponse = await fetch(`https://api.mercadopago.com/merchant_orders/${merchantOrderId}`, {
+        headers: {
+          Authorization: `Bearer ${mpAccessToken}`,
+        },
+      });
+
+      if (!merchantOrderResponse.ok) {
+        const detail = await merchantOrderResponse.text();
+        return Response.json({ error: detail || "No se pudo validar la merchant order" }, { status: 502, headers: corsHeaders });
+      }
+
+      const merchantOrder = await merchantOrderResponse.json();
+      resolvedPaymentId = String(merchantOrder.payments?.find((payment: { id?: string | number }) => payment?.id)?.id || "");
+    }
+
+    if (!resolvedPaymentId) {
+      return Response.json({ error: "No se encontro un paymentId asociado al pago" }, { status: 400, headers: corsHeaders });
+    }
+
+    const paymentResponse = await fetch(`https://api.mercadopago.com/v1/payments/${resolvedPaymentId}`, {
       headers: {
         Authorization: `Bearer ${mpAccessToken}`,
       },
@@ -63,11 +85,11 @@ serve(async (req) => {
     await supabase.rpc("publish_review_payment", {
       p_review_id: resolvedReviewId,
       p_status: status,
-      p_mp_payment_id: String(paymentId),
+      p_mp_payment_id: resolvedPaymentId,
     });
 
     return Response.json(
-      { ok: true, review_id: resolvedReviewId, payment_status: status },
+      { ok: true, review_id: resolvedReviewId, payment_status: status, payment_id: resolvedPaymentId },
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
