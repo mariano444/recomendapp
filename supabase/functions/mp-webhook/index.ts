@@ -87,17 +87,25 @@ serve(async (req) => {
     const status = payment.status || "pending";
 
     if (flowType === "media_unlock" && unlockId) {
-      await supabase.rpc("mark_media_unlock_paid", {
+      const { error: unlockError } = await supabase.rpc("mark_media_unlock_paid", {
         p_unlock_id: unlockId,
         p_status: status,
         p_mp_payment_id: String(paymentId),
       });
+      if (unlockError) {
+        console.error("mark_media_unlock_paid error", unlockError);
+        return new Response("No se pudo actualizar el desbloqueo", { status: 500 });
+      }
     } else if (reviewId) {
-      await supabase.rpc("publish_review_payment", {
+      const { error: publishError } = await supabase.rpc("publish_review_payment", {
         p_review_id: reviewId,
         p_status: status,
         p_mp_payment_id: String(paymentId),
       });
+      if (publishError) {
+        console.error("publish_review_payment error", publishError);
+        return new Response("No se pudo publicar la reseña", { status: 500 });
+      }
     }
 
     await supabase
