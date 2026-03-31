@@ -718,6 +718,33 @@ function getTopRewardReview(reviews = []) {
   return [...reviews].sort((a, b) => b.amount - a.amount || getReviewTimestamp(b) - getReviewTimestamp(a))[0] || null;
 }
 
+function upsertMetaTag(selector, attributes) {
+  let node = document.head.querySelector(selector);
+  if (!node) {
+    node = document.createElement('meta');
+    document.head.appendChild(node);
+  }
+  Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+}
+
+function updateProfileDocumentMeta(profile, reviews = []) {
+  const displayName = [profile?.name, profile?.lastName].filter(Boolean).join(' ').trim() || 'Perfil';
+  const role = profile?.role || 'Profesional';
+  const city = profile?.city || 'Argentina';
+  const topReview = getTopRewardReview(reviews);
+  const totalReviews = reviews.length;
+  const highestReward = topReview?.amount || 0;
+  const description = totalReviews
+    ? `${displayName} en Recomendapp. ${role} en ${city}, con ${totalReviews} resenas visibles y reconocimientos de hasta $${highestReward.toLocaleString('es-AR')}.`
+    : `${displayName} en Recomendapp. ${role} en ${city}, con perfil publico listo para recibir resenas y reconocimiento economico real.`;
+  document.title = `${displayName} | ${role} | Recomendapp`;
+  upsertMetaTag('meta[name="description"]', { name: 'description', content: description });
+  upsertMetaTag('meta[property="og:title"]', { property: 'og:title', content: `${displayName} | Recomendapp` });
+  upsertMetaTag('meta[property="og:description"]', { property: 'og:description', content: description });
+  upsertMetaTag('meta[name="twitter:title"]', { name: 'twitter:title', content: `${displayName} | Recomendapp` });
+  upsertMetaTag('meta[name="twitter:description"]', { name: 'twitter:description', content: description });
+}
+
 function getFilteredPublicReviews(reviews = STATE.publicReviews || []) {
   const now = Date.now();
   const filtered = reviews.filter(review => {
@@ -1780,6 +1807,8 @@ function renderProfile() {
   const pubQuickbar = document.getElementById('pubQuickbar');
   const revCountNode = document.getElementById('revCount');
   const reviewSummary = document.getElementById('pubReviewSummary');
+  const pubTrustPanel = document.getElementById('pubTrustPanel');
+  const pubMetaCards = document.getElementById('pubMetaCards');
   const reviewSortSelect = document.getElementById('reviewSortSelect');
   const reviewDateFilterSelect = document.getElementById('reviewDateFilterSelect');
   const rewardsSection = document.getElementById('pubRewardsSection');
@@ -1788,6 +1817,7 @@ function renderProfile() {
   const formProfileAvatar = document.getElementById('formProfileAvatar');
   const highestReward = allReviews.reduce((max, review) => Math.max(max, review.amount || 0), 0);
   const latestReview = [...allReviews].sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a))[0] || null;
+  const totalVisibleAmount = allReviews.reduce((sum, review) => sum + (review.amount || 0), 0);
   const visibleLabel = reviews.length === allReviews.length
     ? `${reviews.length} resenas visibles`
     : `${reviews.length} de ${allReviews.length} resenas visibles`;
@@ -1800,6 +1830,7 @@ function renderProfile() {
   document.getElementById('pubVerified').style.display = isVerified ? '' : 'none';
   document.getElementById('pubBio').textContent = profile.bio || 'Perfil en Recomendapp';
   document.getElementById('pubTags').innerHTML = (profile.tags || []).map(tag => `<span class="pub-tag">${tag}</span>`).join('');
+  updateProfileDocumentMeta(profile, allReviews);
 
   if (false && pubQuickbar) {
     pubQuickbar.innerHTML = `
@@ -1813,8 +1844,8 @@ function renderProfile() {
   if (pubQuickbar) {
     pubQuickbar.innerHTML = `
       <div class="pub-quickbar-copy">
-        <strong>Resenas ordenadas por valor real</strong>
-        <span>Primero ves las recompensas mas altas y despues podes filtrar por fecha para encontrar rapido lo que mas te importa.</span>
+        <strong>${allReviews.length ? 'Prueba social con reconocimiento visible' : 'Perfil listo para recibir reconocimiento real'}</strong>
+        <span>${allReviews.length ? `Cada resena publicada muestra un gesto economico real. Eso hace que este perfil se entienda mas rapido y transmita mas confianza.` : 'Cuando lleguen las primeras resenas pagas, este perfil va a mostrar prueba social mucho mas fuerte que un comentario comun.'}</span>
       </div>
       <div class="pub-quickbar-stats">
         <div class="pub-quickbar-stat">
@@ -1831,6 +1862,43 @@ function renderProfile() {
         <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver resenas</button>
         ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
       </div>`;
+  }
+
+  if (pubTrustPanel) {
+    pubTrustPanel.innerHTML = `
+      <div class="pub-trust-kicker">Por que pagar una resena genera mas credibilidad</div>
+      <h3>${highestReward ? `Hasta $${highestReward.toLocaleString('es-AR')} en reconocimiento visible` : 'Reconocimiento economico real y publico'}</h3>
+      <p>Una resena paga no se siente como un comentario liviano: muestra tiempo, decision y valor real. Eso ayuda a que una persona nueva entienda mas rapido por que confiar en este perfil.</p>
+      <div class="pub-trust-points">
+        <div class="pub-trust-chip"><strong>${allReviews.length}</strong><span>Resenas visibles</span></div>
+        <div class="pub-trust-chip"><strong>$${totalVisibleAmount.toLocaleString('es-AR')}</strong><span>Reconocimiento acumulado</span></div>
+        <div class="pub-trust-chip"><strong>${latestReview?.date || 'Sin actividad'}</strong><span>Ultima actividad</span></div>
+      </div>`;
+  }
+
+  if (pubMetaCards) {
+    pubMetaCards.innerHTML = [
+      {
+        title: 'Decision mas rapida',
+        text: allReviews.length ? 'Las recompensas visibles hacen que la propuesta del perfil se entienda en segundos.' : 'El perfil ya esta preparado para mostrar prueba social fuerte cuando lleguen las primeras resenas.',
+      },
+      {
+        title: 'Seguridad para quien visita',
+        text: 'La resena solo se publica cuando el pago queda aprobado, lo que ordena mejor la confianza.',
+      },
+      {
+        title: 'Imagen profesional',
+        text: hasPhone ? 'El visitante puede leer, verificar y contactar desde una sola pagina clara.' : 'Todo queda presentado en una pagina ordenada, clara y facil de compartir.',
+      },
+      {
+        title: 'Valor real',
+        text: highestReward ? `La mayor recompensa visible hoy es de $${highestReward.toLocaleString('es-AR')}.` : 'El reconocimiento economico convierte gratitud en una senal concreta.',
+      },
+    ].map(card => `
+      <div class="pub-meta-card">
+        <strong>${card.title}</strong>
+        <span>${card.text}</span>
+      </div>`).join('');
   }
 
   const csProfileName = document.getElementById('csProfileName');
