@@ -410,6 +410,14 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .pub-why-card h4 { font-size:14px; margin-bottom:6px; }
 .pub-why-card p { font-size:12px; color:var(--text2); line-height:1.55; }
 .pub-gallery-wrap { margin:28px 0 18px; }
+.pub-spotlight { display:grid; grid-template-columns:1.05fr .95fr; gap:18px; margin:26px 0 22px; }
+.pub-spotlight-main { padding:26px; border-radius:28px; background:linear-gradient(160deg,rgba(110,151,216,.18),rgba(255,255,255,.03)); border:1px solid rgba(110,151,216,.22); box-shadow:0 24px 60px rgba(12,11,10,.2); }
+.pub-spotlight-empty { grid-column:1 / -1; }
+.pub-spotlight-kicker { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--amber); margin-bottom:10px; }
+.pub-spotlight-main h3 { font-family:'Playfair Display',serif; font-size:32px; line-height:1.02; margin-bottom:10px; }
+.pub-spotlight-main p { font-size:14px; color:var(--text2); line-height:1.7; margin-bottom:18px; max-width:560px; }
+.pub-spotlight-badges { display:flex; gap:10px; flex-wrap:wrap; }
+.pub-spotlight-card .rev-card { height:100%; margin-bottom:0; }
 .pub-gallery-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
 .pub-gallery-title { font-family:'Playfair Display',serif; font-size:30px; font-weight:800; line-height:1.05; }
 .pub-gallery-sub { font-size:14px; color:var(--text2); line-height:1.6; max-width:560px; }
@@ -562,6 +570,10 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .dash-main { display:flex; flex-direction:column; gap:16px; }
 .dash-side { display:flex; flex-direction:column; gap:16px; }
 .dash-panel { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-xl); padding:28px; }
+.dash-spotlight-panel { background:linear-gradient(180deg,rgba(110,151,216,.10),rgba(255,255,255,.02)); border-color:rgba(110,151,216,.18); }
+.dash-spotlight-copy { margin-bottom:16px; }
+.dash-spotlight-amount { font-family:'Playfair Display',serif; font-size:36px; font-weight:900; color:var(--amber); line-height:1; }
+.dash-spotlight-sub { font-size:12px; color:var(--text3); margin-top:8px; text-transform:uppercase; letter-spacing:1.2px; }
 .panel-title { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; }
 .panel-title-right { font-family:'Instrument Sans',sans-serif; font-size:12px; color:var(--amber); font-weight:600; cursor:pointer; }
 .d-rev-item { padding:16px 0; border-bottom:1px solid var(--border); display:flex; gap:14px; align-items:flex-start; }
@@ -815,6 +827,7 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
   .pub-proof-strip,
   .pub-cred-grid,
   .pub-journey,
+  .pub-spotlight,
   .pub-review-hero,
   .pub-trust-grid,
   .pub-cta-panel,
