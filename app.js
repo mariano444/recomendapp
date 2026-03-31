@@ -1571,6 +1571,12 @@ function renderProfile() {
   const isVerified = !!profile.verified;
   const phone = profile.phone || '';
   const hasPhone = !!normalizePhone(phone);
+  const pubQuickbar = document.getElementById('pubQuickbar');
+  const revCountNode = document.getElementById('revCount');
+  const rewardsSection = document.getElementById('pubRewardsSection');
+  const mediaSection = document.getElementById('pubMediaSection');
+  const pubReviews = document.getElementById('pubReviews');
+  const formProfileAvatar = document.getElementById('formProfileAvatar');
 
   setAvatarNode(document.getElementById('pubAvatarText'), profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl);
   setCoverNode(document.getElementById('pubCover'), profile.coverUrl);
@@ -1581,25 +1587,31 @@ function renderProfile() {
   document.getElementById('pubBio').textContent = profile.bio || 'Perfil en Recomendapp';
   document.getElementById('pubTags').innerHTML = (profile.tags || []).map(tag => `<span class="pub-tag">${tag}</span>`).join('');
 
-  document.getElementById('pubQuickbar').innerHTML = `
-    <div class="pub-quickbar-actions pub-quickbar-actions-compact">
-      <button class="btn btn-amber btn-sm" onclick="nav('form')">Dejar reseña</button>
-      <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
-      ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
-    </div>`;
+  if (pubQuickbar) {
+    pubQuickbar.innerHTML = `
+      <div class="pub-quickbar-actions pub-quickbar-actions-compact">
+        <button class="btn btn-amber btn-sm" onclick="nav('form')">Dejar reseña</button>
+        <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
+        ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
+      </div>`;
+  }
 
   const csProfileName = document.getElementById('csProfileName');
   if (csProfileName) csProfileName.textContent = profileName;
 
   renderFormHeader();
-  setAvatarNode(document.getElementById('formProfileAvatar'), profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl);
+  if (formProfileAvatar) {
+    setAvatarNode(formProfileAvatar, profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl);
+  }
 
-  document.getElementById('revCount').textContent = `${reviews.length} reseñas`;
-  document.getElementById('pubRewardsSection').style.display = rewardItems.length ? '' : 'none';
-  document.getElementById('pubMediaSection').style.display = mediaItems.length ? '' : 'none';
-  document.getElementById('pubReviews').innerHTML = reviews.length
-    ? reviews.map(review => revCardHTML(review, false)).join('')
-    : `<div class="rev-card"><p class="rev-text">Todavía no hay reseñas publicadas. La primera puede ser la tuya.</p><button class="btn btn-amber btn-sm" onclick="nav('form')">Escribir la primera reseña</button></div>`;
+  if (revCountNode) revCountNode.textContent = `${reviews.length} reseñas`;
+  if (rewardsSection) rewardsSection.style.display = rewardItems.length ? '' : 'none';
+  if (mediaSection) mediaSection.style.display = mediaItems.length ? '' : 'none';
+  if (pubReviews) {
+    pubReviews.innerHTML = reviews.length
+      ? reviews.map(review => revCardHTML(review, false)).join('')
+      : `<div class="rev-card"><p class="rev-text">Todavía no hay reseñas publicadas. La primera puede ser la tuya.</p><button class="btn btn-amber btn-sm" onclick="nav('form')">Escribir la primera reseña</button></div>`;
+  }
 
   renderPublicRewards(rewardItems);
   renderPublicMediaPreview(mediaItems);
