@@ -82,11 +82,18 @@ serve(async (req) => {
     const status = payment.status || "pending";
     const resolvedReviewId = payment.external_reference || payment.metadata?.review_id || reviewId;
 
-    await supabase.rpc("publish_review_payment", {
+    const { error: publishError } = await supabase.rpc("publish_review_payment", {
       p_review_id: resolvedReviewId,
       p_status: status,
       p_mp_payment_id: resolvedPaymentId,
     });
+
+    if (publishError) {
+      return Response.json(
+        { error: publishError.message || "No se pudo publicar la reseña" },
+        { status: 500, headers: corsHeaders },
+      );
+    }
 
     return Response.json(
       { ok: true, review_id: resolvedReviewId, payment_status: status, payment_id: resolvedPaymentId },
