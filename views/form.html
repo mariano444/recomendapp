@@ -46,6 +46,25 @@
 
       <div class="field"><label class="field-label">Tu reseña</label><textarea class="field-textarea" id="fMsg" placeholder="Contá tu experiencia. ¿Qué te aportó? ¿Qué destacarías? Sé sincero..."></textarea></div>
       <div class="field-inline-help">Mientras más concreta sea la reseña, más confianza genera en quien vea este perfil.</div>
+      <div class="field">
+        <label class="field-label">Celular (opcional)</label>
+        <input class="field-input" id="fPhone" placeholder="+54 9 11 1234 5678">
+        <div class="field-inline-help" style="margin:8px 0 0">Si queres, podes dejar un numero para que el perfil te identifique mejor. Si publicas en anonimo no se muestra.</div>
+      </div>
+
+      <div class="review-upload-grid">
+        <div class="field">
+          <label class="field-label">Foto de perfil (opcional)</label>
+          <input class="field-input" id="fReviewerAvatar" type="file" accept="image/*" onchange="previewReviewImage(this,'reviewAvatarPreview')">
+          <div class="review-upload-preview review-upload-preview-avatar" id="reviewAvatarPreview" data-empty="Sin foto">Sin foto</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Imagen para la resena (opcional)</label>
+          <input class="field-input" id="fReviewImage" type="file" accept="image/*" onchange="previewReviewImage(this,'reviewImagePreview')">
+          <div class="review-upload-preview" id="reviewImagePreview" data-empty="Sin imagen">Sin imagen</div>
+        </div>
+      </div>
+
       <div class="review-quick-prompts">
         <button type="button" class="review-prompt-chip" onclick="addReviewPrompt('Me hizo sentir en confianza desde el primer momento.')">Generó confianza</button>
         <button type="button" class="review-prompt-chip" onclick="addReviewPrompt('Fue muy claro/a, profesional y atento/a en todo el proceso.')">Muy profesional</button>
