@@ -1588,13 +1588,6 @@ function renderProfile() {
       ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
     </div>`;
 
-  document.getElementById('pubReviewHero').innerHTML = '';
-  document.getElementById('pubProofStrip').innerHTML = '';
-  document.getElementById('pubCredGrid').innerHTML = '';
-  document.getElementById('pubTrustGrid').innerHTML = '';
-  document.getElementById('pubStats').innerHTML = '';
-  document.getElementById('pubCtaPanel').innerHTML = '';
-
   const csProfileName = document.getElementById('csProfileName');
   if (csProfileName) csProfileName.textContent = profileName;
 
