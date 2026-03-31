@@ -695,6 +695,10 @@ function getReviewTimestamp(review) {
   return Number.isFinite(value) ? value : 0;
 }
 
+function getTopRewardReview(reviews = []) {
+  return [...reviews].sort((a, b) => b.amount - a.amount || getReviewTimestamp(b) - getReviewTimestamp(a))[0] || null;
+}
+
 function getFilteredPublicReviews(reviews = STATE.publicReviews || []) {
   const now = Date.now();
   const filtered = reviews.filter(review => {
@@ -1084,6 +1088,8 @@ async function createMpPreference(reviewDraft = {}) {
           reviewerPhone: reviewDraft.reviewerPhone || '',
           reviewerAvatarUrl: reviewDraft.reviewerAvatarUrl || '',
           reviewImageUrl: reviewDraft.reviewImageUrl || '',
+          reviewerName: reviewDraft.reviewerName || '',
+          message: reviewDraft.message || document.getElementById('fMsg')?.value || '',
           appUrl: window.location.origin + window.location.pathname,
         }
       });
@@ -1638,7 +1644,7 @@ async function submitReview() {
     sessionStorage.setItem('aplauso_pending', JSON.stringify({
       reviewId: pref.review_id || '',
       profileSlug: STATE.viewedProfile?.slug || STATE.user.slug || '',
-      nombre: STATE.isAnon ? 'Anónimo' : (nombre + ' ' + apellido).trim(),
+      nombre: reviewerName,
       pay: 'MercadoPago',
       amount: STATE.selectedAmt,
       msg,
@@ -1656,7 +1662,6 @@ async function submitReview() {
 
   if (sb) {
     try {
-      const reviewerName = STATE.isAnon ? 'Anónimo' : ((nombre + ' ' + apellido).trim() || 'Visitante');
       const { data, error } = await sb
         .from('reviews')
         .insert({
@@ -1760,10 +1765,12 @@ function renderProfile() {
   const reviewDateFilterSelect = document.getElementById('reviewDateFilterSelect');
   const rewardsSection = document.getElementById('pubRewardsSection');
   const mediaSection = document.getElementById('pubMediaSection');
+  const reviewSpotlight = document.getElementById('pubReviewSpotlight');
   const pubReviews = document.getElementById('pubReviews');
   const formProfileAvatar = document.getElementById('formProfileAvatar');
   const highestReward = allReviews.reduce((max, review) => Math.max(max, review.amount || 0), 0);
   const latestReview = [...allReviews].sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a))[0] || null;
+  const topReview = getTopRewardReview(allReviews);
   const visibleLabel = reviews.length === allReviews.length
     ? `${reviews.length} resenas visibles`
     : `${reviews.length} de ${allReviews.length} resenas visibles`;
@@ -1829,6 +1836,27 @@ function renderProfile() {
   if (revCountNode) revCountNode.textContent = visibleLabel;
   if (rewardsSection) rewardsSection.style.display = rewardItems.length ? '' : 'none';
   if (mediaSection) mediaSection.style.display = mediaItems.length ? '' : 'none';
+  if (reviewSpotlight) {
+    reviewSpotlight.innerHTML = topReview
+      ? `
+        <div class="pub-spotlight-main">
+          <div class="pub-spotlight-kicker">Resena con mayor recompensa</div>
+          <h3>$${topReview.amount.toLocaleString('es-AR')} de reconocimiento visible</h3>
+          <p>Pagar una resena hace visible un gesto real. Eso acelera la confianza, ordena mejor la prueba social y hace que el reconocimiento tenga mas peso para quien visita este perfil.</p>
+          <div class="pub-spotlight-badges">
+            <span class="pub-review-pill">Pago aprobado</span>
+            <span class="pub-review-pill">${topReview.date}</span>
+            <span class="pub-review-pill">${topReview.anon ? 'Anonima' : 'Identificada'}</span>
+          </div>
+        </div>
+        <div class="pub-spotlight-card">${revCardHTML(topReview, false)}</div>`
+      : `
+        <div class="pub-spotlight-main pub-spotlight-empty">
+          <div class="pub-spotlight-kicker">Credibilidad y reconocimiento</div>
+          <h3>Las resenas pagas convierten gratitud en una senal visible.</h3>
+          <p>Cuando alguien paga para dejar su experiencia, demuestra involucramiento real y le da al perfil una prueba social mas fuerte que un comentario comun.</p>
+        </div>`;
+  }
   if (pubReviews) {
     pubReviews.innerHTML = reviews.length
       ? reviews.map(review => revCardHTML(review, false)).join('')
@@ -1984,10 +2012,22 @@ function renderDashboard() {
   document.getElementById('mReviews').textContent = STATE.reviews.length;
   document.getElementById('mAvg').textContent = '$' + avg.toLocaleString('es-AR');
   document.getElementById('pendingCount').textContent = STATE.reviews.filter(r=>!r.reply).length;
+  const topReview = getTopRewardReview(STATE.reviews);
 
   // Reviews
   const dr = document.getElementById('dashReviews');
   if (dr) dr.innerHTML = STATE.reviews.slice(0,5).map(r => revCardHTML(r, true)).join('');
+  const dashTopReview = document.getElementById('dashTopReview');
+  if (dashTopReview) {
+    dashTopReview.innerHTML = topReview
+      ? `
+        <div class="dash-spotlight-copy">
+          <div class="dash-spotlight-amount">$${topReview.amount.toLocaleString('es-AR')}</div>
+          <div class="dash-spotlight-sub">Mayor recompensa recibida</div>
+        </div>
+        ${revCardHTML(topReview, false)}`
+      : `<div class="gallery-admin-empty">Todavia no hay resenas destacadas para mostrar.</div>`;
+  }
 
   // Activity
   const af = document.getElementById('activityFeed');
