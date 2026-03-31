@@ -417,6 +417,18 @@ function profileLink(slug) {
   return base + '?slug=' + encodeURIComponent(slug);
 }
 
+function profileShareId(profile = {}) {
+  return profile.id || profile.slug || '';
+}
+
+function profileLinkFromProfile(profile = {}) {
+  return profileLink(profileShareId(profile));
+}
+
+function isUuidLike(value='') {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value).trim());
+}
+
 function normalizePhone(phone='') {
   return (phone || '').replace(/[^\d+]/g, '');
 }
@@ -734,8 +746,8 @@ function updateProfileDocumentMeta(profile, reviews = []) {
   const topReview = getTopRewardReview(reviews);
   const totalReviews = reviews.length;
   const highestReward = topReview?.amount || 0;
-  const shareUrl = `${window.location.origin}${window.location.pathname}?slug=${encodeURIComponent(profile?.slug || '')}`;
-  const shareImage = profile?.coverUrl || profile?.avatarUrl || '';
+  const shareUrl = profileLinkFromProfile(profile);
+  const shareImage = profile?.avatarUrl || profile?.coverUrl || '';
   const shortBio = (profile?.bio || '').trim();
   const description = shortBio
     ? `${shortBio} Especialidad: ${role}. Recomendaciones visibles y reconocimiento real en Recomendapp.`
@@ -925,7 +937,7 @@ async function loadSearchProfiles() {
 
 async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = false) {
   if (!sb || !slug) return;
-  const isOwnProfile = STATE.loggedIn && slug === STATE.user.slug;
+  const isOwnProfile = STATE.loggedIn && (slug === STATE.user.slug || slug === STATE.user.id);
   if (isOwnProfile) {
     if (forceRefresh) {
       await refreshOwnProfileState(true);
@@ -934,21 +946,26 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
       STATE.publicReviews = STATE.reviews.filter(r => r.published && r.paymentStatus === 'approved');
     }
     renderProfile();
-    if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(slug));
+    if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(STATE.user.id || slug));
     return;
   }
 
   let profile = !forceRefresh ? STATE.profileCache[slug] : null;
   let error = null;
   if (!profile) {
-    const response = await sb
+    const query = sb
       .from('profiles')
-      .select('id, slug, nombre, apellido, role, city, telefono, bio, tags, total_earned, review_count, verified, allow_anon, min_amount, active, mp_alias, mp_cbu, avatar_url, cover_url')
-      .eq('slug', slug)
-      .single();
+      .select('id, slug, nombre, apellido, role, city, telefono, bio, tags, total_earned, review_count, verified, allow_anon, min_amount, active, mp_alias, mp_cbu, avatar_url, cover_url');
+    const response = isUuidLike(slug)
+      ? await query.eq('id', slug).single()
+      : await query.eq('slug', slug).single();
     profile = response.data;
     error = response.error;
-    if (profile && !error) STATE.profileCache[slug] = profile;
+    if (profile && !error) {
+      STATE.profileCache[slug] = profile;
+      STATE.profileCache[profile.slug] = profile;
+      STATE.profileCache[profile.id] = profile;
+    }
   }
 
   if (error || !profile) {
@@ -961,7 +978,7 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
   STATE.publicRewardItems = await fetchRewardItems(profile.id, false);
   STATE.publicMediaItems = await fetchMediaItems(profile.id, false);
   renderProfile();
-  if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(slug));
+  if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(profile.id || slug));
 }
 
 async function hydrateUser(session, navigateToDashboard = false) {
@@ -2135,7 +2152,7 @@ function renderDashboard() {
 
   // Link
   const pl = document.getElementById('profileLinkDisplay');
-  if (pl) pl.textContent = profileLink(STATE.user.slug);
+  if (pl) pl.textContent = profileLinkFromProfile(STATE.user);
 }
 
 function dashTab(btn, tabId) {
@@ -2170,7 +2187,7 @@ function saveProfile() {
         telefono,
         bio,
         tags,
-        slug: slugifyText(nombre + '-' + apellido),
+        slug: STATE.user.slug,
         avatar_url,
         cover_url,
       };
@@ -2259,7 +2276,7 @@ async function saveAccountSettings() {
       nombre,
       apellido,
       telefono,
-      slug: slugifyText(nombre + '-' + apellido),
+      slug: STATE.user.slug,
     })
     .eq('id', STATE.user.id)
     .select('*')
@@ -2495,7 +2512,7 @@ async function openPublicProfile(slug) {
     await loadViewedProfileBySlug(slug, true);
     return;
   }
-  const localProfile = STATE.directoryProfiles.find(p => p.slug === slug);
+  const localProfile = STATE.directoryProfiles.find(p => p.slug === slug || p.id === slug);
   if (!localProfile) return;
   STATE.viewedProfile = {
     id: localProfile.id,
@@ -2515,9 +2532,9 @@ async function openPublicProfile(slug) {
    SHARE
 ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.? */
 function doShare() {
-  const targetSlug = STATE.viewedProfile?.slug || STATE.user.slug;
+  const targetProfile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
   const targetName = STATE.viewedProfile?.name || STATE.user.name;
-  const url = profileLink(targetSlug);
+  const url = profileLinkFromProfile(targetProfile);
   if (navigator.share) {
     navigator.share({ title:'Recomendapp', text:'Mir? el perfil de ' + targetName, url });
     return;
