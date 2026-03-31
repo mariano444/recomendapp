@@ -1194,8 +1194,8 @@ function renderMediaCards(items, allowPay = true) {
     const stateNote = locked
       ? 'Se habilita cuando el pago queda aprobado.'
       : item.downloadUrl
-        ? (item.allowDownload ? 'Disponible para descarga directa desde esta misma p?gina.' : 'Disponible para visualizaci?n online desde esta misma p?gina.')
-        : 'El perfil todav?a no carg? el enlace final de acceso.';
+        ? (item.allowDownload ? 'Disponible para descarga directa desde esta misma página.' : 'Disponible para visualización online desde esta misma página.')
+        : 'El perfil todavía no cargó el enlace final de acceso.';
     return `
       <div class="gallery-card">
         <div class="gallery-media" style="${bgStyle}">
@@ -1242,7 +1242,7 @@ function renderMediaVault() {
   if (!grid) return;
   const items = STATE.publicMediaItems || [];
   if (!items.length) {
-    grid.innerHTML = '<div class="gallery-empty">Este perfil todav?a no public? im?genes o combos.</div>';
+    grid.innerHTML = '<div class="gallery-empty">Este perfil todavía no publicó imágenes o combos.</div>';
     return;
   }
   grid.innerHTML = renderMediaCards(items, true);
@@ -1569,11 +1569,13 @@ function renderProfile() {
   const mediaItems = STATE.publicMediaItems || [];
   const profileName = (profile.name + ' ' + (profile.lastName || '')).trim() || 'Perfil';
   const isVerified = !!profile.verified;
-  const total = reviews.reduce((s,r) => s+r.amount, 0);
-  const avg = reviews.length ? Math.round(total/reviews.length) : 0;
-  const replied = reviews.filter(r => r.reply).length;
+  const total = reviews.reduce((sum, review) => sum + review.amount, 0);
+  const avg = reviews.length ? Math.round(total / reviews.length) : 0;
+  const replied = reviews.filter(review => review.reply).length;
+  const replyRate = reviews.length ? Math.round((replied / reviews.length) * 100) : 0;
   const phone = profile.phone || '';
   const hasPhone = !!normalizePhone(phone);
+
   setAvatarNode(document.getElementById('pubAvatarText'), profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl);
   setCoverNode(document.getElementById('pubCover'), profile.coverUrl);
   document.getElementById('pubName').textContent = profileName;
@@ -1581,36 +1583,39 @@ function renderProfile() {
   document.getElementById('pubCity').textContent = profile.city ? profile.city + ', AR' : 'Argentina';
   document.getElementById('pubVerified').style.display = isVerified ? '' : 'none';
   document.getElementById('pubBio').textContent = profile.bio || 'Perfil en Recomendapp';
-  document.getElementById('pubTags').innerHTML = (profile.tags || []).map(t => `<span class="pub-tag">${t}</span>`).join('');
+  document.getElementById('pubTags').innerHTML = (profile.tags || []).map(tag => `<span class="pub-tag">${tag}</span>`).join('');
+
   document.getElementById('pubQuickbar').innerHTML = `
     <div class="pub-quickbar-copy">
-      <strong>Dejar una reseña lleva menos de 1 minuto.</strong>
-      <span>Escribís, elegís el monto y publicás.</span>
+      <strong>${profile.role || 'Profesional'}${profile.city ? ` en ${profile.city}` : ''}</strong>
+      <span>Perfil claro, compartible y listo para recibir reseñas reales con pago protegido.</span>
     </div>
     <div class="pub-quickbar-actions">
       <button class="btn btn-amber btn-sm" onclick="nav('form')">Dejar reseña</button>
       <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
+      ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
     </div>`;
+
   document.getElementById('pubReviewHero').innerHTML = `
     <div class="pub-review-spotlight">
-      <div class="eyebrow" style="margin-bottom:12px">Tu reseña es la protagonista</div>
-      <h2>Tu reseña ayuda a que otras personas confíen.</h2>
-      <p>Reconocé una buena experiencia de forma simple, clara y rápida.</p>
+      <div class="eyebrow" style="margin-bottom:12px">Perfil público</div>
+      <h2>Una presentación profesional que genera confianza rápido.</h2>
+      <p>Acá se entiende qué hace este perfil, cómo dejar una reseña y por qué ese reconocimiento tiene valor real.</p>
       <div class="pub-review-points">
-        <div class="pub-review-point"><strong>Rápido</strong><span>Se completa en pocos pasos.</span></div>
-        <div class="pub-review-point"><strong>Seguro</strong><span>Pago con Mercado Pago.</span></div>
-        <div class="pub-review-point"><strong>Útil</strong><span>Le da más valor a la recomendación.</span></div>
+        <div class="pub-review-point"><strong>Reseñas reales</strong><span>Solo se publican con el flujo completo.</span></div>
+        <div class="pub-review-point"><strong>Pago protegido</strong><span>Checkout con Mercado Pago.</span></div>
+        <div class="pub-review-point"><strong>Respuesta visible</strong><span>El perfil puede responder públicamente.</span></div>
       </div>
     </div>
     <div class="pub-review-card">
       <div>
-        <div class="pub-review-kicker">Acción principal</div>
-        <h3>Dejá tu reseña ahora.</h3>
-        <p>Elegí un monto, escribí unas líneas y listo.</p>
+        <div class="pub-review-kicker">Qué podés hacer</div>
+        <h3>Dejar una reseña clara y segura.</h3>
+        <p>Elegís el monto, escribís unas líneas y el sistema la publica cuando el pago queda aprobado.</p>
         <div class="pub-review-mini-proof">
-          <div><strong>Menos de 1 minuto.</strong></div>
-          <div><strong>Anónimo opcional.</strong></div>
-          <div><strong>Publicación automática.</strong></div>
+          <div><strong>1.</strong> Elegís un monto.</div>
+          <div><strong>2.</strong> Escribís la experiencia.</div>
+          <div><strong>3.</strong> Se publica automáticamente.</div>
         </div>
       </div>
       <div class="pub-review-actions">
@@ -1618,32 +1623,36 @@ function renderProfile() {
         <button class="btn btn-surface btn-md" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
       </div>
     </div>`;
+
   document.getElementById('pubProofStrip').innerHTML = `
-    <div class="pub-proof-card"><div class="pub-proof-kicker">Reseñas</div><div class="pub-proof-value">${reviews.length}</div><div class="pub-proof-note">Publicadas</div></div>
-    <div class="pub-proof-card"><div class="pub-proof-kicker">Promedio</div><div class="pub-proof-value">${formatCurrency(avg || 0)}</div><div class="pub-proof-note">Por reseña</div></div>
-    <div class="pub-proof-card"><div class="pub-proof-kicker">Respuestas</div><div class="pub-proof-value">${reviews.length ? Math.round(replied/reviews.length*100) : 0}%</div><div class="pub-proof-note">Respondidas</div></div>`;
+    <div class="pub-proof-card highlight"><div class="pub-proof-kicker">Reseñas publicadas</div><div class="pub-proof-value">${reviews.length}</div><div class="pub-proof-note">Prueba social visible</div></div>
+    <div class="pub-proof-card"><div class="pub-proof-kicker">Promedio por reseña</div><div class="pub-proof-value">${formatCurrency(avg || 0)}</div><div class="pub-proof-note">Reconocimiento económico real</div></div>
+    <div class="pub-proof-card"><div class="pub-proof-kicker">Tasa de respuesta</div><div class="pub-proof-value">${replyRate}%</div><div class="pub-proof-note">Seguimiento público del perfil</div></div>`;
+
   document.getElementById('pubCredGrid').innerHTML = `
     <div class="pub-cred-card">
-      <h3>Por qué una reseña con recompensa da más credibilidad</h3>
-      <p>Porque muestra una experiencia real y un reconocimiento genuino. Eso genera más confianza y también motiva a seguir haciendo un buen trabajo.</p>
+      <h3>Cómo funciona en tres pasos</h3>
+      <p>El recorrido está pensado para que cualquier visitante entienda rápido qué hacer y qué pasa después.</p>
       <div class="pub-cred-points">
-        <div class="pub-cred-point"><strong>Más credibilidad</strong><span>Se siente más auténtica.</span></div>
-        <div class="pub-cred-point"><strong>Más confianza</strong><span>Ayuda a decidir más rápido.</span></div>
-        <div class="pub-cred-point"><strong>Más motivación</strong><span>Reconoce el esfuerzo real.</span></div>
+        <div class="pub-cred-point"><strong>1. Elegís</strong><span>Definís el monto y si querés publicar de forma anónima.</span></div>
+        <div class="pub-cred-point"><strong>2. Pagás</strong><span>Usás un checkout conocido y seguro con Mercado Pago.</span></div>
+        <div class="pub-cred-point"><strong>3. Se publica</strong><span>La reseña aparece cuando el pago queda aprobado.</span></div>
       </div>
     </div>
-    <div class="pub-cred-card">
-      <h3>Cómo funciona</h3>
-      <p>Escribís tu reseña, elegís el monto y pagás. Cuando el pago se aprueba, se publica automáticamente.</p>
+    <div class="pub-cred-card dark">
+      <h3>Por qué este perfil transmite más seguridad</h3>
+      <p>Combina identidad profesional, reseñas visibles, pagos protegidos y respuestas públicas en una sola página fácil de compartir.</p>
     </div>`;
+
   document.getElementById('pubTrustGrid').innerHTML = `
-    <div class="pub-trust-item"><strong>Claro</strong><span>La acción principal está siempre visible.</span></div>
-    <div class="pub-trust-item"><strong>Seguro</strong><span>Pago protegido con Mercado Pago.</span></div>
-    <div class="pub-trust-item"><strong>Profesional</strong><span>Las reseñas ordenan la reputación del perfil.</span></div>`;
+    <div class="pub-trust-item"><strong>Decisión rápida</strong><span>El visitante entiende enseguida dónde leer, confiar y actuar.</span></div>
+    <div class="pub-trust-item"><strong>Seguridad</strong><span>El pago está respaldado por un flujo conocido y la publicación depende de aprobación.</span></div>
+    <div class="pub-trust-item"><strong>Imagen profesional</strong><span>Todo queda ordenado en una página limpia, clara y fácil de compartir.</span></div>`;
+
   document.getElementById('pubCtaPanel').innerHTML = `
     <div class="pub-cta-main">
-      <h3>Reconocé una buena experiencia.</h3>
-      <p>Tu reseña suma confianza y valor al perfil.</p>
+      <h3>¿Querés reconocer una buena experiencia?</h3>
+      <p>Podés dejar tu reseña ahora mismo con un proceso simple, profesional y visible para futuras personas que visiten este perfil.</p>
       <div class="pub-cta-points">
         <span class="pub-cta-chip">Menos de 1 minuto</span>
         <span class="pub-cta-chip">Anónimo si querés</span>
@@ -1652,38 +1661,34 @@ function renderProfile() {
       <button class="btn btn-amber btn-md" onclick="nav('form')">Dejar reseña ahora</button>
     </div>
     <div class="pub-cta-side">
-      <h3>Contacto</h3>
-      <p>${hasPhone ? 'Podés contactar al perfil por teléfono o WhatsApp.' : 'Este perfil todavía no agregó un teléfono público.'}</p>
+      <h3>Contacto directo</h3>
+      <p>${hasPhone ? 'Si preferís hablar antes, podés contactar al perfil por teléfono o WhatsApp.' : 'Este perfil todavía no agregó un teléfono público, pero podés dejar una reseña desde esta página.'}</p>
       <div class="pub-contact-list">
         <a class="pub-contact-btn${hasPhone ? '' : ' disabled'}" href="${hasPhone ? phoneLink(phone) : '#'}">${hasPhone ? `Llamar: ${phone}` : 'Teléfono no disponible'}</a>
         <a class="pub-contact-btn${hasPhone ? '' : ' disabled'}" href="${hasPhone ? whatsAppLink(phone) : '#'}" target="_blank" rel="noopener">${hasPhone ? 'Contactar por WhatsApp' : 'WhatsApp no disponible'}</a>
       </div>
     </div>`;
+
   const csProfileName = document.getElementById('csProfileName');
   if (csProfileName) csProfileName.textContent = profileName;
+
   renderFormHeader();
   setAvatarNode(document.getElementById('formProfileAvatar'), profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl);
+
   document.getElementById('pubStats').innerHTML = `
     <div class="stat-cell"><span class="stat-v">${reviews.length}</span><div class="stat-l">Reseñas publicadas</div></div>
-    <div class="stat-cell"><span class="stat-v gold">${formatCurrency(total || 0)}</span><div class="stat-l">Recompensas recibidas</div></div>
-    <div class="stat-cell"><span class="stat-v">${reviews.length ? Math.round(replied/reviews.length*100) : 0}%</span><div class="stat-l">Respondidas</div></div>`;
-  document.getElementById('revCount').textContent = reviews.length + ' reseñas · ordenadas por recientes';
+    <div class="stat-cell"><span class="stat-v gold">${formatCurrency(total || 0)}</span><div class="stat-l">Reconocimiento total</div></div>
+    <div class="stat-cell"><span class="stat-v">${replyRate}%</span><div class="stat-l">Respondidas</div></div>`;
+  document.getElementById('revCount').textContent = `${reviews.length} reseñas · ordenadas por recientes`;
   document.getElementById('pubRewardsSection').style.display = rewardItems.length ? '' : 'none';
   document.getElementById('pubMediaSection').style.display = mediaItems.length ? '' : 'none';
   document.getElementById('pubReviews').innerHTML = reviews.length
-    ? reviews.map(r => revCardHTML(r, false)).join('')
+    ? reviews.map(review => revCardHTML(review, false)).join('')
     : `<div class="rev-card"><p class="rev-text">Todavía no hay reseñas publicadas. La primera puede ser la tuya.</p><button class="btn btn-amber btn-sm" onclick="nav('form')">Escribir la primera reseña</button></div>`;
+
   renderPublicRewards(rewardItems);
   renderPublicMediaPreview(mediaItems);
   renderMediaVault();
-  return;
-  document.getElementById('pubStats').innerHTML = `
-    <div class="stat-cell"><span class="stat-v">${STATE.reviews.length}</span><div class="stat-l">Reseñas</div></div>
-    <div class="stat-cell"><span class="stat-v gold">$${total.toLocaleString('es-AR')}</span><div class="stat-l">Total recibido</div></div>
-    <div class="stat-cell"><span class="stat-v">$${avg.toLocaleString('es-AR')}</span><div class="stat-l">Promedio</div></div>
-    <div class="stat-cell"><span class="stat-v">${STATE.reviews.length ? Math.round(replied/STATE.reviews.length*100) : 0}%</span><div class="stat-l">Respondidas</div></div>`;
-  document.getElementById('revCount').textContent = STATE.reviews.length + ' reseñas · ordenadas por recientes';
-  document.getElementById('pubReviews').innerHTML = STATE.reviews.map(r => revCardHTML(r, false)).join('');
 }
 
 function revCardHTML(r, isDash) {
