@@ -87,6 +87,9 @@ CREATE TABLE IF NOT EXISTS reviews (
   profile_id      UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   reviewer_nombre TEXT,
   reviewer_email  TEXT,
+  reviewer_phone  TEXT,
+  reviewer_avatar_url TEXT,
+  review_image_url TEXT,
   is_anon         BOOLEAN NOT NULL DEFAULT FALSE,
   message         TEXT NOT NULL,
   amount_cents    BIGINT NOT NULL DEFAULT 0,   -- centavos ARS
