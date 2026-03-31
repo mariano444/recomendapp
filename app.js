@@ -1784,12 +1784,10 @@ function renderProfile() {
   const reviewDateFilterSelect = document.getElementById('reviewDateFilterSelect');
   const rewardsSection = document.getElementById('pubRewardsSection');
   const mediaSection = document.getElementById('pubMediaSection');
-  const reviewSpotlight = document.getElementById('pubReviewSpotlight');
   const pubReviews = document.getElementById('pubReviews');
   const formProfileAvatar = document.getElementById('formProfileAvatar');
   const highestReward = allReviews.reduce((max, review) => Math.max(max, review.amount || 0), 0);
   const latestReview = [...allReviews].sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a))[0] || null;
-  const topReview = getTopRewardReview(allReviews);
   const visibleLabel = reviews.length === allReviews.length
     ? `${reviews.length} resenas visibles`
     : `${reviews.length} de ${allReviews.length} resenas visibles`;
@@ -1855,27 +1853,6 @@ function renderProfile() {
   if (revCountNode) revCountNode.textContent = visibleLabel;
   if (rewardsSection) rewardsSection.style.display = rewardItems.length ? '' : 'none';
   if (mediaSection) mediaSection.style.display = mediaItems.length ? '' : 'none';
-  if (reviewSpotlight) {
-    reviewSpotlight.innerHTML = topReview
-      ? `
-        <div class="pub-spotlight-main">
-          <div class="pub-spotlight-kicker">Resena con mayor recompensa</div>
-          <h3>$${topReview.amount.toLocaleString('es-AR')} de reconocimiento visible</h3>
-          <p>Pagar una resena hace visible un gesto real. Eso acelera la confianza, ordena mejor la prueba social y hace que el reconocimiento tenga mas peso para quien visita este perfil.</p>
-          <div class="pub-spotlight-badges">
-            <span class="pub-review-pill">Pago aprobado</span>
-            <span class="pub-review-pill">${topReview.date}</span>
-            <span class="pub-review-pill">${topReview.anon ? 'Anonima' : 'Identificada'}</span>
-          </div>
-        </div>
-        <div class="pub-spotlight-card">${revCardHTML(topReview, false)}</div>`
-      : `
-        <div class="pub-spotlight-main pub-spotlight-empty">
-          <div class="pub-spotlight-kicker">Credibilidad y reconocimiento</div>
-          <h3>Las resenas pagas convierten gratitud en una senal visible.</h3>
-          <p>Cuando alguien paga para dejar su experiencia, demuestra involucramiento real y le da al perfil una prueba social mas fuerte que un comentario comun.</p>
-        </div>`;
-  }
   if (pubReviews) {
     pubReviews.innerHTML = reviews.length
       ? reviews.map(review => revCardHTML(review, false)).join('')
@@ -1895,6 +1872,8 @@ function renderProfile() {
 }
 
 function revCardHTML(r, isDash) {
+  const topReviewId = getTopRewardReview(isDash ? STATE.reviews : (STATE.publicReviews || []))?.id;
+  const isTopReward = r.id === topReviewId;
   const replyBtn = isDash && !r.reply
     ? `<button class="d-rev-btn primary" onclick="openReply('${r.id}')">Responder</button>`
     : (isDash && r.reply ? `<button class="d-rev-btn" style="color:var(--green)" disabled> Respondida</button>` : '');
@@ -1907,6 +1886,7 @@ function revCardHTML(r, isDash) {
       : `background:${r.color||'var(--amber)'};background-image:linear-gradient(135deg,${r.color||'#4F76B8'},${r.color||'#94B8F0'})`);
   const reviewPhone = r.phone ? `<a class="rev-contact" href="tel:${r.phone}">${r.phone}</a>` : '';
   const reviewImage = r.reviewImageUrl ? `<button class="rev-media" type="button" onclick="openImageLightbox('${r.reviewImageUrl}')" style="background-image:url('${r.reviewImageUrl}')"><span class="rev-media-zoom">Ver completa</span></button>` : '';
+  const topRewardBadge = isTopReward ? `<span class="rev-top-badge">Mayor recompensa</span>` : '';
 
   if (isDash) return `
     <div class="d-rev-item">
@@ -1914,6 +1894,7 @@ function revCardHTML(r, isDash) {
       <div class="d-rev-body">
         <div class="d-rev-top">
           <span class="d-rev-name">${r.name}</span>
+          ${topRewardBadge}
           <span class="badge badge-amber"> $${r.amount.toLocaleString('es-AR')}</span>
           <span style="font-size:11px;color:var(--text3)">${r.date}</span>
         </div>
@@ -1926,13 +1907,13 @@ function revCardHTML(r, isDash) {
     </div>`;
 
   return `
-    <div class="rev-card">
+    <div class="rev-card ${isTopReward ? 'rev-card-top' : ''}">
       <div class="rev-header">
         <div class="rev-left">
           <div class="rev-av-txt" style="${avStyle}">${r.initials}</div>
           <div><div class="rev-name">${r.name}</div><div class="rev-date">${r.date}</div>${reviewPhone}</div>
         </div>
-        <div class="rev-amount"> $${r.amount.toLocaleString('es-AR')}</div>
+        <div class="rev-right-meta">${topRewardBadge}<div class="rev-amount"> $${r.amount.toLocaleString('es-AR')}</div></div>
       </div>
       <p class="rev-text">${r.text}</p>
       ${reviewImage}
