@@ -22,7 +22,7 @@ serve(async (req) => {
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-    const { amount, profileSlug, reviewerName, message, appUrl } = await req.json();
+    const { amount, profileSlug, reviewerName, reviewerPhone, reviewerAvatarUrl, reviewImageUrl, message, appUrl } = await req.json();
 
     if (!amount || Number(amount) < 100) {
       return Response.json(
@@ -68,6 +68,9 @@ serve(async (req) => {
     const reviewInsert = {
       profile_id: profile.id,
       reviewer_nombre: reviewerName || "Anonimo",
+      reviewer_phone: reviewerPhone || null,
+      reviewer_avatar_url: reviewerAvatarUrl || null,
+      review_image_url: reviewImageUrl || null,
       is_anon: !reviewerName || reviewerName === "Anonimo",
       message: message || "",
       amount_cents: Math.round(Number(amount) * 100),
