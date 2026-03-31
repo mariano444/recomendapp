@@ -577,6 +577,25 @@ function previewReviewImage(input, previewId) {
   preview.textContent = '';
 }
 
+function openImageLightbox(url) {
+  if (!url) return;
+  const modal = document.getElementById('imageLightbox');
+  const image = document.getElementById('lightboxImage');
+  if (!modal || !image) return;
+  image.src = url;
+  modal.classList.add('open');
+}
+
+function closeImageLightbox() {
+  const modal = document.getElementById('imageLightbox');
+  const image = document.getElementById('lightboxImage');
+  if (modal) modal.classList.remove('open');
+  if (image) image.src = '';
+}
+
+window.openImageLightbox = openImageLightbox;
+window.closeImageLightbox = closeImageLightbox;
+
 function resetReviewMediaFields() {
   const phoneInput = document.getElementById('fPhone');
   const avatarInput = document.getElementById('fReviewerAvatar');
@@ -1887,7 +1906,7 @@ function revCardHTML(r, isDash) {
       ? 'color:var(--text3);font-family:sans-serif;font-size:18px'
       : `background:${r.color||'var(--amber)'};background-image:linear-gradient(135deg,${r.color||'#4F76B8'},${r.color||'#94B8F0'})`);
   const reviewPhone = r.phone ? `<a class="rev-contact" href="tel:${r.phone}">${r.phone}</a>` : '';
-  const reviewImage = r.reviewImageUrl ? `<div class="rev-media" style="background-image:url('${r.reviewImageUrl}')"></div>` : '';
+  const reviewImage = r.reviewImageUrl ? `<button class="rev-media" type="button" onclick="openImageLightbox('${r.reviewImageUrl}')" style="background-image:url('${r.reviewImageUrl}')"><span class="rev-media-zoom">Ver completa</span></button>` : '';
 
   if (isDash) return `
     <div class="d-rev-item">
@@ -1976,6 +1995,9 @@ function submitReply() {
   }
 }
 document.getElementById('replyModal').addEventListener('click', e => { if (e.target === document.getElementById('replyModal')) closeModal(); });
+document.getElementById('imageLightbox')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('imageLightbox')) closeImageLightbox();
+});
 
 /* ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.?
    DASHBOARD
