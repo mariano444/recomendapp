@@ -1596,6 +1596,59 @@ function renderProfile() {
       ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
     </div>`;
 
+  document.getElementById('pubReviewHero').innerHTML = `
+    <div class="pub-review-spotlight">
+      <div class="eyebrow" style="margin-bottom:12px">Perfil público</div>
+      <h2>Una presentación profesional que genera confianza rápido.</h2>
+      <p>Acá se entiende qué hace este perfil, cómo dejar una reseña y por qué ese reconocimiento tiene valor real.</p>
+      <div class="pub-review-points">
+        <div class="pub-review-point"><strong>Reseñas reales</strong><span>Solo se publican con el flujo completo.</span></div>
+        <div class="pub-review-point"><strong>Pago protegido</strong><span>Checkout con Mercado Pago.</span></div>
+        <div class="pub-review-point"><strong>Respuesta visible</strong><span>El perfil puede responder públicamente.</span></div>
+      </div>
+    </div>
+    <div class="pub-review-card">
+      <div>
+        <div class="pub-review-kicker">Qué podés hacer</div>
+        <h3>Dejar una reseña clara y segura.</h3>
+        <p>Elegís el monto, escribís unas líneas y el sistema la publica cuando el pago queda aprobado.</p>
+        <div class="pub-review-mini-proof">
+          <div><strong>1.</strong> Elegís un monto.</div>
+          <div><strong>2.</strong> Escribís la experiencia.</div>
+          <div><strong>3.</strong> Se publica automáticamente.</div>
+        </div>
+      </div>
+      <div class="pub-review-actions">
+        <button class="btn btn-amber btn-md" onclick="nav('form')">Dejar reseña ahora</button>
+        <button class="btn btn-surface btn-md" onclick="document.getElementById('pubReviews').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
+      </div>
+    </div>`;
+
+  document.getElementById('pubProofStrip').innerHTML = `
+    <div class="pub-proof-card highlight"><div class="pub-proof-kicker">Reseñas publicadas</div><div class="pub-proof-value">${reviews.length}</div><div class="pub-proof-note">Prueba social visible</div></div>
+    <div class="pub-proof-card"><div class="pub-proof-kicker">Promedio por reseña</div><div class="pub-proof-value">${formatCurrency(avg || 0)}</div><div class="pub-proof-note">Reconocimiento económico real</div></div>
+    <div class="pub-proof-card"><div class="pub-proof-kicker">Tasa de respuesta</div><div class="pub-proof-value">${replyRate}%</div><div class="pub-proof-note">Seguimiento público del perfil</div></div>`;
+
+  document.getElementById('pubCredGrid').innerHTML = `
+    <div class="pub-cred-card">
+      <h3>Cómo funciona en tres pasos</h3>
+      <p>El recorrido está pensado para que cualquier visitante entienda rápido qué hacer y qué pasa después.</p>
+      <div class="pub-cred-points">
+        <div class="pub-cred-point"><strong>1. Elegís</strong><span>Definís el monto y si querés publicar de forma anónima.</span></div>
+        <div class="pub-cred-point"><strong>2. Pagás</strong><span>Usás un checkout conocido y seguro con Mercado Pago.</span></div>
+        <div class="pub-cred-point"><strong>3. Se publica</strong><span>La reseña aparece cuando el pago queda aprobado.</span></div>
+      </div>
+    </div>
+    <div class="pub-cred-card dark">
+      <h3>Por qué este perfil transmite más seguridad</h3>
+      <p>Combina identidad profesional, reseñas visibles, pagos protegidos y respuestas públicas en una sola página fácil de compartir.</p>
+    </div>`;
+
+  document.getElementById('pubTrustGrid').innerHTML = `
+    <div class="pub-trust-item"><strong>Decisión rápida</strong><span>El visitante entiende enseguida dónde leer, confiar y actuar.</span></div>
+    <div class="pub-trust-item"><strong>Seguridad</strong><span>El pago está respaldado por un flujo conocido y la publicación depende de aprobación.</span></div>
+    <div class="pub-trust-item"><strong>Imagen profesional</strong><span>Todo queda ordenado en una página limpia, clara y fácil de compartir.</span></div>`;
+
   document.getElementById('pubCtaPanel').innerHTML = `
     <div class="pub-cta-main">
       <h3>¿Querés reconocer una buena experiencia?</h3>
