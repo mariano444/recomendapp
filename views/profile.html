@@ -46,7 +46,21 @@
         <div class="pub-section-title">Reseñas recibidas</div>
         <div class="pub-section-sub">La prueba social principal del perfil. Acá se ve la experiencia real de quienes ya dejaron su reconocimiento.</div>
       </div>
-      <div style="font-size:12px;color:var(--text3)" id="revCount"></div>
+      <div class="pub-review-summary" id="pubReviewSummary"></div>
+      <div class="pub-review-tools">
+        <select class="field-select field-input pub-review-select" id="reviewSortSelect" onchange="setPublicReviewSort(this.value)">
+          <option value="amount_desc">Mayor recompensa</option>
+          <option value="recent">Más recientes</option>
+          <option value="oldest">Más antiguas</option>
+          <option value="amount_asc">Menor recompensa</option>
+        </select>
+        <select class="field-select field-input pub-review-select" id="reviewDateFilterSelect" onchange="setPublicReviewDateFilter(this.value)">
+          <option value="all">Todas las fechas</option>
+          <option value="7d">Últimos 7 días</option>
+          <option value="30d">Últimos 30 días</option>
+        </select>
+        <div style="font-size:12px;color:var(--text3)" id="revCount"></div>
+      </div>
     </div>
     <div id="pubReviews"></div>
 </div>
