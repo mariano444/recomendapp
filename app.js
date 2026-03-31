@@ -435,6 +435,35 @@ function galleryPriceLabel(priceCents=0) {
   return formatCurrency(Math.round((priceCents || 0) / 100));
 }
 
+function iconSvg(name) {
+  const icons = {
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 10v5"></path><path d="M12 7h.01"></path></svg>',
+    payment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 10h18"></path><path d="M7 15h3"></path></svg>',
+    anon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12c2.4-4 5.1-6 8-6s5.6 2 8 6c-2.4 4-5.1 6-8 6s-5.6-2-8-6z"></path><circle cx="12" cy="12" r="2.5"></circle><path d="M4 4l16 16"></path></svg>',
+    panel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"></rect><rect x="13" y="3" width="8" height="5" rx="2"></rect><rect x="13" y="10" width="8" height="11" rx="2"></rect><rect x="3" y="13" width="8" height="8" rx="2"></rect></svg>',
+    eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>',
+    success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7L10 17l-5-5"></path></svg>',
+  };
+  return icons[name] || icons.info;
+}
+
+function hydrateIcons(root = document) {
+  if (!root?.querySelectorAll) return;
+  root.querySelectorAll('.icon, .switch-row-icon, .feat-ico, .step-em, .pw-toggle, .confirm-icon').forEach(el => {
+    if (el.dataset.iconHydrated === 'true') return;
+    const text = (el.textContent || '').trim().toLowerCase();
+    let iconName = 'info';
+    if (el.classList.contains('pw-toggle')) iconName = 'eye';
+    else if (el.classList.contains('confirm-icon') || text === 'gracias') iconName = 'success';
+    else if (text.includes('pago')) iconName = 'payment';
+    else if (text.includes('anon')) iconName = 'anon';
+    else if (text.includes('panel')) iconName = 'panel';
+    el.dataset.iconHydrated = 'true';
+    el.dataset.iconLabel = (el.textContent || '').trim();
+    el.innerHTML = `<span class="ui-icon" aria-hidden="true">${iconSvg(iconName)}</span>`;
+  });
+}
+
 function persistUnlockedMedia() {
   try { localStorage.setItem('aplauso_media_unlocks', JSON.stringify(STATE.unlockedMediaIds || [])); } catch {}
 }
@@ -498,6 +527,70 @@ function renderFormHeader() {
   if (nameNode) nameNode.textContent = displayName;
   if (metaNode) metaNode.textContent = `${role} ? ${city}`;
   if (confirmNode) confirmNode.textContent = displayName;
+}
+
+async function imageFileToDataUrl(file, options = {}) {
+  if (!file) return '';
+  const {
+    maxWidth = 1280,
+    maxHeight = 1280,
+    quality = 0.84,
+  } = options;
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('No se pudo leer la imagen'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('No se pudo procesar la imagen'));
+      img.onload = () => {
+        const ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+        const width = Math.max(1, Math.round(img.width * ratio));
+        const height = Math.max(1, Math.round(img.height * ratio));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('No se pudo preparar la imagen'));
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = String(reader.result || '');
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function previewReviewImage(input, previewId) {
+  const preview = document.getElementById(previewId);
+  if (!preview) return;
+  const file = input?.files?.[0];
+  if (!file) {
+    preview.style.backgroundImage = '';
+    preview.classList.remove('has-image');
+    preview.textContent = preview.dataset.empty || '';
+    return;
+  }
+  const objectUrl = URL.createObjectURL(file);
+  preview.style.backgroundImage = `url('${objectUrl}')`;
+  preview.classList.add('has-image');
+  preview.textContent = '';
+}
+
+function resetReviewMediaFields() {
+  const phoneInput = document.getElementById('fPhone');
+  const avatarInput = document.getElementById('fReviewerAvatar');
+  const imageInput = document.getElementById('fReviewImage');
+  if (phoneInput) phoneInput.value = '';
+  if (avatarInput) avatarInput.value = '';
+  if (imageInput) imageInput.value = '';
+  ['reviewAvatarPreview', 'reviewImagePreview'].forEach(id => {
+    const preview = document.getElementById(id);
+    if (!preview) return;
+    preview.style.backgroundImage = '';
+    preview.classList.remove('has-image');
+    preview.textContent = preview.dataset.empty || '';
+  });
 }
 
 async function uploadProfileAsset(file, folder='avatar') {
@@ -586,6 +679,9 @@ function mapReviewRow(row) {
     rawDate: row.created_at || null,
     amount: Math.round((row.amount_cents || 0) / 100),
     text: row.message || '',
+    phone: row.is_anon ? '' : (row.reviewer_phone || ''),
+    avatarUrl: row.is_anon ? '' : (row.reviewer_avatar_url || ''),
+    reviewImageUrl: row.review_image_url || '',
     reply: row.reply || null,
     anon: !!row.is_anon,
     color: row.is_anon ? '' : '#4F76B8',
@@ -661,7 +757,7 @@ async function fetchPublicReviews(profileId, forceRefresh = false) {
   }
   const { data, error } = await sb
     .from('reviews')
-    .select('id, reviewer_nombre, is_anon, message, amount_cents, reply, created_at')
+    .select('id, reviewer_nombre, reviewer_phone, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at')
     .eq('profile_id', profileId)
     .eq('published', true)
     .eq('payment_status', 'approved')
@@ -676,7 +772,7 @@ async function fetchOwnReviews(profileId) {
   if (!sb || !profileId) return [...STATE.reviews];
   const { data, error } = await sb
     .from('reviews')
-    .select('id, reviewer_nombre, is_anon, message, amount_cents, reply, created_at, payment_status, published')
+    .select('id, reviewer_nombre, reviewer_phone, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at, payment_status, published')
     .eq('profile_id', profileId)
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -868,6 +964,7 @@ async function loadViews() {
   );
 
   root.innerHTML = entries.map(([, markup]) => markup.trim()).join('\n');
+  hydrateIcons(root);
   viewsLoaded = true;
 }
 
@@ -885,6 +982,7 @@ function runViewLifecycle(viewId) {
     renderFormHeader();
     initFormMp();
   }
+  hydrateIcons(document.getElementById('view-' + viewId) || document);
 }
 
 /* ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.?
@@ -970,7 +1068,7 @@ async function renderMpBrick() {
   // El brick real se crea al construir la preferencia
 }
 
-async function createMpPreference() {
+async function createMpPreference(reviewDraft = {}) {
   const amount = STATE.selectedAmt;
   if (!amount || amount < 100) { toast('El monto m?nimo es $100','error'); return null; }
 
@@ -983,6 +1081,9 @@ async function createMpPreference() {
           profileSlug: STATE.viewedProfile?.slug || STATE.user.slug,
           reviewerName: STATE.isAnon ? 'Anónimo' : ((document.getElementById('fNombre')?.value || '') + ' ' + (document.getElementById('fApellido')?.value || '')).trim(),
           message: document.getElementById('fMsg')?.value || '',
+          reviewerPhone: reviewDraft.reviewerPhone || '',
+          reviewerAvatarUrl: reviewDraft.reviewerAvatarUrl || '',
+          reviewImageUrl: reviewDraft.reviewImageUrl || '',
           appUrl: window.location.origin + window.location.pathname,
         }
       });
@@ -1490,6 +1591,9 @@ async function submitReview() {
   const msg = document.getElementById('fMsg')?.value?.trim();
   const nombre   = document.getElementById('fNombre')?.value?.trim() || '';
   const apellido = document.getElementById('fApellido')?.value?.trim() || '';
+  const reviewerPhone = document.getElementById('fPhone')?.value?.trim() || '';
+  const reviewerAvatarFile = document.getElementById('fReviewerAvatar')?.files?.[0] || null;
+  const reviewImageFile = document.getElementById('fReviewImage')?.files?.[0] || null;
   const profileId = STATE.viewedProfile?.id;
   if (!msg) { toast('Escribí tu reseña antes de continuar','error'); return; }
   if (!STATE.selectedAmt || STATE.selectedAmt < 100) { toast('Seleccioná un monto válido','error'); return; }
@@ -1503,11 +1607,31 @@ async function submitReview() {
   }
   btn.disabled = true;
   btnTxt.innerHTML = '<span class="spinner"></span> Procesando...';
+  if (reviewerPhone && normalizePhone(reviewerPhone).length < 8) {
+    btn.disabled = false;
+    btnTxt.textContent = 'Pagar y publicar reseÃ±a';
+    toast('Ingresa un celular valido o dejalo vacio','error');
+    return;
+  }
+  const reviewerName = STATE.isAnon ? 'AnÃ³nimo' : ((nombre + ' ' + apellido).trim() || 'Visitante');
+  const reviewerAvatarUrl = STATE.isAnon || !reviewerAvatarFile
+    ? ''
+    : await imageFileToDataUrl(reviewerAvatarFile, { maxWidth: 520, maxHeight: 520, quality: 0.86 });
+  const reviewImageUrl = reviewImageFile
+    ? await imageFileToDataUrl(reviewImageFile, { maxWidth: 1440, maxHeight: 1440, quality: 0.84 })
+    : '';
+  const reviewDraft = {
+    reviewerName,
+    reviewerPhone: STATE.isAnon ? '' : reviewerPhone,
+    reviewerAvatarUrl,
+    reviewImageUrl,
+    message: msg,
+  };
 
   // Si hay MP configurado ??' crear preferencia y redirigir
   const pk = getMpPublicKey();
   if (STATE.selectedPay === 'mercadopago') {
-    const pref = await createMpPreference();
+    const pref = await createMpPreference(reviewDraft);
     if (!pref) { btn.disabled = false; btnTxt.textContent = 'Pagar y publicar reseña'; return; }
 
     // Guardar datos temporales para mostrar en confirmaci?n post-pago
@@ -1517,7 +1641,10 @@ async function submitReview() {
       nombre: STATE.isAnon ? 'Anónimo' : (nombre + ' ' + apellido).trim(),
       pay: 'MercadoPago',
       amount: STATE.selectedAmt,
-      msg
+      msg,
+      reviewerPhone: reviewDraft.reviewerPhone,
+      reviewerAvatarUrl: reviewDraft.reviewerAvatarUrl,
+      reviewImageUrl: reviewDraft.reviewImageUrl
     }));
 
     // En producci?n redirige al checkout de MP
@@ -1535,6 +1662,9 @@ async function submitReview() {
         .insert({
           profile_id: profileId,
           reviewer_nombre: reviewerName,
+          reviewer_phone: reviewDraft.reviewerPhone,
+          reviewer_avatar_url: reviewDraft.reviewerAvatarUrl,
+          review_image_url: reviewDraft.reviewImageUrl,
           is_anon: STATE.isAnon,
           message: msg,
           amount_cents: Math.round(STATE.selectedAmt * 100),
@@ -1542,7 +1672,7 @@ async function submitReview() {
           payment_status: STATE.selectedPay === 'mercadopago' ? 'pending' : 'approved',
           published: STATE.selectedPay === 'mercadopago' ? false : true,
         })
-        .select('id, reviewer_nombre, is_anon, message, amount_cents, reply, created_at, payment_status, published')
+        .select('id, reviewer_nombre, reviewer_phone, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at, payment_status, published')
         .single();
 
       if (error) throw error;
@@ -1559,6 +1689,7 @@ async function submitReview() {
           : 'Efectivo';
       document.getElementById('csAmount').textContent = '$' + STATE.selectedAmt.toLocaleString('es-AR') + ' ';
       document.getElementById('fMsg').value = '';
+      resetReviewMediaFields();
       btn.disabled = false;
       btnTxt.textContent = 'Pagar y publicar reseña';
       toast(data?.published ? 'Reseña guardada en la base' : 'Reseña guardada pendiente de pago','success');
@@ -1583,6 +1714,9 @@ async function submitReview() {
     date: 'ahora mismo',
     amount: STATE.selectedAmt,
     text: msg,
+    phone: reviewDraft.reviewerPhone,
+    avatarUrl: reviewDraft.reviewerAvatarUrl,
+    reviewImageUrl: reviewDraft.reviewImageUrl,
     reply: null,
     anon: STATE.isAnon,
     color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'),
@@ -1599,6 +1733,7 @@ async function submitReview() {
   document.getElementById('csAmount').textContent = '$' + STATE.selectedAmt.toLocaleString('es-AR') + ' ';
 
   document.getElementById('fMsg').value = '';
+  resetReviewMediaFields();
   btn.disabled = false;
   btnTxt.textContent = 'Pagar y publicar reseña';
   toast('Reseña publicada exitosamente','success');
@@ -1718,7 +1853,13 @@ function revCardHTML(r, isDash) {
     : (isDash && r.reply ? `<button class="d-rev-btn" style="color:var(--green)" disabled> Respondida</button>` : '');
   const replyBlock = r.reply
     ? `<div class="rev-reply"><div class="rev-reply-label">Respuesta de ${STATE.user.name}</div><p class="rev-reply-text">${r.reply}</p></div>` : '';
-  const avStyle = r.anon ? 'color:var(--text3);font-family:sans-serif;font-size:18px' : `background:${r.color||'var(--amber)'};background-image:linear-gradient(135deg,${r.color||'#4F76B8'},${r.color||'#94B8F0'})`;
+  const avStyle = r.avatarUrl
+    ? `background-image:url('${r.avatarUrl}');background-size:cover;background-position:center;color:transparent`
+    : (r.anon
+      ? 'color:var(--text3);font-family:sans-serif;font-size:18px'
+      : `background:${r.color||'var(--amber)'};background-image:linear-gradient(135deg,${r.color||'#4F76B8'},${r.color||'#94B8F0'})`);
+  const reviewPhone = r.phone ? `<a class="rev-contact" href="tel:${r.phone}">${r.phone}</a>` : '';
+  const reviewImage = r.reviewImageUrl ? `<div class="rev-media" style="background-image:url('${r.reviewImageUrl}')"></div>` : '';
 
   if (isDash) return `
     <div class="d-rev-item">
@@ -1729,7 +1870,9 @@ function revCardHTML(r, isDash) {
           <span class="badge badge-amber"> $${r.amount.toLocaleString('es-AR')}</span>
           <span style="font-size:11px;color:var(--text3)">${r.date}</span>
         </div>
+        ${reviewPhone}
         <div class="d-rev-text">"${r.text.substring(0,120)}${r.text.length>120?'...':''}"</div>
+        ${reviewImage}
         ${replyBlock}
         <div class="d-rev-actions">${replyBtn}</div>
       </div>
@@ -1740,11 +1883,12 @@ function revCardHTML(r, isDash) {
       <div class="rev-header">
         <div class="rev-left">
           <div class="rev-av-txt" style="${avStyle}">${r.initials}</div>
-          <div><div class="rev-name">${r.name}</div><div class="rev-date">${r.date}</div></div>
+          <div><div class="rev-name">${r.name}</div><div class="rev-date">${r.date}</div>${reviewPhone}</div>
         </div>
         <div class="rev-amount"> $${r.amount.toLocaleString('es-AR')}</div>
       </div>
       <p class="rev-text">${r.text}</p>
+      ${reviewImage}
       ${replyBlock}
     </div>`;
 }
@@ -2351,7 +2495,7 @@ async function waitForPublishedReview(reviewId, attempts = 10, delayMs = 800) {
   for (let i = 0; i < attempts; i++) {
     const { data, error } = await sb
       .from('reviews')
-      .select('id, reviewer_nombre, is_anon, message, amount_cents, reply, created_at, payment_status, published')
+      .select('id, reviewer_nombre, reviewer_phone, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at, payment_status, published')
       .eq('id', reviewId)
       .eq('published', true)
       .eq('payment_status', 'approved')
