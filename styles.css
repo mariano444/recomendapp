@@ -453,6 +453,8 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .rev-amount { display:flex; align-items:center; gap:5px; background:var(--amber-soft); border:1px solid rgba(110,151,216,.24); border-radius:100px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--amber); }
 .rev-text { font-size:13px; color:var(--text2); line-height:1.7; }
 .rev-media { width:100%; aspect-ratio:16/10; margin-top:14px; border-radius:18px; background:linear-gradient(135deg,#1d2738,#0f1722); background-size:cover; background-position:center; border:1px solid var(--border); }
+.rev-media { position:relative; cursor:pointer; overflow:hidden; }
+.rev-media-zoom { position:absolute; right:12px; bottom:12px; padding:7px 10px; border-radius:999px; background:rgba(12,11,10,.72); border:1px solid rgba(255,255,255,.08); color:#fff; font-size:11px; font-weight:700; letter-spacing:.4px; }
 .rev-reply { margin-top:12px; padding:12px 14px; background:var(--surface); border-radius:14px; border-left:2px solid var(--amber); }
 .rev-reply-label { font-size:11px; font-weight:700; color:var(--amber); letter-spacing:.8px; text-transform:uppercase; margin-bottom:4px; }
 .rev-reply-text { font-size:12px; color:var(--text2); line-height:1.55; }
@@ -999,13 +1001,17 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     width:100%;
     justify-content:center;
   }
-  .modal {
+.modal {
     padding:24px 20px;
   }
   .search-bar {
     font-size:14px;
   }
 }
+.modal-image { width:min(92vw,1100px); max-width:1100px; padding:18px; background:rgba(12,11,10,.96); }
+.lightbox-stage { display:flex; align-items:center; justify-content:center; min-height:60vh; }
+.lightbox-stage img { max-width:100%; max-height:78vh; object-fit:contain; border-radius:18px; }
+.lightbox-close { align-self:flex-end; margin-left:auto; margin-bottom:12px; padding:10px 14px; border-radius:999px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--text); cursor:pointer; }
 @media(max-width:480px) {
   .amount-grid {
     grid-template-columns:repeat(2,1fr);
