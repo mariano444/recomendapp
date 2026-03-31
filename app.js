@@ -736,16 +736,19 @@ function updateProfileDocumentMeta(profile, reviews = []) {
   const highestReward = topReview?.amount || 0;
   const shareUrl = `${window.location.origin}${window.location.pathname}?slug=${encodeURIComponent(profile?.slug || '')}`;
   const shareImage = profile?.coverUrl || profile?.avatarUrl || '';
-  const description = totalReviews
-    ? `${displayName}, ${role} en ${city}. Mira sus resenas con reconocimiento visible, montos reales de hasta $${highestReward.toLocaleString('es-AR')} y deja tu experiencia en segundos.`
-    : `${displayName}, ${role} en ${city}. Descubre su perfil profesional y deja una resena con reconocimiento real desde una pagina clara, simple y confiable.`;
-  document.title = `${displayName} | ${role} | Deja tu resena en Recomendapp`;
+  const shortBio = (profile?.bio || '').trim();
+  const description = shortBio
+    ? `${shortBio} Especialidad: ${role}. Recomendaciones visibles y reconocimiento real en Recomendapp.`
+    : totalReviews
+      ? `${displayName}, ${role} en ${city}. Mira sus recomendaciones visibles, ${totalReviews} resenas publicadas y reconocimientos de hasta $${highestReward.toLocaleString('es-AR')} en Recomendapp.`
+      : `${displayName}, ${role} en ${city}. Conoce su perfil profesional y deja una recomendacion con reconocimiento real en Recomendapp.`;
+  document.title = `${displayName} | ${role} | Recomendapp - Reconocé quien te atendió bien`;
   upsertMetaTag('meta[name="description"]', { name: 'description', content: description });
-  upsertMetaTag('meta[property="og:title"]', { property: 'og:title', content: `${displayName} | ${role} | Deja tu resena` });
+  upsertMetaTag('meta[property="og:title"]', { property: 'og:title', content: `${displayName} | ${role} | Recomendapp - Reconocé quien te atendió bien` });
   upsertMetaTag('meta[property="og:description"]', { property: 'og:description', content: description });
   upsertMetaTag('meta[property="og:url"]', { property: 'og:url', content: shareUrl });
   upsertMetaTag('meta[property="og:image"]', { property: 'og:image', content: shareImage });
-  upsertMetaTag('meta[name="twitter:title"]', { name: 'twitter:title', content: `${displayName} | ${role} | Deja tu resena` });
+  upsertMetaTag('meta[name="twitter:title"]', { name: 'twitter:title', content: `${displayName} | ${role} | Recomendapp - Reconocé quien te atendió bien` });
   upsertMetaTag('meta[name="twitter:description"]', { name: 'twitter:description', content: description });
   upsertMetaTag('meta[name="twitter:image"]', { name: 'twitter:image', content: shareImage });
   let canonical = document.head.querySelector('link[rel="canonical"]');
