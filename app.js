@@ -319,6 +319,8 @@ const STATE = {
   directoryProfiles: [],
   profileCache: {},
   publicReviewsCache: {},
+  publicReviewSort: 'amount_desc',
+  publicReviewDateFilter: 'all',
   searchDebounce: null,
 };
 
@@ -581,6 +583,7 @@ function mapReviewRow(row) {
     name: row.is_anon ? 'Anónimo' : fullName,
     initials: row.is_anon ? '?' : ((parts[0]?.charAt(0) || '?') + (parts[1]?.charAt(0) || '')).toUpperCase(),
     date: formatDateLabel(row.created_at),
+    rawDate: row.created_at || null,
     amount: Math.round((row.amount_cents || 0) / 100),
     text: row.message || '',
     reply: row.reply || null,
@@ -590,6 +593,49 @@ function mapReviewRow(row) {
     paymentStatus: row.payment_status || 'approved',
   };
 }
+
+function getReviewTimestamp(review) {
+  const value = new Date(review?.rawDate || review?.date || 0).getTime();
+  return Number.isFinite(value) ? value : 0;
+}
+
+function getFilteredPublicReviews(reviews = STATE.publicReviews || []) {
+  const now = Date.now();
+  const filtered = reviews.filter(review => {
+    if (STATE.publicReviewDateFilter === '7d') {
+      return now - getReviewTimestamp(review) <= 7 * 24 * 60 * 60 * 1000;
+    }
+    if (STATE.publicReviewDateFilter === '30d') {
+      return now - getReviewTimestamp(review) <= 30 * 24 * 60 * 60 * 1000;
+    }
+    return true;
+  });
+
+  const sorted = [...filtered];
+  if (STATE.publicReviewSort === 'amount_desc') {
+    sorted.sort((a, b) => b.amount - a.amount || getReviewTimestamp(b) - getReviewTimestamp(a));
+  } else if (STATE.publicReviewSort === 'amount_asc') {
+    sorted.sort((a, b) => a.amount - b.amount || getReviewTimestamp(b) - getReviewTimestamp(a));
+  } else if (STATE.publicReviewSort === 'recent') {
+    sorted.sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a));
+  } else if (STATE.publicReviewSort === 'oldest') {
+    sorted.sort((a, b) => getReviewTimestamp(a) - getReviewTimestamp(b));
+  }
+  return sorted;
+}
+
+function setPublicReviewSort(value) {
+  STATE.publicReviewSort = value || 'amount_desc';
+  renderProfile();
+}
+
+function setPublicReviewDateFilter(value) {
+  STATE.publicReviewDateFilter = value || 'all';
+  renderProfile();
+}
+
+window.setPublicReviewSort = setPublicReviewSort;
+window.setPublicReviewDateFilter = setPublicReviewDateFilter;
 
 function mapProfileCard(row) {
   return {
@@ -1564,7 +1610,8 @@ async function submitReview() {
 ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.? */
 function renderProfile() {
   const profile = STATE.viewedProfile || STATE.user;
-  const reviews = STATE.publicReviews || [];
+  const allReviews = STATE.publicReviews || [];
+  const reviews = getFilteredPublicReviews(allReviews);
   const rewardItems = STATE.publicRewardItems || [];
   const mediaItems = STATE.publicMediaItems || [];
   const profileName = (profile.name + ' ' + (profile.lastName || '')).trim() || 'Perfil';
@@ -1573,10 +1620,18 @@ function renderProfile() {
   const hasPhone = !!normalizePhone(phone);
   const pubQuickbar = document.getElementById('pubQuickbar');
   const revCountNode = document.getElementById('revCount');
+  const reviewSummary = document.getElementById('pubReviewSummary');
+  const reviewSortSelect = document.getElementById('reviewSortSelect');
+  const reviewDateFilterSelect = document.getElementById('reviewDateFilterSelect');
   const rewardsSection = document.getElementById('pubRewardsSection');
   const mediaSection = document.getElementById('pubMediaSection');
   const pubReviews = document.getElementById('pubReviews');
   const formProfileAvatar = document.getElementById('formProfileAvatar');
+  const highestReward = allReviews.reduce((max, review) => Math.max(max, review.amount || 0), 0);
+  const latestReview = [...allReviews].sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a))[0] || null;
+  const visibleLabel = reviews.length === allReviews.length
+    ? `${reviews.length} resenas visibles`
+    : `${reviews.length} de ${allReviews.length} resenas visibles`;
 
   setAvatarNode(document.getElementById('pubAvatarText'), profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl);
   setCoverNode(document.getElementById('pubCover'), profile.coverUrl);
@@ -1587,11 +1642,34 @@ function renderProfile() {
   document.getElementById('pubBio').textContent = profile.bio || 'Perfil en Recomendapp';
   document.getElementById('pubTags').innerHTML = (profile.tags || []).map(tag => `<span class="pub-tag">${tag}</span>`).join('');
 
-  if (pubQuickbar) {
+  if (false && pubQuickbar) {
     pubQuickbar.innerHTML = `
       <div class="pub-quickbar-actions pub-quickbar-actions-compact">
         <button class="btn btn-amber btn-sm" onclick="nav('form')">Dejar reseña</button>
         <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
+        ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
+      </div>`;
+  }
+
+  if (pubQuickbar) {
+    pubQuickbar.innerHTML = `
+      <div class="pub-quickbar-copy">
+        <strong>Resenas ordenadas por valor real</strong>
+        <span>Primero ves las recompensas mas altas y despues podes filtrar por fecha para encontrar rapido lo que mas te importa.</span>
+      </div>
+      <div class="pub-quickbar-stats">
+        <div class="pub-quickbar-stat">
+          <strong>${highestReward ? '$' + highestReward.toLocaleString('es-AR') : '$0'}</strong>
+          <span>Mayor recompensa</span>
+        </div>
+        <div class="pub-quickbar-stat">
+          <strong>${latestReview?.date || 'Sin actividad'}</strong>
+          <span>Ultima resena</span>
+        </div>
+      </div>
+      <div class="pub-quickbar-actions">
+        <button class="btn btn-amber btn-sm" onclick="nav('form')">Dejar resena</button>
+        <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver resenas</button>
         ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
       </div>`;
   }
@@ -1605,12 +1683,25 @@ function renderProfile() {
   }
 
   if (revCountNode) revCountNode.textContent = `${reviews.length} reseñas`;
+  if (reviewSummary) {
+    reviewSummary.innerHTML = `
+      <span class="pub-review-pill">Orden: ${STATE.publicReviewSort === 'amount_desc' ? 'Mayor recompensa' : STATE.publicReviewSort === 'recent' ? 'Mas recientes' : STATE.publicReviewSort === 'oldest' ? 'Mas antiguas' : 'Menor recompensa'}</span>
+      <span class="pub-review-pill">${highestReward ? 'Hasta $' + highestReward.toLocaleString('es-AR') : 'Sin recompensas visibles'}</span>
+      <span class="pub-review-pill">${latestReview ? 'Ultima actividad ' + latestReview.date : 'Aun sin actividad'}</span>`;
+  }
+  if (reviewSortSelect) reviewSortSelect.value = STATE.publicReviewSort;
+  if (reviewDateFilterSelect) reviewDateFilterSelect.value = STATE.publicReviewDateFilter;
+  if (revCountNode) revCountNode.textContent = visibleLabel;
   if (rewardsSection) rewardsSection.style.display = rewardItems.length ? '' : 'none';
   if (mediaSection) mediaSection.style.display = mediaItems.length ? '' : 'none';
   if (pubReviews) {
     pubReviews.innerHTML = reviews.length
       ? reviews.map(review => revCardHTML(review, false)).join('')
       : `<div class="rev-card"><p class="rev-text">Todavía no hay reseñas publicadas. La primera puede ser la tuya.</p><button class="btn btn-amber btn-sm" onclick="nav('form')">Escribir la primera reseña</button></div>`;
+  }
+
+  if (pubReviews && !reviews.length) {
+    pubReviews.innerHTML = `<div class="rev-card"><p class="rev-text">No hay resenas que coincidan con estos filtros todavia.</p><button class="btn btn-amber btn-sm" onclick="setPublicReviewDateFilter('all'); setPublicReviewSort('amount_desc')">Ver todas</button></div>`;
   }
 
   renderPublicRewards(rewardItems);
@@ -2339,6 +2430,7 @@ async function checkMpReturn() {
   const mediaItemId = params.get('media_item_id') || '';
   const returnSlug = params.get('slug') || '';
   const paymentId = params.get('payment_id') || params.get('collection_id') || params.get('data.id') || '';
+  const merchantOrderId = params.get('merchant_order_id') || '';
   const pending = sessionStorage.getItem('aplauso_pending');
   const pendingMedia = sessionStorage.getItem('aplauso_media_pending');
 
@@ -2374,7 +2466,7 @@ async function checkMpReturn() {
       const targetReviewId = reviewId || data.reviewId || '';
       const targetSlug = returnSlug || data.profileSlug || STATE.viewedProfile?.slug || '';
       let confirmation = null;
-      if (targetReviewId && paymentId && targetSlug) {
+      if (targetReviewId && targetSlug && (paymentId || merchantOrderId)) {
         confirmation = await confirmApprovedPayment(targetReviewId, paymentId, targetSlug);
       }
       const publishedReview = confirmation?.payment_status === 'approved'
