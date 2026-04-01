@@ -427,7 +427,9 @@ function profileLink(slug) {
 }
 
 function profileShareLink(slug) {
-  return profileLink(slug);
+  if (!slug) return profileLink(slug);
+  const base = (CONFIG.appUrl || window.location.origin || '').replace(/\/+$/, '');
+  return `${base}/share/${encodeURIComponent(slug)}`;
 }
 
 function profileShareId(profile = {}) {
@@ -439,7 +441,9 @@ function profileLinkFromProfile(profile = {}) {
 }
 
 function profileShareLinkFromProfile(profile = {}) {
-  return profileShareLink(profileShareId(profile));
+  const base = profileShareLink(profileShareId(profile));
+  const version = encodeURIComponent(String(profile?.updatedAt || '').trim());
+  return version ? `${base}?v=${version}` : base;
 }
 
 function isUuidLike(value='') {
@@ -683,6 +687,7 @@ function mergeUserProfile(profile) {
     tags: Array.isArray(profile.tags) ? profile.tags : [],
     initials: initialsFromProfile(profile.nombre, profile.apellido),
     slug: profile.slug || STATE.user.slug,
+    updatedAt: profile.updated_at || STATE.user.updatedAt || '',
     plan: profile.plan || 'free',
     allowAnon: profile.allow_anon ?? true,
     minAmount: profile.min_amount ?? 0,
@@ -706,6 +711,7 @@ function setViewedProfileFromProfile(profile) {
   STATE.viewedProfile = {
     id: profile.id,
     slug: profile.slug,
+    updatedAt: profile.updated_at || '',
     name: profile.nombre,
     lastName: profile.apellido || '',
     phone: profile.telefono || '',
