@@ -30,6 +30,9 @@ CREATE TABLE IF NOT EXISTS profiles (
   tags          TEXT[] NOT NULL DEFAULT '{}',
   avatar_url    TEXT,
   cover_url     TEXT,
+  share_title   TEXT,
+  share_subtitle TEXT,
+  share_description TEXT,
   plan          plan_type NOT NULL DEFAULT 'free',
   mp_alias      TEXT,                           -- alias CBU/CVU para recibir pagos
   mp_cbu        TEXT,                           -- CBU para transferencias
