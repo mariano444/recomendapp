@@ -46,7 +46,12 @@
       </div>
 
       <div class="field"><label class="field-label">Tu reseña</label><textarea class="field-textarea" id="fMsg" placeholder="Contá tu experiencia. ¿Qué te aportó? ¿Qué destacarías? Sé sincero..."></textarea></div>
+      <div class="review-quick-prompts" id="reviewQuickPrompts"></div>
       <div class="field-inline-help">Mientras más concreta sea la reseña, más confianza genera en quien vea este perfil.</div>
+      <div class="two-col">
+        <div class="field"><label class="field-label">Provincia (opcional)</label><input class="field-input" id="fProvince" placeholder="Buenos Aires"></div>
+        <div class="field"><label class="field-label">Localidad (opcional)</label><input class="field-input" id="fLocality" placeholder="San Justo"></div>
+      </div>
       <div class="field">
         <label class="field-label">Celular (opcional)</label>
         <input class="field-input" id="fPhone" placeholder="+54 9 11 1234 5678">
@@ -64,13 +69,6 @@
           <input class="field-input" id="fReviewImage" type="file" accept="image/*" onchange="previewReviewImage(this,'reviewImagePreview')">
           <div class="review-upload-preview" id="reviewImagePreview" data-empty="Sin imagen">Sin imagen</div>
         </div>
-      </div>
-
-      <div class="review-quick-prompts">
-        <button type="button" class="review-prompt-chip" onclick="addReviewPrompt('Me hizo sentir en confianza desde el primer momento.')">Generó confianza</button>
-        <button type="button" class="review-prompt-chip" onclick="addReviewPrompt('Fue muy claro/a, profesional y atento/a en todo el proceso.')">Muy profesional</button>
-        <button type="button" class="review-prompt-chip" onclick="addReviewPrompt('Lo que más valoro es la dedicación y el seguimiento.')">Buena dedicación</button>
-        <button type="button" class="review-prompt-chip" onclick="addReviewPrompt('Lo/la volvería a elegir y recomendaría sin dudas.')">Lo recomendaría</button>
       </div>
 
       <!-- Monto -->
