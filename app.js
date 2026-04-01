@@ -324,6 +324,7 @@ const STATE = {
     shareSubtitle: '',
     shareDescription: '',
     shareImageMode: 'cover',
+    reviewPromptSuggestions: [],
   },
   viewedProfile: null,
   reviews: [],
@@ -461,6 +462,21 @@ function profileShareLinkFromProfile(profile = {}) {
   return version ? `${base}?v=${version}` : base;
 }
 
+function defaultReviewPromptSuggestions() {
+  return [
+    'Me hizo sentir en confianza desde el primer momento.',
+    'Fue muy claro/a, profesional y atento/a en todo el proceso.',
+    'Lo que más valoro es la dedicación y el seguimiento.',
+    'Lo/la volvería a elegir y recomendaría sin dudas.',
+  ];
+}
+
+function normalizeReviewPromptSuggestions(value) {
+  const source = Array.isArray(value) ? value : [];
+  const normalized = source.map(item => String(item || '').trim()).filter(Boolean);
+  return normalized.length ? normalized.slice(0, 8) : defaultReviewPromptSuggestions();
+}
+
 function isUuidLike(value='') {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value).trim());
 }
@@ -588,6 +604,7 @@ function renderFormHeader() {
     setAvatarNode(avatarNode, profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl || '');
   }
   renderFormRewardSpotlight();
+  renderReviewPromptChips();
 }
 
 function getPrimaryRewardItem(items = STATE.publicRewardItems || []) {
@@ -627,6 +644,20 @@ function renderFormRewardSpotlight() {
         <div class="form-reward-note">${reward.downloadUrl ? 'Se mostrará en la confirmación y se intentará descargar automáticamente.' : 'El perfil todavía no cargó el archivo final de esta promo.'}</div>
       </div>
     </div>`;
+}
+
+function renderReviewPromptChips() {
+  const wrap = document.getElementById('reviewQuickPrompts');
+  if (!wrap) return;
+  const prompts = normalizeReviewPromptSuggestions((STATE.viewedProfile || STATE.user || {}).reviewPromptSuggestions);
+  wrap.innerHTML = prompts.map(prompt => {
+    const shortLabel = prompt
+      .replace('Me hizo sentir en confianza desde el primer momento.', 'Generó confianza')
+      .replace('Fue muy claro/a, profesional y atento/a en todo el proceso.', 'Muy profesional')
+      .replace('Lo que más valoro es la dedicación y el seguimiento.', 'Buena dedicación')
+      .replace('Lo/la volvería a elegir y recomendaría sin dudas.', 'Lo recomendaría');
+    return `<button type="button" class="review-prompt-chip" data-prompt="${prompt.replace(/"/g, '&quot;')}" onclick="addReviewPrompt(this.dataset.prompt)">${shortLabel}</button>`;
+  }).join('');
 }
 
 function renderConfirmRewardBox() {
@@ -719,9 +750,13 @@ window.closeImageLightbox = closeImageLightbox;
 
 function resetReviewMediaFields() {
   const phoneInput = document.getElementById('fPhone');
+  const provinceInput = document.getElementById('fProvince');
+  const localityInput = document.getElementById('fLocality');
   const avatarInput = document.getElementById('fReviewerAvatar');
   const imageInput = document.getElementById('fReviewImage');
   if (phoneInput) phoneInput.value = '';
+  if (provinceInput) provinceInput.value = '';
+  if (localityInput) localityInput.value = '';
   if (avatarInput) avatarInput.value = '';
   if (imageInput) imageInput.value = '';
   ['reviewAvatarPreview', 'reviewImagePreview'].forEach(id => {
@@ -784,6 +819,7 @@ function mergeUserProfile(profile) {
     shareSubtitle: profile.share_subtitle || '',
     shareDescription: profile.share_description || '',
     shareImageMode: profile.share_image_mode || 'cover',
+    reviewPromptSuggestions: normalizeReviewPromptSuggestions(profile.review_prompt_suggestions),
   };
 }
 
@@ -815,6 +851,7 @@ function setViewedProfileFromProfile(profile) {
     shareSubtitle: profile.share_subtitle || '',
     shareDescription: profile.share_description || '',
     shareImageMode: profile.share_image_mode || 'cover',
+    reviewPromptSuggestions: normalizeReviewPromptSuggestions(profile.review_prompt_suggestions),
   };
 }
 
@@ -830,6 +867,8 @@ function mapReviewRow(row) {
     amount: Math.round((row.amount_cents || 0) / 100),
     text: row.message || '',
     phone: row.is_anon ? '' : (row.reviewer_phone || ''),
+    province: row.is_anon ? '' : (row.reviewer_province || ''),
+    locality: row.is_anon ? '' : (row.reviewer_locality || ''),
     avatarUrl: row.is_anon ? '' : (row.reviewer_avatar_url || ''),
     reviewImageUrl: row.review_image_url || '',
     reply: row.reply || null,
@@ -981,13 +1020,19 @@ async function fetchPublicReviews(profileId, forceRefresh = false) {
   if (!forceRefresh && STATE.publicReviewsCache[profileId]) {
     return STATE.publicReviewsCache[profileId].map(r => ({ ...r }));
   }
-  const { data, error } = await sb
+  const buildQuery = (selectClause) => sb
     .from('reviews')
-    .select('id, reviewer_nombre, reviewer_phone, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at')
+    .select(selectClause)
     .eq('profile_id', profileId)
     .eq('published', true)
     .eq('payment_status', 'approved')
     .order('created_at', { ascending: false });
+  let { data, error } = await buildQuery('id, reviewer_nombre, reviewer_phone, reviewer_province, reviewer_locality, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at');
+  if (error && /reviewer_province|reviewer_locality/i.test(error.message || '')) {
+    const fallback = await buildQuery('id, reviewer_nombre, reviewer_phone, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at');
+    data = fallback.data;
+    error = fallback.error;
+  }
   if (error) throw error;
   const mapped = (data || []).map(mapReviewRow);
   STATE.publicReviewsCache[profileId] = mapped;
@@ -996,11 +1041,17 @@ async function fetchPublicReviews(profileId, forceRefresh = false) {
 
 async function fetchOwnReviews(profileId) {
   if (!sb || !profileId) return [...STATE.reviews];
-  const { data, error } = await sb
+  const buildQuery = (selectClause) => sb
     .from('reviews')
-    .select('id, reviewer_nombre, reviewer_phone, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at, payment_status, published')
+    .select(selectClause)
     .eq('profile_id', profileId)
     .order('created_at', { ascending: false });
+  let { data, error } = await buildQuery('id, reviewer_nombre, reviewer_phone, reviewer_province, reviewer_locality, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at, payment_status, published');
+  if (error && /reviewer_province|reviewer_locality/i.test(error.message || '')) {
+    const fallback = await buildQuery('id, reviewer_nombre, reviewer_phone, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at, payment_status, published');
+    data = fallback.data;
+    error = fallback.error;
+  }
   if (error) throw error;
   return (data || []).map(mapReviewRow);
 }
@@ -1885,6 +1936,8 @@ async function submitReview() {
   const nombre   = document.getElementById('fNombre')?.value?.trim() || '';
   const apellido = document.getElementById('fApellido')?.value?.trim() || '';
   const reviewerPhone = document.getElementById('fPhone')?.value?.trim() || '';
+  const reviewerProvince = document.getElementById('fProvince')?.value?.trim() || '';
+  const reviewerLocality = document.getElementById('fLocality')?.value?.trim() || '';
   const reviewerAvatarFile = document.getElementById('fReviewerAvatar')?.files?.[0] || null;
   const reviewImageFile = document.getElementById('fReviewImage')?.files?.[0] || null;
   const profileId = STATE.viewedProfile?.id;
@@ -1916,6 +1969,8 @@ async function submitReview() {
   const reviewDraft = {
     reviewerName,
     reviewerPhone: STATE.isAnon ? '' : reviewerPhone,
+    reviewerProvince: STATE.isAnon ? '' : reviewerProvince,
+    reviewerLocality: STATE.isAnon ? '' : reviewerLocality,
     reviewerAvatarUrl,
     reviewImageUrl,
     message: msg,
@@ -1936,6 +1991,8 @@ async function submitReview() {
       amount: STATE.selectedAmt,
       msg,
       reviewerPhone: reviewDraft.reviewerPhone,
+      reviewerProvince: reviewDraft.reviewerProvince,
+      reviewerLocality: reviewDraft.reviewerLocality,
       reviewerAvatarUrl: reviewDraft.reviewerAvatarUrl,
       reviewImageUrl: reviewDraft.reviewImageUrl
     }));
@@ -1949,23 +2006,41 @@ async function submitReview() {
 
   if (sb) {
     try {
-      const { data, error } = await sb
+      const reviewPayload = {
+        profile_id: profileId,
+        reviewer_nombre: reviewerName,
+        reviewer_phone: reviewDraft.reviewerPhone,
+        reviewer_province: reviewDraft.reviewerProvince,
+        reviewer_locality: reviewDraft.reviewerLocality,
+        reviewer_avatar_url: reviewDraft.reviewerAvatarUrl,
+        review_image_url: reviewDraft.reviewImageUrl,
+        is_anon: STATE.isAnon,
+        message: msg,
+        amount_cents: Math.round(STATE.selectedAmt * 100),
+        payment_method: STATE.selectedPay === 'transfer' ? 'transfer' : STATE.selectedPay === 'cash' ? 'cash' : 'mercadopago',
+        payment_status: STATE.selectedPay === 'mercadopago' ? 'pending' : 'approved',
+        published: STATE.selectedPay === 'mercadopago' ? false : true,
+      };
+      let { data, error } = await sb
         .from('reviews')
-        .insert({
-          profile_id: profileId,
-          reviewer_nombre: reviewerName,
-          reviewer_phone: reviewDraft.reviewerPhone,
-          reviewer_avatar_url: reviewDraft.reviewerAvatarUrl,
-          review_image_url: reviewDraft.reviewImageUrl,
-          is_anon: STATE.isAnon,
-          message: msg,
-          amount_cents: Math.round(STATE.selectedAmt * 100),
-          payment_method: STATE.selectedPay === 'transfer' ? 'transfer' : STATE.selectedPay === 'cash' ? 'cash' : 'mercadopago',
-          payment_status: STATE.selectedPay === 'mercadopago' ? 'pending' : 'approved',
-          published: STATE.selectedPay === 'mercadopago' ? false : true,
-        })
-        .select('id, reviewer_nombre, reviewer_phone, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at, payment_status, published')
+        .insert(reviewPayload)
+        .select('id, reviewer_nombre, reviewer_phone, reviewer_province, reviewer_locality, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at, payment_status, published')
         .single();
+      if (error && /reviewer_province|reviewer_locality/i.test(error.message || '')) {
+        const fallbackPayload = { ...reviewPayload };
+        delete fallbackPayload.reviewer_province;
+        delete fallbackPayload.reviewer_locality;
+        const fallbackResponse = await sb
+          .from('reviews')
+          .insert(fallbackPayload)
+          .select('id, reviewer_nombre, reviewer_phone, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at, payment_status, published')
+          .single();
+        data = fallbackResponse.data;
+        error = fallbackResponse.error;
+        if (!error) {
+          toast('La reseña se guardó, pero para persistir provincia y localidad falta aplicar la migración SQL.', 'info');
+        }
+      }
 
       if (error) throw error;
       if (data?.published) {
@@ -2012,6 +2087,8 @@ async function submitReview() {
     amount: STATE.selectedAmt,
     text: msg,
     phone: reviewDraft.reviewerPhone,
+    province: reviewDraft.reviewerProvince,
+    locality: reviewDraft.reviewerLocality,
     avatarUrl: reviewDraft.reviewerAvatarUrl,
     reviewImageUrl: reviewDraft.reviewImageUrl,
     reply: null,
@@ -2166,6 +2243,8 @@ function revCardHTML(r, isDash) {
       : `background:${r.color||'var(--amber)'};background-image:linear-gradient(135deg,${r.color||'#4F76B8'},${r.color||'#94B8F0'})`);
   const maskedPhone = maskPhone(r.phone);
   const reviewPhone = maskedPhone ? `<span class="rev-contact">${maskedPhone}</span>` : '';
+  const reviewLocation = [r.locality, r.province].filter(Boolean).join(', ');
+  const reviewLocationHtml = reviewLocation ? `<span class="rev-contact rev-location">${reviewLocation}</span>` : '';
   const reviewImage = r.reviewImageUrl ? `<button class="rev-media" type="button" onclick="openImageLightbox('${r.reviewImageUrl}')" style="background-image:url('${r.reviewImageUrl}')"><span class="rev-media-zoom">Ver completa</span></button>` : '';
   const topRewardBadge = isTopReward ? `<span class="rev-top-badge">Mayor recompensa</span>` : '';
 
@@ -2179,7 +2258,7 @@ function revCardHTML(r, isDash) {
           <span class="badge badge-amber"> $${r.amount.toLocaleString('es-AR')}</span>
           <span style="font-size:11px;color:var(--text3)">${r.date}</span>
         </div>
-        ${reviewPhone}
+        ${reviewPhone}${reviewLocationHtml}
         <div class="d-rev-text">"${r.text.substring(0,120)}${r.text.length>120?'...':''}"</div>
         ${reviewImage}
         ${replyBlock}
@@ -2192,7 +2271,7 @@ function revCardHTML(r, isDash) {
       <div class="rev-header">
         <div class="rev-left">
           <div class="rev-av-txt" style="${avStyle}">${r.initials}</div>
-          <div><div class="rev-name">${r.name}</div><div class="rev-date">${r.date}</div>${reviewPhone}</div>
+          <div><div class="rev-name">${r.name}</div><div class="rev-date">${r.date}</div>${reviewPhone}${reviewLocationHtml}</div>
         </div>
         <div class="rev-right-meta">${topRewardBadge}<div class="rev-amount"> $${r.amount.toLocaleString('es-AR')}</div></div>
       </div>
@@ -2281,6 +2360,7 @@ function renderDashboard() {
   const editShareSubtitle = document.getElementById('editShareSubtitle');
   const editShareDescription = document.getElementById('editShareDescription');
   const editShareImageMode = document.getElementById('editShareImageMode');
+  const editReviewPrompts = document.getElementById('editReviewPrompts');
   if (editNombre) editNombre.value = STATE.user.name || '';
   if (editApellido) editApellido.value = STATE.user.lastName || '';
   if (editRole) editRole.value = STATE.user.role || '';
@@ -2292,6 +2372,7 @@ function renderDashboard() {
   if (editShareSubtitle) editShareSubtitle.value = STATE.user.shareSubtitle || '';
   if (editShareDescription) editShareDescription.value = STATE.user.shareDescription || '';
   if (editShareImageMode) editShareImageMode.value = STATE.user.shareImageMode || 'cover';
+  if (editReviewPrompts) editReviewPrompts.value = normalizeReviewPromptSuggestions(STATE.user.reviewPromptSuggestions).join('\n');
   if (isProfileTabVisible) {
     renderRewardAdmin();
     renderMediaAdmin();
@@ -2415,6 +2496,7 @@ function saveProfile() {
       const share_subtitle = document.getElementById('editShareSubtitle')?.value?.trim() || '';
       const share_description = document.getElementById('editShareDescription')?.value?.trim() || '';
       const share_image_mode = document.getElementById('editShareImageMode')?.value || 'cover';
+      const review_prompt_suggestions = normalizeReviewPromptSuggestions((document.getElementById('editReviewPrompts')?.value || '').split(/\r?\n/));
       const avatarFile = document.getElementById('editAvatarFile')?.files?.[0] || null;
       const coverFile = document.getElementById('editCoverFile')?.files?.[0] || null;
       const [avatar_url, cover_url] = await Promise.all([
@@ -2436,6 +2518,7 @@ function saveProfile() {
         share_subtitle,
         share_description,
         share_image_mode,
+        review_prompt_suggestions,
       };
       let { data, error } = await sb
         .from('profiles')
@@ -2443,12 +2526,13 @@ function saveProfile() {
         .eq('id', STATE.user.id)
         .select('*')
         .single();
-      if (error && /share_title|share_subtitle|share_description|share_image_mode/i.test(error.message || '')) {
+      if (error && /share_title|share_subtitle|share_description|share_image_mode|review_prompt_suggestions/i.test(error.message || '')) {
         const fallbackPayload = { ...payload };
         delete fallbackPayload.share_title;
         delete fallbackPayload.share_subtitle;
         delete fallbackPayload.share_description;
         delete fallbackPayload.share_image_mode;
+        delete fallbackPayload.review_prompt_suggestions;
         const fallbackResponse = await sb
           .from('profiles')
           .update(fallbackPayload)
@@ -2486,6 +2570,7 @@ function saveProfile() {
   STATE.user.shareSubtitle = document.getElementById('editShareSubtitle')?.value || STATE.user.shareSubtitle;
   STATE.user.shareDescription = document.getElementById('editShareDescription')?.value || STATE.user.shareDescription;
   STATE.user.shareImageMode = document.getElementById('editShareImageMode')?.value || STATE.user.shareImageMode;
+  STATE.user.reviewPromptSuggestions = normalizeReviewPromptSuggestions((document.getElementById('editReviewPrompts')?.value || '').split(/\r?\n/));
   const tagsRaw       = document.getElementById('editTags')?.value || '';
   STATE.user.tags     = tagsRaw.split(',').map(t=>t.trim()).filter(Boolean);
   STATE.user.initials = (STATE.user.name.charAt(0)+STATE.user.lastName.charAt(0)).toUpperCase();
@@ -2912,7 +2997,7 @@ async function waitForPublishedReview(reviewId, attempts = 10, delayMs = 800) {
   for (let i = 0; i < attempts; i++) {
     const { data, error } = await sb
       .from('reviews')
-      .select('id, reviewer_nombre, reviewer_phone, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at, payment_status, published')
+      .select('id, reviewer_nombre, reviewer_phone, reviewer_province, reviewer_locality, reviewer_avatar_url, review_image_url, is_anon, message, amount_cents, reply, created_at, payment_status, published')
       .eq('id', reviewId)
       .eq('published', true)
       .eq('payment_status', 'approved')
