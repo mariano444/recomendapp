@@ -30,7 +30,7 @@ serve(async (req) => {
 
     const baseQuery = supabase
       .from("profiles")
-      .select("id, slug, nombre, apellido, role, city, bio, review_count, total_earned, avatar_url, cover_url, active");
+      .select("*");
 
     const profileResponse = profileId
       ? await baseQuery.eq("id", profileId).maybeSingle()
@@ -55,17 +55,22 @@ serve(async (req) => {
     const role = cleanText(profile.role || "", "Profesional");
     const city = cleanText(profile.city || "", "Argentina");
     const bio = cleanText(profile.bio || "");
+    const shareTitle = cleanText(profile.share_title || "", displayName);
+    const shareSubtitle = cleanText(profile.share_subtitle || "", [role, city].filter(Boolean).join(" | "));
+    const shareDescription = cleanText(profile.share_description || "");
     const totalReviews = Number(profile.review_count || 0);
     const highestReward = Math.round(Number(topReview?.amount_cents || 0) / 100);
     const totalEarned = Math.round(Number(profile.total_earned || 0) / 100);
     const appProfileUrl = `${appUrl}?slug=${encodeURIComponent(profile.id || profile.slug)}`;
     const shareImage = cleanText(profile.cover_url || profile.avatar_url || "");
-    const title = `${displayName} | ${role} | Recomendapp - Reconoce quien te atendio bien`;
-    const description = bio
+    const title = shareSubtitle
+      ? `${shareTitle} | ${shareSubtitle} | Recomendapp - Reconoce quien te atendio bien`
+      : `${shareTitle} | Recomendapp - Reconoce quien te atendio bien`;
+    const description = shareDescription || (bio
       ? `${bio} Especialidad: ${role}. Recomendaciones visibles y reconocimiento real en Recomendapp.`
       : totalReviews
         ? `${displayName}, ${role} en ${city}. Mira ${totalReviews} recomendaciones visibles${highestReward ? ` y reconocimientos de hasta $${highestReward.toLocaleString("es-AR")}` : ""} en Recomendapp.`
-        : `${displayName}, ${role} en ${city}. Conoce su perfil profesional y deja una recomendacion con reconocimiento real en Recomendapp.`;
+        : `${displayName}, ${role} en ${city}. Conoce su perfil profesional y deja una recomendacion con reconocimiento real en Recomendapp.`);
 
     const imageTags = shareImage
       ? `
