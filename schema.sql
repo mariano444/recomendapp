@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   share_title   TEXT,
   share_subtitle TEXT,
   share_description TEXT,
+  share_image_mode TEXT NOT NULL DEFAULT 'cover',
   plan          plan_type NOT NULL DEFAULT 'free',
   mp_alias      TEXT,                           -- alias CBU/CVU para recibir pagos
   mp_cbu        TEXT,                           -- CBU para transferencias
@@ -45,6 +46,19 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'profiles_share_image_mode_check'
+  ) THEN
+    ALTER TABLE profiles
+      ADD CONSTRAINT profiles_share_image_mode_check
+      CHECK (share_image_mode IN ('cover', 'avatar', 'none'));
+  END IF;
+END $$;
 
 -- Generar slug automático en base a nombre/apellido
 CREATE OR REPLACE FUNCTION generate_slug(nombre TEXT, apellido TEXT)
