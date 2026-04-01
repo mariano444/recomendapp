@@ -420,8 +420,8 @@ function profileLink(slug) {
 
 function profileShareLink(slug) {
   if (!slug) return profileLink(slug);
-  if (!CONFIG.supabaseUrl || CONFIG.supabaseUrl.includes('TU-PROYECTO')) return profileLink(slug);
-  return `${CONFIG.supabaseUrl}/functions/v1/share-profile?profile_id=${encodeURIComponent(slug)}`;
+  const base = (CONFIG.appUrl || window.location.origin || '').replace(/\/+$/, '');
+  return `${base}/share/${encodeURIComponent(slug)}`;
 }
 
 function profileShareId(profile = {}) {
@@ -442,6 +442,13 @@ function isUuidLike(value='') {
 
 function normalizePhone(phone='') {
   return (phone || '').replace(/[^\d+]/g, '');
+}
+
+function maskPhone(phone='') {
+  const digits = normalizePhone(phone).replace(/[^\d]/g, '');
+  if (!digits) return '';
+  if (digits.length <= 5) return digits.charAt(0) + '*'.repeat(Math.max(digits.length - 2, 1)) + digits.slice(-1);
+  return `${digits.slice(0, 3)}${'*'.repeat(Math.max(digits.length - 5, 1))}${digits.slice(-2)}`;
 }
 
 function phoneLink(phone='') {
@@ -1957,7 +1964,8 @@ function revCardHTML(r, isDash) {
     : (r.anon
       ? 'color:var(--text3);font-family:sans-serif;font-size:18px'
       : `background:${r.color||'var(--amber)'};background-image:linear-gradient(135deg,${r.color||'#4F76B8'},${r.color||'#94B8F0'})`);
-  const reviewPhone = r.phone ? `<a class="rev-contact" href="tel:${r.phone}">${r.phone}</a>` : '';
+  const maskedPhone = maskPhone(r.phone);
+  const reviewPhone = maskedPhone ? `<span class="rev-contact">${maskedPhone}</span>` : '';
   const reviewImage = r.reviewImageUrl ? `<button class="rev-media" type="button" onclick="openImageLightbox('${r.reviewImageUrl}')" style="background-image:url('${r.reviewImageUrl}')"><span class="rev-media-zoom">Ver completa</span></button>` : '';
   const topRewardBadge = isTopReward ? `<span class="rev-top-badge">Mayor recompensa</span>` : '';
 
