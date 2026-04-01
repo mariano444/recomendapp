@@ -433,7 +433,7 @@ function profileShareLink(slug) {
 }
 
 function profileShareId(profile = {}) {
-  return profile.slug || profile.id || '';
+  return profile.id || profile.slug || '';
 }
 
 function profileLinkFromProfile(profile = {}) {
@@ -1017,7 +1017,7 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
       STATE.publicMediaItems = STATE.mediaItems.filter(item => item.active);
     }
     renderProfile();
-    if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(STATE.user.slug || STATE.user.id || slug));
+    if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(STATE.user.id || STATE.user.slug || slug));
     return;
   }
 
@@ -1058,7 +1058,7 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
   STATE.publicRewardItems = publicRewardItems;
   STATE.publicMediaItems = publicMediaItems;
   renderProfile();
-  if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(profile.slug || profile.id || slug));
+  if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(profile.id || profile.slug || slug));
 }
 
 async function hydrateUser(session, navigateToDashboard = false) {
