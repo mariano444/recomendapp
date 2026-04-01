@@ -18,9 +18,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Instrument+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://sdk.mercadopago.com/js/v2"></script>
-<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="/styles.css">
 </head>
-<body>
+<body class="app-loading">
+
+<div class="app-preloader" id="appPreloader" aria-live="polite" aria-label="Cargando aplicacion">
+  <div class="app-preloader-panel">
+    <div class="app-preloader-brand">
+      <span class="app-preloader-gem"></span>
+      <span>Recomendapp</span>
+    </div>
+    <div class="app-preloader-title">Preparando tu experiencia</div>
+    <div class="app-preloader-copy" id="appPreloaderText">Cargando vistas y perfil...</div>
+    <div class="app-preloader-bar">
+      <span class="app-preloader-bar-fill"></span>
+    </div>
+  </div>
+</div>
 
 <nav class="topnav" id="topnav">
   <div class="logo" onclick="nav('home')">
@@ -94,6 +108,6 @@
 
 <main id="views-root"></main>
 
-<script src="./app.js"></script>
+<script src="/app.js"></script>
 </body>
 </html>
