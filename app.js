@@ -418,12 +418,22 @@ function profileLink(slug) {
   return base + '?slug=' + encodeURIComponent(slug);
 }
 
+function profileShareLink(slug) {
+  if (!slug) return profileLink(slug);
+  if (!CONFIG.supabaseUrl || CONFIG.supabaseUrl.includes('TU-PROYECTO')) return profileLink(slug);
+  return `${CONFIG.supabaseUrl}/functions/v1/share-profile?profile_id=${encodeURIComponent(slug)}`;
+}
+
 function profileShareId(profile = {}) {
   return profile.id || profile.slug || '';
 }
 
 function profileLinkFromProfile(profile = {}) {
   return profileLink(profileShareId(profile));
+}
+
+function profileShareLinkFromProfile(profile = {}) {
+  return profileShareLink(profileShareId(profile));
 }
 
 function isUuidLike(value='') {
@@ -747,21 +757,22 @@ function updateProfileDocumentMeta(profile, reviews = []) {
   const topReview = getTopRewardReview(reviews);
   const totalReviews = reviews.length;
   const highestReward = topReview?.amount || 0;
-  const shareUrl = profileLinkFromProfile(profile);
-  const shareImage = profile?.avatarUrl || profile?.coverUrl || '';
+  const canonicalUrl = profileLinkFromProfile(profile);
+  const shareUrl = profileShareLinkFromProfile(profile);
+  const shareImage = profile?.coverUrl || profile?.avatarUrl || '';
   const shortBio = (profile?.bio || '').trim();
   const description = shortBio
     ? `${shortBio} Especialidad: ${role}. Recomendaciones visibles y reconocimiento real en Recomendapp.`
     : totalReviews
       ? `${displayName}, ${role} en ${city}. Mira sus recomendaciones visibles, ${totalReviews} resenas publicadas y reconocimientos de hasta $${highestReward.toLocaleString('es-AR')} en Recomendapp.`
       : `${displayName}, ${role} en ${city}. Conoce su perfil profesional y deja una recomendacion con reconocimiento real en Recomendapp.`;
-  document.title = `${displayName} | ${role} | Recomendapp - Reconocé quien te atendió bien`;
+  document.title = `${displayName} | ${role} | Recomendapp - Reconoce quien te atendio bien`;
   upsertMetaTag('meta[name="description"]', { name: 'description', content: description });
-  upsertMetaTag('meta[property="og:title"]', { property: 'og:title', content: `${displayName} | ${role} | Recomendapp - Reconocé quien te atendió bien` });
+  upsertMetaTag('meta[property="og:title"]', { property: 'og:title', content: `${displayName} | ${role} | Recomendapp - Reconoce quien te atendio bien` });
   upsertMetaTag('meta[property="og:description"]', { property: 'og:description', content: description });
   upsertMetaTag('meta[property="og:url"]', { property: 'og:url', content: shareUrl });
   upsertMetaTag('meta[property="og:image"]', { property: 'og:image', content: shareImage });
-  upsertMetaTag('meta[name="twitter:title"]', { name: 'twitter:title', content: `${displayName} | ${role} | Recomendapp - Reconocé quien te atendió bien` });
+  upsertMetaTag('meta[name="twitter:title"]', { name: 'twitter:title', content: `${displayName} | ${role} | Recomendapp - Reconoce quien te atendio bien` });
   upsertMetaTag('meta[name="twitter:description"]', { name: 'twitter:description', content: description });
   upsertMetaTag('meta[name="twitter:image"]', { name: 'twitter:image', content: shareImage });
   let canonical = document.head.querySelector('link[rel="canonical"]');
@@ -770,7 +781,7 @@ function updateProfileDocumentMeta(profile, reviews = []) {
     canonical.setAttribute('rel', 'canonical');
     document.head.appendChild(canonical);
   }
-  canonical.setAttribute('href', shareUrl);
+  canonical.setAttribute('href', canonicalUrl);
 }
 
 function getFilteredPublicReviews(reviews = STATE.publicReviews || []) {
@@ -2153,7 +2164,7 @@ function renderDashboard() {
 
   // Link
   const pl = document.getElementById('profileLinkDisplay');
-  if (pl) pl.textContent = profileLinkFromProfile(STATE.user);
+  if (pl) pl.textContent = profileShareLinkFromProfile(STATE.user);
 }
 
 function dashTab(btn, tabId) {
@@ -2535,7 +2546,7 @@ async function openPublicProfile(slug) {
 async function doShare() {
   const targetProfile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
   const targetName = STATE.viewedProfile?.name || STATE.user.name;
-  const url = profileLinkFromProfile(targetProfile);
+  const url = profileShareLinkFromProfile(targetProfile);
   if (navigator.share) {
     if (shareInFlight) return;
     shareInFlight = true;
