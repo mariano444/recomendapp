@@ -301,6 +301,9 @@ const STATE = {
     initials: '',
     email: '',
     slug: '',
+    shareTitle: '',
+    shareSubtitle: '',
+    shareDescription: '',
   },
   viewedProfile: null,
   reviews: [],
@@ -688,6 +691,9 @@ function mergeUserProfile(profile) {
     mpCbu: profile.mp_cbu || '',
     avatarUrl: profile.avatar_url || '',
     coverUrl: profile.cover_url || '',
+    shareTitle: profile.share_title || '',
+    shareSubtitle: profile.share_subtitle || '',
+    shareDescription: profile.share_description || '',
   };
 }
 
@@ -714,6 +720,9 @@ function setViewedProfileFromProfile(profile) {
     mpCbu: profile.mp_cbu || '',
     avatarUrl: profile.avatar_url || '',
     coverUrl: profile.cover_url || '',
+    shareTitle: profile.share_title || '',
+    shareSubtitle: profile.share_subtitle || '',
+    shareDescription: profile.share_description || '',
   };
 }
 
@@ -748,6 +757,38 @@ function getTopRewardReview(reviews = []) {
   return [...reviews].sort((a, b) => b.amount - a.amount || getReviewTimestamp(b) - getReviewTimestamp(a))[0] || null;
 }
 
+function buildProfileMeta(profile, reviews = []) {
+  const displayName = [profile?.name, profile?.lastName].filter(Boolean).join(' ').trim() || 'Perfil';
+  const role = (profile?.role || 'Profesional').trim();
+  const city = (profile?.city || 'Argentina').trim();
+  const topReview = getTopRewardReview(reviews);
+  const totalReviews = reviews.length;
+  const highestReward = topReview?.amount || 0;
+  const shareTitle = (profile?.shareTitle || '').trim() || displayName;
+  const shareSubtitle = (profile?.shareSubtitle || '').trim() || [role, city].filter(Boolean).join(' | ');
+  const shortBio = (profile?.bio || '').trim();
+  const shareDescription = (profile?.shareDescription || '').trim();
+  const description = shareDescription || (
+    shortBio
+      ? `${shortBio} Especialidad: ${role}. Recomendaciones visibles y reconocimiento real en Recomendapp.`
+      : totalReviews
+        ? `${displayName}, ${role} en ${city}. Mira sus recomendaciones visibles, ${totalReviews} resenas publicadas y reconocimientos de hasta $${highestReward.toLocaleString('es-AR')} en Recomendapp.`
+        : `${displayName}, ${role} en ${city}. Conoce su perfil profesional y deja una recomendacion con reconocimiento real en Recomendapp.`
+  );
+  const composedTitle = shareSubtitle
+    ? `${shareTitle} | ${shareSubtitle} | Recomendapp - Reconoce quien te atendio bien`
+    : `${shareTitle} | Recomendapp - Reconoce quien te atendio bien`;
+  return {
+    displayName,
+    shareTitle,
+    shareSubtitle,
+    description,
+    composedTitle,
+    highestReward,
+    totalReviews,
+  };
+}
+
 function upsertMetaTag(selector, attributes) {
   let node = document.head.querySelector(selector);
   if (!node) {
@@ -758,29 +799,18 @@ function upsertMetaTag(selector, attributes) {
 }
 
 function updateProfileDocumentMeta(profile, reviews = []) {
-  const displayName = [profile?.name, profile?.lastName].filter(Boolean).join(' ').trim() || 'Perfil';
-  const role = profile?.role || 'Profesional';
-  const city = profile?.city || 'Argentina';
-  const topReview = getTopRewardReview(reviews);
-  const totalReviews = reviews.length;
-  const highestReward = topReview?.amount || 0;
+  const meta = buildProfileMeta(profile, reviews);
   const canonicalUrl = profileLinkFromProfile(profile);
   const shareUrl = profileShareLinkFromProfile(profile);
   const shareImage = profile?.coverUrl || profile?.avatarUrl || '';
-  const shortBio = (profile?.bio || '').trim();
-  const description = shortBio
-    ? `${shortBio} Especialidad: ${role}. Recomendaciones visibles y reconocimiento real en Recomendapp.`
-    : totalReviews
-      ? `${displayName}, ${role} en ${city}. Mira sus recomendaciones visibles, ${totalReviews} resenas publicadas y reconocimientos de hasta $${highestReward.toLocaleString('es-AR')} en Recomendapp.`
-      : `${displayName}, ${role} en ${city}. Conoce su perfil profesional y deja una recomendacion con reconocimiento real en Recomendapp.`;
-  document.title = `${displayName} | ${role} | Recomendapp - Reconoce quien te atendio bien`;
-  upsertMetaTag('meta[name="description"]', { name: 'description', content: description });
-  upsertMetaTag('meta[property="og:title"]', { property: 'og:title', content: `${displayName} | ${role} | Recomendapp - Reconoce quien te atendio bien` });
-  upsertMetaTag('meta[property="og:description"]', { property: 'og:description', content: description });
+  document.title = meta.composedTitle;
+  upsertMetaTag('meta[name="description"]', { name: 'description', content: meta.description });
+  upsertMetaTag('meta[property="og:title"]', { property: 'og:title', content: meta.composedTitle });
+  upsertMetaTag('meta[property="og:description"]', { property: 'og:description', content: meta.description });
   upsertMetaTag('meta[property="og:url"]', { property: 'og:url', content: shareUrl });
   upsertMetaTag('meta[property="og:image"]', { property: 'og:image', content: shareImage });
-  upsertMetaTag('meta[name="twitter:title"]', { name: 'twitter:title', content: `${displayName} | ${role} | Recomendapp - Reconoce quien te atendio bien` });
-  upsertMetaTag('meta[name="twitter:description"]', { name: 'twitter:description', content: description });
+  upsertMetaTag('meta[name="twitter:title"]', { name: 'twitter:title', content: meta.composedTitle });
+  upsertMetaTag('meta[name="twitter:description"]', { name: 'twitter:description', content: meta.description });
   upsertMetaTag('meta[name="twitter:image"]', { name: 'twitter:image', content: shareImage });
   let canonical = document.head.querySelector('link[rel="canonical"]');
   if (!canonical) {
@@ -921,9 +951,14 @@ async function refreshOwnProfileState(forceProfileRefresh = false) {
     }
   }
 
-  STATE.reviews = await fetchOwnReviews(STATE.user.id);
-  STATE.rewardItems = await fetchRewardItems(STATE.user.id, true);
-  STATE.mediaItems = await fetchMediaItems(STATE.user.id, true);
+  const [reviews, rewardItems, mediaItems] = await Promise.all([
+    fetchOwnReviews(STATE.user.id),
+    fetchRewardItems(STATE.user.id, true),
+    fetchMediaItems(STATE.user.id, true),
+  ]);
+  STATE.reviews = reviews;
+  STATE.rewardItems = rewardItems;
+  STATE.mediaItems = mediaItems;
   delete STATE.publicReviewsCache[STATE.user.id];
 
   if (!STATE.viewedProfile || STATE.viewedProfile.id === STATE.user.id || STATE.viewedProfile.slug === STATE.user.slug) {
@@ -942,7 +977,7 @@ async function loadSearchProfiles() {
   if (!sb) return;
   const { data, error } = await sb
     .from('profiles')
-      .select('id, slug, nombre, apellido, role, city, telefono, bio, tags, total_earned, review_count, verified, active, mp_alias, mp_cbu, allow_anon, min_amount, avatar_url, cover_url')
+      .select('*')
     .eq('active', true)
     .order('review_count', { ascending: false })
     .limit(100);
@@ -974,7 +1009,7 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
   if (!profile) {
     const query = sb
       .from('profiles')
-      .select('id, slug, nombre, apellido, role, city, telefono, bio, tags, total_earned, review_count, verified, allow_anon, min_amount, active, mp_alias, mp_cbu, avatar_url, cover_url');
+      .select('*');
     const response = isUuidLike(slug)
       ? await query.eq('id', slug).single()
       : await query.eq('slug', slug).single();
@@ -993,9 +1028,14 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
   }
 
   setViewedProfileFromProfile(profile);
-  STATE.publicReviews = await fetchPublicReviews(profile.id, forceRefresh);
-  STATE.publicRewardItems = await fetchRewardItems(profile.id, false);
-  STATE.publicMediaItems = await fetchMediaItems(profile.id, false);
+  const [publicReviews, publicRewardItems, publicMediaItems] = await Promise.all([
+    fetchPublicReviews(profile.id, forceRefresh),
+    fetchRewardItems(profile.id, false),
+    fetchMediaItems(profile.id, false),
+  ]);
+  STATE.publicReviews = publicReviews;
+  STATE.publicRewardItems = publicRewardItems;
+  STATE.publicMediaItems = publicMediaItems;
   renderProfile();
   if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(profile.id || slug));
 }
@@ -1016,9 +1056,14 @@ async function hydrateUser(session, navigateToDashboard = false) {
     console.warn('No se pudo cargar el perfil del usuario:', error.message);
   } else {
     mergeUserProfile(profile);
-    STATE.reviews = await fetchOwnReviews(session.user.id);
-    STATE.rewardItems = await fetchRewardItems(session.user.id, true);
-    STATE.mediaItems = await fetchMediaItems(session.user.id, true);
+    const [reviews, rewardItems, mediaItems] = await Promise.all([
+      fetchOwnReviews(session.user.id),
+      fetchRewardItems(session.user.id, true),
+      fetchMediaItems(session.user.id, true),
+    ]);
+    STATE.reviews = reviews;
+    STATE.rewardItems = rewardItems;
+    STATE.mediaItems = mediaItems;
     await loadStoredMpConfig(true);
   }
 
@@ -1058,7 +1103,7 @@ async function loadViews() {
 
   const entries = await Promise.all(
     Object.entries(VIEW_PARTIALS).map(async ([viewId, path]) => {
-      const response = await fetch(path, { cache: 'no-cache' });
+      const response = await fetch(path, { cache: 'force-cache' });
       if (!response.ok) throw new Error(`No se pudo cargar la vista "${viewId}"`);
       return [viewId, await response.text()];
     })
@@ -2072,6 +2117,9 @@ function renderDashboard() {
   const editPhone = document.getElementById('editPhone');
   const editBio = document.getElementById('editBio');
   const editTags = document.getElementById('editTags');
+  const editShareTitle = document.getElementById('editShareTitle');
+  const editShareSubtitle = document.getElementById('editShareSubtitle');
+  const editShareDescription = document.getElementById('editShareDescription');
   if (editNombre) editNombre.value = STATE.user.name || '';
   if (editApellido) editApellido.value = STATE.user.lastName || '';
   if (editRole) editRole.value = STATE.user.role || '';
@@ -2079,6 +2127,9 @@ function renderDashboard() {
   if (editPhone) editPhone.value = STATE.user.phone || '';
   if (editBio) editBio.value = STATE.user.bio || '';
   if (editTags) editTags.value = (STATE.user.tags || []).join(', ');
+  if (editShareTitle) editShareTitle.value = STATE.user.shareTitle || '';
+  if (editShareSubtitle) editShareSubtitle.value = STATE.user.shareSubtitle || '';
+  if (editShareDescription) editShareDescription.value = STATE.user.shareDescription || '';
   renderRewardAdmin();
   renderMediaAdmin();
   // Avatar y t?tulos
@@ -2195,10 +2246,15 @@ function saveProfile() {
       const telefono = document.getElementById('editPhone')?.value?.trim() || '';
       const bio = document.getElementById('editBio')?.value?.trim() || '';
       const tags = (document.getElementById('editTags')?.value || '').split(',').map(t=>t.trim()).filter(Boolean);
+      const share_title = document.getElementById('editShareTitle')?.value?.trim() || '';
+      const share_subtitle = document.getElementById('editShareSubtitle')?.value?.trim() || '';
+      const share_description = document.getElementById('editShareDescription')?.value?.trim() || '';
       const avatarFile = document.getElementById('editAvatarFile')?.files?.[0] || null;
       const coverFile = document.getElementById('editCoverFile')?.files?.[0] || null;
-      const avatar_url = avatarFile ? await uploadProfileAsset(avatarFile, 'avatar') : STATE.user.avatarUrl || null;
-      const cover_url = coverFile ? await uploadProfileAsset(coverFile, 'cover') : STATE.user.coverUrl || null;
+      const [avatar_url, cover_url] = await Promise.all([
+        avatarFile ? uploadProfileAsset(avatarFile, 'avatar') : Promise.resolve(STATE.user.avatarUrl || null),
+        coverFile ? uploadProfileAsset(coverFile, 'cover') : Promise.resolve(STATE.user.coverUrl || null),
+      ]);
       const payload = {
         nombre,
         apellido,
@@ -2210,13 +2266,33 @@ function saveProfile() {
         slug: STATE.user.slug,
         avatar_url,
         cover_url,
+        share_title,
+        share_subtitle,
+        share_description,
       };
-      const { data, error } = await sb
+      let { data, error } = await sb
         .from('profiles')
         .update(payload)
         .eq('id', STATE.user.id)
         .select('*')
         .single();
+      if (error && /share_title|share_subtitle|share_description/i.test(error.message || '')) {
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.share_title;
+        delete fallbackPayload.share_subtitle;
+        delete fallbackPayload.share_description;
+        const fallbackResponse = await sb
+          .from('profiles')
+          .update(fallbackPayload)
+          .eq('id', STATE.user.id)
+          .select('*')
+          .single();
+        data = fallbackResponse.data;
+        error = fallbackResponse.error;
+        if (!error) {
+          toast('El perfil se guardo, pero para persistir metadatos personalizados falta aplicar la migracion SQL.', 'info');
+        }
+      }
       if (error) {
         toast(error.message || 'No se pudo actualizar el perfil','error');
         return;
@@ -2238,6 +2314,9 @@ function saveProfile() {
   STATE.user.city     = document.getElementById('editCity')?.value || STATE.user.city;
   STATE.user.phone    = document.getElementById('editPhone')?.value || STATE.user.phone;
   STATE.user.bio      = document.getElementById('editBio')?.value || STATE.user.bio;
+  STATE.user.shareTitle = document.getElementById('editShareTitle')?.value || STATE.user.shareTitle;
+  STATE.user.shareSubtitle = document.getElementById('editShareSubtitle')?.value || STATE.user.shareSubtitle;
+  STATE.user.shareDescription = document.getElementById('editShareDescription')?.value || STATE.user.shareDescription;
   const tagsRaw       = document.getElementById('editTags')?.value || '';
   STATE.user.tags     = tagsRaw.split(',').map(t=>t.trim()).filter(Boolean);
   STATE.user.initials = (STATE.user.name.charAt(0)+STATE.user.lastName.charAt(0)).toUpperCase();
@@ -2783,6 +2862,15 @@ async function initApp() {
     updateNav();
     await bootstrapSupabaseData();
     await checkMpReturn();
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(() => {
+        if (!STATE.directoryProfiles?.length) loadSearchProfiles();
+      }, { timeout: 1500 });
+    } else {
+      setTimeout(() => {
+        if (!STATE.directoryProfiles?.length) loadSearchProfiles();
+      }, 800);
+    }
   } catch (error) {
     console.error('No se pudo iniciar la app:', error);
     const root = document.getElementById('views-root');
