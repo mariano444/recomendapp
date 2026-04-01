@@ -91,9 +91,6 @@ serve(async (req) => {
     <meta name="twitter:image" content="${escapeHtml(shareImage)}" />
 `
       : "";
-    const coverStyle = shareImage
-      ? ` style="background-image:url('${escapeHtml(shareImage)}');background-position:center;background-size:cover;background-repeat:no-repeat"`
-      : "";
 
     const statsLine = totalReviews || totalEarned || highestReward
       ? `<p>${totalReviews ? `${totalReviews} recomendaciones visibles` : "Perfil activo"}${totalEarned ? ` | $${totalEarned.toLocaleString("es-AR")} reconocidos` : ""}${highestReward ? ` | hasta $${highestReward.toLocaleString("es-AR")} por recomendacion` : ""}</p>`
@@ -118,54 +115,16 @@ serve(async (req) => {
 ${imageTags}    <meta name="twitter:card" content="${shareImage ? "summary_large_image" : "summary"}" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <style>
-      :root{color-scheme:dark}
-      *{box-sizing:border-box}
-      body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(circle at top,#1e293b 0,#0f172a 55%,#020617 100%);color:#e5eefc;min-height:100vh}
-      .wrap{max-width:980px;margin:0 auto;padding:24px}
-      .card{overflow:hidden;border:1px solid rgba(148,163,184,.18);border-radius:28px;background:rgba(15,23,42,.86);box-shadow:0 24px 80px rgba(2,6,23,.35);backdrop-filter:blur(10px)}
-      .hero{position:relative;padding:32px}
-      .cover{height:220px;border-radius:20px;background:linear-gradient(135deg,#0ea5e9,#22c55e)}
-      .content{padding:0 32px 32px}
-      .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(34,197,94,.14);color:#86efac;font-size:12px;font-weight:700;letter-spacing:.02em;text-transform:uppercase}
-      h1{margin:18px 0 10px;font-size:clamp(30px,5vw,52px);line-height:1.02}
-      .sub{margin:0 0 18px;color:#cbd5e1;font-size:18px}
-      p{margin:0 0 14px;color:#cbd5e1;line-height:1.6}
-      .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:24px 0}
-      .stat{padding:16px 18px;border-radius:18px;background:rgba(15,23,42,.72);border:1px solid rgba(148,163,184,.14)}
-      .stat strong{display:block;font-size:24px;color:#fff}
-      .stat span{display:block;margin-top:6px;color:#94a3b8;font-size:13px}
-      .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
-      a{display:inline-flex;align-items:center;justify-content:center;padding:13px 18px;border-radius:999px;text-decoration:none;font-weight:700}
-      .primary{background:linear-gradient(135deg,#22c55e,#16a34a);color:#04130a}
-      .secondary{background:rgba(148,163,184,.1);border:1px solid rgba(148,163,184,.2);color:#e5eefc}
-      @media (max-width: 640px){.wrap{padding:16px}.hero,.content{padding:20px}.cover{height:160px}}
-    </style>
   </head>
   <body>
-    <div class="wrap">
-      <main class="card">
-        <section class="hero">
-          <div class="cover"${coverStyle}></div>
-        </section>
-        <section class="content">
-          <span class="badge">Perfil publico</span>
-          <h1>${escapeHtml(displayName)}</h1>
-          <p class="sub">${escapeHtml(role)}${city ? ` | ${escapeHtml(city)}` : ""}</p>
-          <p>${escapeHtml(description)}</p>
-          <div class="stats">
-            <div class="stat"><strong>${totalReviews || 0}</strong><span>Recomendaciones visibles</span></div>
-            <div class="stat"><strong>${totalEarned ? `$${totalEarned.toLocaleString("es-AR")}` : "$0"}</strong><span>Reconocimiento acumulado</span></div>
-            <div class="stat"><strong>${highestReward ? `$${highestReward.toLocaleString("es-AR")}` : "$0"}</strong><span>Mayor recompensa publicada</span></div>
-          </div>
-          ${statsLine}
-          <div class="actions">
-            <a class="primary" href="${escapeHtml(appProfileUrl)}">Abrir perfil completo</a>
-            <a class="secondary" href="${escapeHtml(appProfileUrl)}">Dejar una recomendacion</a>
-          </div>
-        </section>
-      </main>
-    </div>
+    <main>
+      <h1>${escapeHtml(displayName)}</h1>
+      <p>${escapeHtml(role)}${city ? ` | ${escapeHtml(city)}` : ""}</p>
+      <p>${escapeHtml(description)}</p>
+      <p>${totalReviews || 0} recomendaciones visibles</p>
+      <p>${totalEarned ? `$${totalEarned.toLocaleString("es-AR")} reconocidos` : "Perfil activo en Recomendapp"}</p>
+      <p><a href="${escapeHtml(appProfileUrl)}">Abrir perfil completo</a></p>
+    </main>
   </body>
 </html>`;
 
