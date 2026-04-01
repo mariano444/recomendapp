@@ -1,6 +1,65 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+async function publishReviewPaymentFallback(
+  supabase: ReturnType<typeof createClient>,
+  reviewId: string,
+  status: string,
+  paymentId: string,
+) {
+  const { data: review, error: reviewError } = await supabase
+    .from("reviews")
+    .select("id, profile_id, amount_cents, payment_status")
+    .eq("id", reviewId)
+    .maybeSingle();
+
+  if (reviewError || !review) {
+    throw new Error(reviewError?.message || "No se encontro la resena");
+  }
+
+  const wasApproved = review.payment_status === "approved";
+  const nextStatus = String(status || "pending");
+
+  const { error: updateReviewError } = await supabase
+    .from("reviews")
+    .update({
+      mp_payment_id: paymentId || null,
+      payment_status: nextStatus,
+      published: nextStatus === "approved",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", reviewId);
+
+  if (updateReviewError) {
+    throw new Error(updateReviewError.message || "No se pudo actualizar la resena");
+  }
+
+  if (nextStatus === "approved" && !wasApproved) {
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("total_earned, review_count")
+      .eq("id", review.profile_id)
+      .maybeSingle();
+
+    if (profileError || !profile) {
+      throw new Error(profileError?.message || "No se encontro el perfil");
+    }
+
+    const { error: updateProfileError } = await supabase
+      .from("profiles")
+      .update({
+        total_earned: Number(profile.total_earned || 0) + Number(review.amount_cents || 0),
+        review_count: Number(profile.review_count || 0) + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", review.profile_id);
+
+    if (updateProfileError) {
+      throw new Error(updateProfileError.message || "No se pudo actualizar el perfil");
+    }
+  }
+}
+
 serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -97,11 +156,20 @@ serve(async (req) => {
         return new Response("No se pudo actualizar el desbloqueo", { status: 500 });
       }
     } else if (reviewId) {
-      const { error: publishError } = await supabase.rpc("publish_review_payment", {
+      let { error: publishError } = await supabase.rpc("publish_review_payment", {
         p_review_id: reviewId,
         p_status: status,
         p_mp_payment_id: String(paymentId),
       });
+      if (publishError && /publish_review_payment|schema cache/i.test(publishError.message || "")) {
+        try {
+          await publishReviewPaymentFallback(supabase, String(reviewId), String(status), String(paymentId));
+          publishError = null;
+        } catch (fallbackError) {
+          console.error("publish_review_payment fallback error", fallbackError);
+          return new Response("No se pudo publicar la reseña", { status: 500 });
+        }
+      }
       if (publishError) {
         console.error("publish_review_payment error", publishError);
         return new Response("No se pudo publicar la reseña", { status: 500 });
