@@ -529,6 +529,7 @@ function mapRewardItem(row) {
     title: row.title || 'Recompensa',
     description: row.description || '',
     imageUrl: row.image_url || '',
+    downloadUrl: row.download_url || '',
     active: row.active !== false,
     sortOrder: row.sort_order || 0,
   };
@@ -579,9 +580,74 @@ function renderFormHeader() {
   const nameNode = document.getElementById('formProfileName');
   const metaNode = document.getElementById('formProfileMeta');
   const confirmNode = document.getElementById('csProfileName');
+  const avatarNode = document.getElementById('formProfileAvatar');
   if (nameNode) nameNode.textContent = displayName;
   if (metaNode) metaNode.textContent = `${role} ? ${city}`;
   if (confirmNode) confirmNode.textContent = displayName;
+  if (avatarNode) {
+    setAvatarNode(avatarNode, profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl || '');
+  }
+  renderFormRewardSpotlight();
+}
+
+function getPrimaryRewardItem(items = STATE.publicRewardItems || []) {
+  return (items || []).find(item => item.active !== false) || null;
+}
+
+function triggerRewardDownload(rewardItem) {
+  if (!rewardItem?.downloadUrl) return false;
+  const anchor = document.createElement('a');
+  anchor.href = rewardItem.downloadUrl;
+  anchor.target = '_blank';
+  anchor.rel = 'noopener';
+  anchor.download = '';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  return true;
+}
+
+function renderFormRewardSpotlight() {
+  const wrap = document.getElementById('formRewardSpotlight');
+  if (!wrap) return;
+  const reward = getPrimaryRewardItem();
+  if (!reward) {
+    wrap.style.display = 'none';
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.style.display = '';
+  wrap.innerHTML = `
+    <div class="form-reward-card">
+      <div class="form-reward-media" style="${reward.imageUrl ? `background-image:url('${reward.imageUrl}')` : ''}"></div>
+      <div class="form-reward-copy">
+        <span class="form-reward-kicker">Recompensa por reseña aprobada</span>
+        <h3>${reward.title}</h3>
+        <p>${reward.description || 'Esta promo se libera automáticamente cuando el pago queda aprobado.'}</p>
+        <div class="form-reward-note">${reward.downloadUrl ? 'Se mostrará en la confirmación y se intentará descargar automáticamente.' : 'El perfil todavía no cargó el archivo final de esta promo.'}</div>
+      </div>
+    </div>`;
+}
+
+function renderConfirmRewardBox() {
+  const box = document.getElementById('confirmRewardBox');
+  if (!box) return;
+  const reward = getPrimaryRewardItem(STATE.publicRewardItems);
+  if (!reward) {
+    box.style.display = 'none';
+    box.innerHTML = '';
+    return;
+  }
+  box.style.display = '';
+  box.innerHTML = `
+    <div class="confirm-reward-box">
+      <div class="confirm-reward-copy">
+        <span class="form-reward-kicker">Beneficio desbloqueado</span>
+        <strong>${reward.title}</strong>
+        <p>${reward.description || 'Tu recompensa ya está lista.'}</p>
+      </div>
+      ${reward.downloadUrl ? `<button class="btn btn-amber btn-md" onclick="triggerRewardDownload(getPrimaryRewardItem(STATE.publicRewardItems))">Descargar promo</button>` : '<button class="btn btn-surface btn-md" disabled>Sin archivo cargado</button>'}
+    </div>`;
 }
 
 async function imageFileToDataUrl(file, options = {}) {
@@ -941,15 +1007,22 @@ async function fetchOwnReviews(profileId) {
 
 async function fetchRewardItems(profileId, isOwner = false) {
   if (!sb || !profileId) return [];
-  let query = sb
-    .from('profile_reward_items')
-    .select('id, title, description, image_url, active, sort_order')
-    .eq('profile_id', profileId)
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: false });
-
-  if (!isOwner) query = query.eq('active', true);
-  const { data, error } = await query;
+  const buildQuery = (selectClause) => {
+    let query = sb
+      .from('profile_reward_items')
+      .select(selectClause)
+      .eq('profile_id', profileId)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
+    if (!isOwner) query = query.eq('active', true);
+    return query;
+  };
+  let { data, error } = await buildQuery('id, title, description, image_url, download_url, active, sort_order');
+  if (error && /download_url/i.test(error.message || '')) {
+    const fallback = await buildQuery('id, title, description, image_url, active, sort_order');
+    data = fallback.data;
+    error = fallback.error;
+  }
   if (error) throw error;
   return (data || []).map(mapRewardItem);
 }
@@ -1486,7 +1559,7 @@ function renderRewardAdmin() {
       <div class="gallery-admin-thumb" style="${item.imageUrl ? `background-image:url('${item.imageUrl}')` : ''}"></div>
       <div>
         <div class="gallery-admin-title">${item.title}</div>
-        <div class="gallery-admin-meta">${item.description || 'Sin descripción'}<br>${item.active ? 'Activa y visible cuando corresponda' : 'Oculta'}</div>
+        <div class="gallery-admin-meta">${item.description || 'Sin descripción'}<br>${item.downloadUrl ? 'Archivo listo para descarga automática' : 'Sin archivo descargable cargado'}<br>${item.active ? 'Activa y visible cuando corresponda' : 'Oculta'}</div>
       </div>
       <div class="gallery-admin-actions">
         <button class="btn btn-ghost btn-sm" onclick="editRewardItem('${item.id}')">Editar</button>
@@ -1514,6 +1587,7 @@ function renderPublicRewards(items = STATE.publicRewardItems || []) {
           <div class="gallery-title">${item.title}</div>
         </div>
         <div class="gallery-desc">${item.description || 'Se entrega luego de la aprobación del pago de tu reseña.'}</div>
+        <div class="gallery-state-note">${item.downloadUrl ? 'Incluye archivo promocional descargable al aprobarse tu reseña.' : 'Incluye beneficio visible en el perfil.'}</div>
         <div class="gallery-cta">
           <button class="btn btn-amber btn-sm" onclick="nav('form')">Quiero dejar mi reseña</button>
         </div>
@@ -1599,7 +1673,7 @@ function renderMediaVault() {
 
 function resetRewardForm() {
   STATE.currentRewardEditId = null;
-  ['rewardTitle','rewardDescription','rewardImageUrl'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['rewardTitle','rewardDescription','rewardImageUrl','rewardDownloadUrl'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const imageFile = document.getElementById('rewardImageFile');
   if (imageFile) imageFile.value = '';
   const active = document.getElementById('rewardActive');
@@ -1613,6 +1687,7 @@ function editRewardItem(id) {
   document.getElementById('rewardTitle').value = item.title;
   document.getElementById('rewardDescription').value = item.description || '';
   document.getElementById('rewardImageUrl').value = item.imageUrl || '';
+  document.getElementById('rewardDownloadUrl').value = item.downloadUrl || '';
   document.getElementById('rewardActive').value = String(item.active !== false);
 }
 
@@ -1623,12 +1698,14 @@ async function saveRewardItem() {
   const description = document.getElementById('rewardDescription')?.value?.trim() || '';
   const imageFile = document.getElementById('rewardImageFile')?.files?.[0] || null;
   const imageUrlField = document.getElementById('rewardImageUrl')?.value?.trim() || '';
+  const download_url = document.getElementById('rewardDownloadUrl')?.value?.trim() || '';
   const image_url = (imageFile ? await uploadProfileAsset(imageFile, 'reward') : '') || imageUrlField || '';
   const payload = {
     profile_id: STATE.user.id,
     title,
     description,
     image_url,
+    download_url,
     active: (document.getElementById('rewardActive')?.value || 'true') === 'true',
     sort_order: STATE.currentRewardEditId
       ? (STATE.rewardItems.find(item => item.id === STATE.currentRewardEditId)?.sortOrder || 0)
@@ -1637,12 +1714,25 @@ async function saveRewardItem() {
   const query = STATE.currentRewardEditId
     ? sb.from('profile_reward_items').update(payload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id)
     : sb.from('profile_reward_items').insert(payload);
-  const { error } = await query;
+  let { error } = await query;
+  if (error && /download_url/i.test(error.message || '')) {
+    const fallbackPayload = { ...payload };
+    delete fallbackPayload.download_url;
+    const fallbackQuery = STATE.currentRewardEditId
+      ? sb.from('profile_reward_items').update(fallbackPayload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id)
+      : sb.from('profile_reward_items').insert(fallbackPayload);
+    const fallbackResponse = await fallbackQuery;
+    error = fallbackResponse.error;
+    if (!error) {
+      toast('La recompensa se guardó, pero para habilitar descarga automática falta aplicar la migración SQL.', 'info');
+    }
+  }
   if (error) return toast(error.message || 'No se pudo guardar la recompensa','error');
   STATE.rewardItems = await fetchRewardItems(STATE.user.id, true);
   STATE.publicRewardItems = STATE.rewardItems.filter(item => item.active);
   renderRewardAdmin();
   renderPublicRewards();
+  renderFormRewardSpotlight();
   resetRewardForm();
   toast('Recompensa guardada ','success');
 }
@@ -1655,6 +1745,7 @@ async function deleteRewardItem(id) {
   STATE.publicRewardItems = STATE.rewardItems.filter(item => item.active);
   renderRewardAdmin();
   renderPublicRewards();
+  renderFormRewardSpotlight();
   resetRewardForm();
   toast('Recompensa eliminada ','success');
 }
@@ -1894,6 +1985,11 @@ async function submitReview() {
       btn.disabled = false;
       btnTxt.textContent = 'Pagar y publicar reseña';
       toast(data?.published ? 'Reseña guardada en la base' : 'Reseña guardada pendiente de pago','success');
+      const approvedReward = getPrimaryRewardItem(STATE.publicRewardItems);
+      renderConfirmRewardBox();
+      if (data?.published && approvedReward?.downloadUrl) {
+        setTimeout(() => triggerRewardDownload(approvedReward), 250);
+      }
       renderProfile();
       nav('confirm');
       return;
@@ -1938,6 +2034,11 @@ async function submitReview() {
   btn.disabled = false;
   btnTxt.textContent = 'Pagar y publicar reseña';
   toast('Reseña publicada exitosamente','success');
+  const approvedReward = getPrimaryRewardItem(STATE.publicRewardItems);
+  renderConfirmRewardBox();
+  if (approvedReward?.downloadUrl) {
+    setTimeout(() => triggerRewardDownload(approvedReward), 250);
+  }
   nav('confirm');
 }
 
@@ -2932,6 +3033,7 @@ async function checkMpReturn() {
       const publishedReview = confirmation?.payment_status === 'approved'
         ? await syncApprovedReview(targetReviewId, targetSlug, 18, 700)
         : await syncApprovedReview(targetReviewId, targetSlug, 24, 1200);
+      const approvedReward = getPrimaryRewardItem(STATE.publicRewardItems);
       await ensureViewsLoaded(['confirm']);
       const csAuthor = document.getElementById('csAuthor');
       const csPago = document.getElementById('csPago');
@@ -2939,6 +3041,10 @@ async function checkMpReturn() {
       if (csAuthor) csAuthor.textContent = data.nombre;
       if (csPago) csPago.textContent = 'MercadoPago';
       if (csAmount) csAmount.textContent = data.amount ? ('$' + data.amount.toLocaleString('es-AR') + ' ARS') : 'Pago aprobado';
+      renderConfirmRewardBox();
+      if (publishedReview && approvedReward?.downloadUrl) {
+        setTimeout(() => triggerRewardDownload(approvedReward), 500);
+      }
       setTimeout(() => nav(publishedReview ? 'confirm' : 'profile'), 150);
       toast(
         publishedReview
