@@ -1029,3 +1029,322 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
     font-size:11px;
   }
 }
+
+/* APP POLISH */
+html, body {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at top, rgba(110,151,216,.16), transparent 28%),
+    radial-gradient(circle at 85% 10%, rgba(94,196,138,.10), transparent 18%),
+    linear-gradient(180deg, #0c0b0a 0%, #11100e 42%, #15130f 100%);
+}
+
+body.app-loading {
+  overflow: hidden;
+}
+
+#views-root {
+  position: relative;
+  min-height: 100vh;
+}
+
+#views-root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(110,151,216,.08), transparent 26%),
+    radial-gradient(circle at 80% 0%, rgba(255,255,255,.04), transparent 24%);
+  z-index: -1;
+}
+
+.app-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top, rgba(110,151,216,.22), transparent 30%),
+    linear-gradient(180deg, rgba(12,11,10,.98), rgba(12,11,10,.94));
+  transition: opacity .45s ease, visibility .45s ease;
+}
+
+.app-preloader.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.app-preloader-panel {
+  width: min(100%, 420px);
+  padding: 28px;
+  border-radius: 28px;
+  border: 1px solid rgba(255,255,255,.09);
+  background: linear-gradient(180deg, rgba(42,38,32,.90), rgba(19,18,16,.88));
+  box-shadow: 0 30px 100px rgba(0,0,0,.45);
+  backdrop-filter: blur(20px) saturate(1.2);
+}
+
+.app-preloader-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.app-preloader-gem {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 0 0 rgba(110,151,216,.45);
+  animation: preloaderPulse 1.5s ease-in-out infinite;
+}
+
+.app-preloader-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(28px, 6vw, 36px);
+  line-height: 1.04;
+  margin-bottom: 10px;
+}
+
+.app-preloader-copy {
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.app-preloader-bar {
+  position: relative;
+  overflow: hidden;
+  height: 10px;
+  margin-top: 22px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.04);
+}
+
+.app-preloader-bar-fill {
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--amber-dark), var(--amber), var(--blue));
+  animation: preloadSweep 1.2s ease-in-out infinite;
+}
+
+@keyframes preloadSweep {
+  0% { transform: translateX(-100%); }
+  60% { transform: translateX(170%); }
+  100% { transform: translateX(170%); }
+}
+
+@keyframes preloaderPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(110,151,216,.08), 0 0 16px rgba(110,151,216,.30); }
+  50% { box-shadow: 0 0 0 12px rgba(110,151,216,0), 0 0 22px rgba(110,151,216,.45); }
+}
+
+.topnav {
+  padding-top: max(16px, calc(10px + env(safe-area-inset-top)));
+  margin: 10px auto 0;
+  width: min(1180px, calc(100% - 28px));
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 22px;
+  box-shadow: 0 18px 54px rgba(0,0,0,.28);
+}
+
+.hero,
+.pub-view,
+.dash-view,
+.search-view,
+.settings-view {
+  position: relative;
+}
+
+.dash-inner,
+.search-inner,
+.settings-inner,
+.pub-body {
+  width: min(1120px, 100%);
+}
+
+.metric,
+.dash-panel,
+.pub-proof-card,
+.pub-trust-item,
+.pub-journey-card,
+.pub-cred-card,
+.pub-cta-main,
+.pub-cta-side,
+.pub-why-card,
+.gallery-card,
+.gallery-admin-card {
+  box-shadow: 0 16px 44px rgba(0,0,0,.16);
+}
+
+.dash-tabs {
+  position: sticky;
+  top: 92px;
+  z-index: 30;
+  backdrop-filter: blur(16px);
+}
+
+.field-input,
+.field-textarea,
+.field-select,
+.btn,
+.nav-link,
+.nav-btn-ghost,
+.nav-btn-amber {
+  min-height: 46px;
+}
+
+.modal-overlay {
+  padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+}
+
+.modal {
+  max-height: min(88vh, 900px);
+  overflow: auto;
+}
+
+.toast-container {
+  width: min(calc(100% - 24px), 480px);
+  bottom: max(84px, calc(18px + env(safe-area-inset-bottom)));
+}
+
+.toast {
+  width: 100%;
+  text-align: center;
+  white-space: normal;
+}
+
+@media(max-width:900px) {
+  .topnav {
+    width: calc(100% - 20px);
+    margin-top: 8px;
+    border-radius: 18px;
+  }
+
+  .dash-tabs {
+    top: 82px;
+  }
+
+  .pub-quickbar,
+  .dash-panel,
+  .metric,
+  .auth-form-box,
+  .hero-panel {
+    border-radius: 22px;
+  }
+}
+
+@media(max-width:640px) {
+  body::after {
+    opacity: .02;
+  }
+
+  .topnav {
+    padding: 10px 12px;
+    min-height: 60px;
+  }
+
+  .logo {
+    font-size: 17px;
+  }
+
+  .hero,
+  .dash-view,
+  .search-view,
+  .settings-view,
+  .pub-view {
+    padding-top: 78px;
+  }
+
+  .hero {
+    min-height: auto;
+  }
+
+  .dash-inner,
+  .search-inner,
+  .settings-inner,
+  .pub-body {
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: 108px;
+  }
+
+  .dash-tabs {
+    top: 74px;
+    padding: 5px;
+    border-radius: 18px;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+
+  .dash-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dash-top,
+  .pub-top,
+  .pub-section-head,
+  .pub-gallery-head,
+  .dash-top-right,
+  .pub-action-row,
+  .pub-review-tools {
+    gap: 12px;
+  }
+
+  .metric {
+    min-height: 132px;
+  }
+
+  .bottom-nav {
+    bottom: max(10px, calc(10px + env(safe-area-inset-bottom)));
+    padding: 8px 10px;
+    border-radius: 20px;
+    width: calc(100% - 16px);
+  }
+
+  .bnav-tab {
+    min-height: 42px;
+  }
+
+  .modal {
+    border-radius: 24px;
+  }
+}
+
+@media(max-width:480px) {
+  .app-preloader-panel {
+    padding: 22px;
+    border-radius: 24px;
+  }
+
+  .pub-avatar {
+    width: 92px;
+    height: 92px;
+    font-size: 34px;
+  }
+
+  .pub-quickbar-stat,
+  .pub-review-point,
+  .pub-cred-point,
+  .pub-why-card,
+  .metric,
+  .dash-panel {
+    border-radius: 18px;
+  }
+}
