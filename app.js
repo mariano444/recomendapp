@@ -308,6 +308,7 @@ const STATE = {
     shareTitle: '',
     shareSubtitle: '',
     shareDescription: '',
+    shareImageMode: 'cover',
   },
   viewedProfile: null,
   reviews: [],
@@ -432,7 +433,7 @@ function profileShareLink(slug) {
 }
 
 function profileShareId(profile = {}) {
-  return profile.id || profile.slug || '';
+  return profile.slug || profile.id || '';
 }
 
 function profileLinkFromProfile(profile = {}) {
@@ -698,6 +699,7 @@ function mergeUserProfile(profile) {
     shareTitle: profile.share_title || '',
     shareSubtitle: profile.share_subtitle || '',
     shareDescription: profile.share_description || '',
+    shareImageMode: profile.share_image_mode || 'cover',
   };
 }
 
@@ -727,6 +729,7 @@ function setViewedProfileFromProfile(profile) {
     shareTitle: profile.share_title || '',
     shareSubtitle: profile.share_subtitle || '',
     shareDescription: profile.share_description || '',
+    shareImageMode: profile.share_image_mode || 'cover',
   };
 }
 
@@ -793,6 +796,13 @@ function buildProfileMeta(profile, reviews = []) {
   };
 }
 
+function getProfileShareImage(profile = {}) {
+  const mode = String(profile?.shareImageMode || '').trim() || 'cover';
+  if (mode === 'none') return '';
+  if (mode === 'avatar') return profile?.avatarUrl || profile?.coverUrl || '';
+  return profile?.coverUrl || profile?.avatarUrl || '';
+}
+
 function upsertMetaTag(selector, attributes) {
   let node = document.head.querySelector(selector);
   if (!node) {
@@ -806,13 +816,14 @@ function updateProfileDocumentMeta(profile, reviews = []) {
   const meta = buildProfileMeta(profile, reviews);
   const canonicalUrl = profileLinkFromProfile(profile);
   const shareUrl = profileShareLinkFromProfile(profile);
-  const shareImage = profile?.coverUrl || profile?.avatarUrl || '';
+  const shareImage = getProfileShareImage(profile);
   document.title = meta.composedTitle;
   upsertMetaTag('meta[name="description"]', { name: 'description', content: meta.description });
   upsertMetaTag('meta[property="og:title"]', { property: 'og:title', content: meta.composedTitle });
   upsertMetaTag('meta[property="og:description"]', { property: 'og:description', content: meta.description });
   upsertMetaTag('meta[property="og:url"]', { property: 'og:url', content: shareUrl });
   upsertMetaTag('meta[property="og:image"]', { property: 'og:image', content: shareImage });
+  upsertMetaTag('meta[name="twitter:card"]', { name: 'twitter:card', content: shareImage ? 'summary_large_image' : 'summary' });
   upsertMetaTag('meta[name="twitter:title"]', { name: 'twitter:title', content: meta.composedTitle });
   upsertMetaTag('meta[name="twitter:description"]', { name: 'twitter:description', content: meta.description });
   upsertMetaTag('meta[name="twitter:image"]', { name: 'twitter:image', content: shareImage });
@@ -1002,9 +1013,11 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
     } else {
       STATE.viewedProfile = { ...STATE.user };
       STATE.publicReviews = STATE.reviews.filter(r => r.published && r.paymentStatus === 'approved');
+      STATE.publicRewardItems = STATE.rewardItems.filter(item => item.active);
+      STATE.publicMediaItems = STATE.mediaItems.filter(item => item.active);
     }
     renderProfile();
-    if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(STATE.user.id || slug));
+    if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(STATE.user.slug || STATE.user.id || slug));
     return;
   }
 
@@ -1032,6 +1045,10 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
   }
 
   setViewedProfileFromProfile(profile);
+  STATE.publicReviews = [];
+  STATE.publicRewardItems = [];
+  STATE.publicMediaItems = [];
+  renderProfile();
   const [publicReviews, publicRewardItems, publicMediaItems] = await Promise.all([
     fetchPublicReviews(profile.id, forceRefresh),
     fetchRewardItems(profile.id, false),
@@ -1041,7 +1058,7 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
   STATE.publicRewardItems = publicRewardItems;
   STATE.publicMediaItems = publicMediaItems;
   renderProfile();
-  if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(profile.id || slug));
+  if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(profile.slug || profile.id || slug));
 }
 
 async function hydrateUser(session, navigateToDashboard = false) {
@@ -1093,10 +1110,10 @@ async function bootstrapSupabaseData() {
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     await hydrateUser(session, false);
-    if (requestedSlug) nav('profile');
+    if (requestedSlug) await nav('profile');
   } else if (requestedSlug) {
+    await nav('profile');
     await loadViewedProfileBySlug(requestedSlug, false);
-    nav('profile');
   }
 }
 
@@ -1126,7 +1143,8 @@ async function ensureViewsLoaded(viewIds = []) {
 
 async function loadViews() {
   if (viewsLoaded) return;
-  await ensureViewsLoaded(INITIAL_VIEW_IDS);
+  const requestedSlug = new URLSearchParams(window.location.search).get('slug') || CONFIG.profileSlug;
+  await ensureViewsLoaded(requestedSlug ? ['profile'] : INITIAL_VIEW_IDS);
   viewsLoaded = true;
 }
 
@@ -2140,6 +2158,7 @@ function renderDashboard() {
   const editShareTitle = document.getElementById('editShareTitle');
   const editShareSubtitle = document.getElementById('editShareSubtitle');
   const editShareDescription = document.getElementById('editShareDescription');
+  const editShareImageMode = document.getElementById('editShareImageMode');
   if (editNombre) editNombre.value = STATE.user.name || '';
   if (editApellido) editApellido.value = STATE.user.lastName || '';
   if (editRole) editRole.value = STATE.user.role || '';
@@ -2150,6 +2169,7 @@ function renderDashboard() {
   if (editShareTitle) editShareTitle.value = STATE.user.shareTitle || '';
   if (editShareSubtitle) editShareSubtitle.value = STATE.user.shareSubtitle || '';
   if (editShareDescription) editShareDescription.value = STATE.user.shareDescription || '';
+  if (editShareImageMode) editShareImageMode.value = STATE.user.shareImageMode || 'cover';
   if (isProfileTabVisible) {
     renderRewardAdmin();
     renderMediaAdmin();
@@ -2272,6 +2292,7 @@ function saveProfile() {
       const share_title = document.getElementById('editShareTitle')?.value?.trim() || '';
       const share_subtitle = document.getElementById('editShareSubtitle')?.value?.trim() || '';
       const share_description = document.getElementById('editShareDescription')?.value?.trim() || '';
+      const share_image_mode = document.getElementById('editShareImageMode')?.value || 'cover';
       const avatarFile = document.getElementById('editAvatarFile')?.files?.[0] || null;
       const coverFile = document.getElementById('editCoverFile')?.files?.[0] || null;
       const [avatar_url, cover_url] = await Promise.all([
@@ -2292,6 +2313,7 @@ function saveProfile() {
         share_title,
         share_subtitle,
         share_description,
+        share_image_mode,
       };
       let { data, error } = await sb
         .from('profiles')
@@ -2299,11 +2321,12 @@ function saveProfile() {
         .eq('id', STATE.user.id)
         .select('*')
         .single();
-      if (error && /share_title|share_subtitle|share_description/i.test(error.message || '')) {
+      if (error && /share_title|share_subtitle|share_description|share_image_mode/i.test(error.message || '')) {
         const fallbackPayload = { ...payload };
         delete fallbackPayload.share_title;
         delete fallbackPayload.share_subtitle;
         delete fallbackPayload.share_description;
+        delete fallbackPayload.share_image_mode;
         const fallbackResponse = await sb
           .from('profiles')
           .update(fallbackPayload)
@@ -2340,6 +2363,7 @@ function saveProfile() {
   STATE.user.shareTitle = document.getElementById('editShareTitle')?.value || STATE.user.shareTitle;
   STATE.user.shareSubtitle = document.getElementById('editShareSubtitle')?.value || STATE.user.shareSubtitle;
   STATE.user.shareDescription = document.getElementById('editShareDescription')?.value || STATE.user.shareDescription;
+  STATE.user.shareImageMode = document.getElementById('editShareImageMode')?.value || STATE.user.shareImageMode;
   const tagsRaw       = document.getElementById('editTags')?.value || '';
   STATE.user.tags     = tagsRaw.split(',').map(t=>t.trim()).filter(Boolean);
   STATE.user.initials = (STATE.user.name.charAt(0)+STATE.user.lastName.charAt(0)).toUpperCase();
