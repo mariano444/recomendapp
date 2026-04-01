@@ -2932,10 +2932,13 @@ async function checkMpReturn() {
       const publishedReview = confirmation?.payment_status === 'approved'
         ? await syncApprovedReview(targetReviewId, targetSlug, 18, 700)
         : await syncApprovedReview(targetReviewId, targetSlug, 24, 1200);
-
-      document.getElementById('csAuthor').textContent = data.nombre;
-      document.getElementById('csPago').textContent = 'MercadoPago';
-      document.getElementById('csAmount').textContent = data.amount ? ('$' + data.amount.toLocaleString('es-AR') + ' ARS') : 'Pago aprobado';
+      await ensureViewsLoaded(['confirm']);
+      const csAuthor = document.getElementById('csAuthor');
+      const csPago = document.getElementById('csPago');
+      const csAmount = document.getElementById('csAmount');
+      if (csAuthor) csAuthor.textContent = data.nombre;
+      if (csPago) csPago.textContent = 'MercadoPago';
+      if (csAmount) csAmount.textContent = data.amount ? ('$' + data.amount.toLocaleString('es-AR') + ' ARS') : 'Pago aprobado';
       setTimeout(() => nav(publishedReview ? 'confirm' : 'profile'), 150);
       toast(
         publishedReview
