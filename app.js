@@ -30,8 +30,12 @@ const VIEW_PARTIALS = {
   settings: './views/settings.html',
 };
 
+const INITIAL_VIEW_IDS = ['home', 'login', 'register', 'forgot', 'profile', 'form', 'confirm', 'dashboard'];
+const DEFERRED_VIEW_IDS = ['search', 'media', 'settings'];
+
 let viewsLoaded = false;
 let shareInFlight = false;
+const loadedViewIds = new Set();
 
 /* ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.?
    SUPABASE CLIENT
@@ -1096,21 +1100,33 @@ async function bootstrapSupabaseData() {
   }
 }
 
-async function loadViews() {
-  if (viewsLoaded) return;
+async function ensureViewsLoaded(viewIds = []) {
   const root = document.getElementById('views-root');
   if (!root) return;
-
+  const missing = viewIds.filter(viewId => VIEW_PARTIALS[viewId] && !loadedViewIds.has(viewId));
+  if (!missing.length) return;
   const entries = await Promise.all(
-    Object.entries(VIEW_PARTIALS).map(async ([viewId, path]) => {
-      const response = await fetch(path, { cache: 'force-cache' });
+    missing.map(async (viewId) => {
+      const response = await fetch(VIEW_PARTIALS[viewId], { cache: 'force-cache' });
       if (!response.ok) throw new Error(`No se pudo cargar la vista "${viewId}"`);
       return [viewId, await response.text()];
     })
   );
+  entries.forEach(([viewId, markup]) => {
+    const holder = document.createElement('div');
+    holder.innerHTML = String(markup).trim();
+    const viewNode = holder.firstElementChild;
+    if (viewNode) {
+      root.appendChild(viewNode);
+      loadedViewIds.add(viewId);
+      hydrateIcons(viewNode);
+    }
+  });
+}
 
-  root.innerHTML = entries.map(([, markup]) => markup.trim()).join('\n');
-  hydrateIcons(root);
+async function loadViews() {
+  if (viewsLoaded) return;
+  await ensureViewsLoaded(INITIAL_VIEW_IDS);
   viewsLoaded = true;
 }
 
@@ -1134,8 +1150,9 @@ function runViewLifecycle(viewId) {
 /* ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.?
    NAVIGATION
 ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.? */
-function nav(viewId) {
+async function nav(viewId) {
   if (!viewsLoaded) return;
+  await ensureViewsLoaded([viewId]);
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const el = document.getElementById('view-' + viewId);
   if (el) { el.classList.add('active'); window.scrollTo(0,0); }
@@ -2355,10 +2372,16 @@ async function loadSettingsForm() {
   const stA = document.getElementById('stApellido');
   const stP = document.getElementById('stTelefono');
   const stE = document.getElementById('stEmail');
+  const stShareTitle = document.getElementById('stShareTitle');
+  const stShareSubtitle = document.getElementById('stShareSubtitle');
+  const stShareDescription = document.getElementById('stShareDescription');
   if (stN) stN.value = STATE.user.name;
   if (stA) stA.value = STATE.user.lastName;
   if (stP) stP.value = STATE.user.phone || '';
   if (stE) stE.value = STATE.user.email;
+  if (stShareTitle) stShareTitle.value = STATE.user.shareTitle || '';
+  if (stShareSubtitle) stShareSubtitle.value = STATE.user.shareSubtitle || '';
+  if (stShareDescription) stShareDescription.value = STATE.user.shareDescription || '';
 }
 
 async function saveAccountSettings() {
@@ -2369,17 +2392,42 @@ async function saveAccountSettings() {
   const nombre = document.getElementById('stNombre')?.value?.trim() || STATE.user.name;
   const apellido = document.getElementById('stApellido')?.value?.trim() || STATE.user.lastName;
   const telefono = document.getElementById('stTelefono')?.value?.trim() || '';
-  const { data, error } = await sb
+  const share_title = document.getElementById('stShareTitle')?.value?.trim() || '';
+  const share_subtitle = document.getElementById('stShareSubtitle')?.value?.trim() || '';
+  const share_description = document.getElementById('stShareDescription')?.value?.trim() || '';
+  let { data, error } = await sb
     .from('profiles')
     .update({
       nombre,
       apellido,
       telefono,
       slug: STATE.user.slug,
+      share_title,
+      share_subtitle,
+      share_description,
     })
     .eq('id', STATE.user.id)
     .select('*')
     .single();
+
+  if (error && /share_title|share_subtitle|share_description/i.test(error.message || '')) {
+    const fallbackResponse = await sb
+      .from('profiles')
+      .update({
+        nombre,
+        apellido,
+        telefono,
+        slug: STATE.user.slug,
+      })
+      .eq('id', STATE.user.id)
+      .select('*')
+      .single();
+    data = fallbackResponse.data;
+    error = fallbackResponse.error;
+    if (!error) {
+      toast('La cuenta se guardo, pero para persistir metadatos personalizados falta aplicar la migracion SQL.', 'info');
+    }
+  }
 
   if (error) {
     toast(error.message || 'No se pudo guardar la cuenta','error');
@@ -2864,10 +2912,12 @@ async function initApp() {
     await checkMpReturn();
     if ('requestIdleCallback' in window) {
       window.requestIdleCallback(() => {
+        ensureViewsLoaded(DEFERRED_VIEW_IDS);
         if (!STATE.directoryProfiles?.length) loadSearchProfiles();
       }, { timeout: 1500 });
     } else {
       setTimeout(() => {
+        ensureViewsLoaded(DEFERRED_VIEW_IDS);
         if (!STATE.directoryProfiles?.length) loadSearchProfiles();
       }, 800);
     }
