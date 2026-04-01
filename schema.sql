@@ -34,6 +34,12 @@ CREATE TABLE IF NOT EXISTS profiles (
   share_subtitle TEXT,
   share_description TEXT,
   share_image_mode TEXT NOT NULL DEFAULT 'cover',
+  review_prompt_suggestions TEXT[] NOT NULL DEFAULT ARRAY[
+    'Me hizo sentir en confianza desde el primer momento.',
+    'Fue muy claro/a, profesional y atento/a en todo el proceso.',
+    'Lo que más valoro es la dedicación y el seguimiento.',
+    'Lo/la volvería a elegir y recomendaría sin dudas.'
+  ],
   plan          plan_type NOT NULL DEFAULT 'free',
   mp_alias      TEXT,                           -- alias CBU/CVU para recibir pagos
   mp_cbu        TEXT,                           -- CBU para transferencias
@@ -105,6 +111,8 @@ CREATE TABLE IF NOT EXISTS reviews (
   reviewer_nombre TEXT,
   reviewer_email  TEXT,
   reviewer_phone  TEXT,
+  reviewer_province TEXT,
+  reviewer_locality TEXT,
   reviewer_avatar_url TEXT,
   review_image_url TEXT,
   is_anon         BOOLEAN NOT NULL DEFAULT FALSE,
