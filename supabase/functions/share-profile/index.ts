@@ -23,6 +23,26 @@ function getShareImage(profile: Record<string, unknown>) {
   return coverUrl || avatarUrl;
 }
 
+function isPreviewBot(userAgent: string) {
+  const ua = userAgent.toLowerCase();
+  return [
+    "whatsapp",
+    "facebookexternalhit",
+    "meta-externalagent",
+    "twitterbot",
+    "linkedinbot",
+    "slackbot",
+    "discordbot",
+    "telegrambot",
+    "skypeuripreview",
+    "googlebot",
+    "bingbot",
+    "crawler",
+    "spider",
+    "bot",
+  ].some((token) => ua.includes(token));
+}
+
 serve(async (req) => {
   try {
     const url = new URL(req.url);
@@ -72,7 +92,13 @@ serve(async (req) => {
     const totalEarned = Math.round(Number(profile.total_earned || 0) / 100);
     const profileIdentifier = cleanText(profile.id || profile.slug || "");
     const appProfileUrl = `${appUrl}?slug=${encodeURIComponent(profileIdentifier)}`;
-    const sharePageUrl = req.url;
+    const shareVersion = cleanText(url.searchParams.get("v") || "");
+    const publicShareBaseUrl = `${appUrl.replace(/\/+$/, "")}/share/${encodeURIComponent(profileIdentifier)}`;
+    const sharePageUrl = shareVersion ? `${publicShareBaseUrl}?v=${encodeURIComponent(shareVersion)}` : publicShareBaseUrl;
+    const userAgent = req.headers.get("user-agent") || "";
+    if (!isPreviewBot(userAgent)) {
+      return Response.redirect(appProfileUrl, 302);
+    }
     const shareImage = getShareImage(profile);
     const title = shareSubtitle
       ? `${shareTitle} | ${shareSubtitle} | Recomendapp - Reconoce quien te atendio bien`
