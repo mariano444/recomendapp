@@ -427,9 +427,7 @@ function profileLink(slug) {
 }
 
 function profileShareLink(slug) {
-  if (!slug) return profileLink(slug);
-  const base = (CONFIG.appUrl || window.location.origin || '').replace(/\/+$/, '');
-  return `${base}/share/${encodeURIComponent(slug)}`;
+  return profileLink(slug);
 }
 
 function profileShareId(profile = {}) {
