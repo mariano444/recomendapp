@@ -70,7 +70,7 @@ serve(async (req) => {
     const totalReviews = Number(profile.review_count || 0);
     const highestReward = Math.round(Number(topReview?.amount_cents || 0) / 100);
     const totalEarned = Math.round(Number(profile.total_earned || 0) / 100);
-    const profileIdentifier = cleanText(profile.slug || profile.id || "");
+    const profileIdentifier = cleanText(profile.id || profile.slug || "");
     const appProfileUrl = `${appUrl}?slug=${encodeURIComponent(profileIdentifier)}`;
     const sharePageUrl = req.url;
     const shareImage = getShareImage(profile);
