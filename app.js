@@ -2127,6 +2127,9 @@ document.getElementById('imageLightbox')?.addEventListener('click', e => {
    DASHBOARD
 ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.? */
 function renderDashboard() {
+  const isProfileTabVisible = document.getElementById('tabPerfil')?.style.display !== 'none';
+  const isAnalyticsTabVisible = document.getElementById('tabAnalytics')?.style.display !== 'none';
+  const isPaymentsTabVisible = document.getElementById('tabPagos')?.style.display !== 'none';
   const editNombre = document.getElementById('editNombre');
   const editApellido = document.getElementById('editApellido');
   const editRole = document.getElementById('editRole');
@@ -2147,8 +2150,10 @@ function renderDashboard() {
   if (editShareTitle) editShareTitle.value = STATE.user.shareTitle || '';
   if (editShareSubtitle) editShareSubtitle.value = STATE.user.shareSubtitle || '';
   if (editShareDescription) editShareDescription.value = STATE.user.shareDescription || '';
-  renderRewardAdmin();
-  renderMediaAdmin();
+  if (isProfileTabVisible) {
+    renderRewardAdmin();
+    renderMediaAdmin();
+  }
   // Avatar y t?tulos
   const av = document.getElementById('dashAvatar');
   if (av) setAvatarNode(av, STATE.user.initials, STATE.user.avatarUrl);
@@ -2191,52 +2196,53 @@ function renderDashboard() {
     </div>`).join('');
 
   // Chart
-  const bars = document.getElementById('chartBars');
-  const labels = document.getElementById('chartLabels');
-  if (bars) {
-    const max = Math.max(...CHART_DATA.map(d=>d.val));
-    bars.innerHTML = CHART_DATA.map(d => {
-      const h = Math.round((d.val/max)*90)+10;
-      return `<div class="chart-bar-wrap"><div class="chart-bar" style="height:${h}px" title="$${d.val.toLocaleString('es-AR')}"></div></div>`;
-    }).join('');
-  }
-  if (labels) labels.innerHTML = CHART_DATA.map(d => `<div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">${d.day}</div>`).join('');
+  if (isAnalyticsTabVisible) {
+    const bars = document.getElementById('chartBars');
+    const labels = document.getElementById('chartLabels');
+    if (bars) {
+      const max = Math.max(...CHART_DATA.map(d=>d.val));
+      bars.innerHTML = CHART_DATA.map(d => {
+        const h = Math.round((d.val/max)*90)+10;
+        return `<div class="chart-bar-wrap"><div class="chart-bar" style="height:${h}px" title="$${d.val.toLocaleString('es-AR')}"></div></div>`;
+      }).join('');
+    }
+    if (labels) labels.innerHTML = CHART_DATA.map(d => `<div style="flex:1;text-align:center;font-size:10px;color:var(--text3)">${d.day}</div>`).join('');
 
-  // Distribucion montos
-  const ad = document.getElementById('amtDistrib');
-  if (ad) {
-    const ranges = [
-      {label:'$0-1k', count:STATE.reviews.filter(r=>r.amount<=1000).length},
-      {label:'$1k-5k', count:STATE.reviews.filter(r=>r.amount>1000&&r.amount<=5000).length},
-      {label:'$5k-10k', count:STATE.reviews.filter(r=>r.amount>5000&&r.amount<=10000).length},
-      {label:'$10k+', count:STATE.reviews.filter(r=>r.amount>10000).length},
-    ];
-    const maxC = Math.max(...ranges.map(r=>r.count),1);
-    ad.innerHTML = ranges.map(r => `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div style="width:64px;font-size:12px;color:var(--text2)">${r.label}</div>
-        <div style="flex:1;background:var(--surface);border-radius:4px;height:8px;overflow:hidden">
-          <div style="height:100%;border-radius:4px;background:var(--amber);width:${Math.round(r.count/maxC*100)}%;transition:width .6s"></div>
+    const ad = document.getElementById('amtDistrib');
+    if (ad) {
+      const ranges = [
+        {label:'$0-1k', count:STATE.reviews.filter(r=>r.amount<=1000).length},
+        {label:'$1k-5k', count:STATE.reviews.filter(r=>r.amount>1000&&r.amount<=5000).length},
+        {label:'$5k-10k', count:STATE.reviews.filter(r=>r.amount>5000&&r.amount<=10000).length},
+        {label:'$10k+', count:STATE.reviews.filter(r=>r.amount>10000).length},
+      ];
+      const maxC = Math.max(...ranges.map(r=>r.count),1);
+      ad.innerHTML = ranges.map(r => `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="width:64px;font-size:12px;color:var(--text2)">${r.label}</div>
+          <div style="flex:1;background:var(--surface);border-radius:4px;height:8px;overflow:hidden">
+            <div style="height:100%;border-radius:4px;background:var(--amber);width:${Math.round(r.count/maxC*100)}%;transition:width .6s"></div>
+          </div>
+          <div style="font-size:12px;color:var(--text3);width:20px;text-align:right">${r.count}</div>
+        </div>`).join('');
+    }
+
+    const replied = STATE.reviews.filter(r=>r.reply).length;
+    const rateEl = document.getElementById('analyticsReplyRate');
+    if (rateEl) rateEl.textContent = STATE.reviews.length ? Math.round(replied/STATE.reviews.length*100)+'%' : '0%';
+  }
+
+  if (isPaymentsTabVisible) {
+    const ph = document.getElementById('payHistory');
+    if (ph) ph.innerHTML = STATE.reviews.slice(0, 10).map(p => `
+      <div class="pay-row">
+        <div class="pay-row-left">
+          <div class="avatar av-sm" style="background:linear-gradient(135deg,#635D55,#3A3630)">${(p.name || '?').charAt(0)}</div>
+          <div class="pay-row-info"><div class="pay-row-name">${p.name}</div><div class="pay-row-date">${p.date} ? MercadoPago</div></div>
         </div>
-        <div style="font-size:12px;color:var(--text3);width:20px;text-align:right">${r.count}</div>
+        <div class="pay-row-amount">+${formatCurrency(p.amount)}</div>
       </div>`).join('');
   }
-
-  // Analytics
-  const replied = STATE.reviews.filter(r=>r.reply).length;
-  const rateEl = document.getElementById('analyticsReplyRate');
-  if (rateEl) rateEl.textContent = STATE.reviews.length ? Math.round(replied/STATE.reviews.length*100)+'%' : '0%';
-
-  // Pagos
-  const ph = document.getElementById('payHistory');
-  if (ph) ph.innerHTML = STATE.reviews.slice(0, 10).map(p => `
-    <div class="pay-row">
-      <div class="pay-row-left">
-        <div class="avatar av-sm" style="background:linear-gradient(135deg,#635D55,#3A3630)">${(p.name || '?').charAt(0)}</div>
-        <div class="pay-row-info"><div class="pay-row-name">${p.name}</div><div class="pay-row-date">${p.date} ? MercadoPago</div></div>
-      </div>
-      <div class="pay-row-amount">+${formatCurrency(p.amount)}</div>
-    </div>`).join('');
 
   // Link
   const pl = document.getElementById('profileLinkDisplay');
