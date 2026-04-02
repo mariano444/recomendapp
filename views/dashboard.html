@@ -117,7 +117,21 @@
             <div class="field"><label class="field-label">Imagen</label><input class="field-input" type="file" id="rewardImageFile" accept="image/*"></div>
             <div class="field"><label class="field-label">O URL de imagen</label><input class="field-input" id="rewardImageUrl" placeholder="https://..."></div>
           </div>
-          <div class="field"><label class="field-label">Archivo / URL de la promo</label><input class="field-input" id="rewardDownloadUrl" placeholder="https://..."></div>
+          <div class="three-col">
+            <div class="field"><label class="field-label">Tipo de recompensa</label><select class="field-select field-input" id="rewardKind"><option value="image">Imagen</option><option value="video">Video</option><option value="audio">Audio</option><option value="pdf">PDF</option><option value="document">Documento</option><option value="promo">PromociÃ³n</option></select></div>
+            <div class="field"><label class="field-label">Vista previa</label><select class="field-select field-input" id="rewardVisibility"><option value="visible">Visible antes del pago</option><option value="blocked">Bloqueada hasta pagar</option></select></div>
+            <div class="field"><label class="field-label">Entrega</label><select class="field-select field-input" id="rewardDeliveryMode"><option value="download">Descargar despuÃ©s de aprobar</option><option value="view">Ver despuÃ©s de aprobar</option></select></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><label class="field-label">Archivo de recompensa</label><input class="field-input" type="file" id="rewardAssetFile" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></div>
+            <div class="field"><label class="field-label">O URL del archivo</label><input class="field-input" id="rewardDownloadUrl" placeholder="https://..."></div>
+          </div>
+          <div class="field"><label class="field-label">Texto teaser / sorpresa</label><input class="field-input" id="rewardTeaser" placeholder="Ej: Beneficio sorpresa desbloqueado despuÃ©s del pago aprobado"></div>
+          <div class="three-col">
+            <div class="field"><label class="field-label">Sorpresa</label><select class="field-select field-input" id="rewardIsSurprise"><option value="false">No</option><option value="true">SÃ­, ocultar detalles</option></select></div>
+            <div class="field"><label class="field-label">Cupos limitados</label><input class="field-input" id="rewardStockTotal" type="number" min="0" step="1" placeholder="0 = sin lÃ­mite"></div>
+            <div class="field"><label class="field-label">VÃ¡lida hasta</label><input class="field-input" id="rewardAvailableUntil" type="datetime-local"></div>
+          </div>
           <div class="field"><label class="field-label">Mostrar en formulario</label><select class="field-select field-input" id="rewardShowInForm"><option value="false">No mostrar</option><option value="true">Mostrar esta promo</option></select></div>
           <div class="gallery-admin-actions">
             <button class="btn btn-amber btn-md" onclick="saveRewardItem()">Guardar recompensa</button>
