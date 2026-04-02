@@ -3637,8 +3637,26 @@ async function shareProfileLink(options = {}) {
 
 function renderMediaVault() {
   const grid = document.getElementById('mediaVaultGrid');
-  const rewardGrid = document.getElementById('rewardVaultGrid');
   if (!grid) return;
+  let rewardGrid = document.getElementById('rewardVaultGrid');
+  if (!rewardGrid) {
+    const section = document.createElement('div');
+    section.innerHTML = `
+      <div class="pub-gallery-head" style="margin-bottom:18px">
+        <div>
+          <div class="pub-gallery-title">Recompensas por reseña</div>
+          <div class="pub-gallery-sub">Elegi una recompensa especifica para que el link compartido lleve directo al formulario con esa promo preseleccionada.</div>
+        </div>
+      </div>
+      <div class="pub-gallery-grid" id="rewardVaultGrid"></div>
+      <div class="pub-gallery-head" style="margin:34px 0 18px">
+        <div>
+          <div class="pub-gallery-title">Galeria y contenido desbloqueable</div>
+        </div>
+      </div>`;
+    grid.parentElement?.insertBefore(section, grid);
+    rewardGrid = document.getElementById('rewardVaultGrid');
+  }
   const rewards = STATE.publicRewardItems || [];
   const items = STATE.publicMediaItems || [];
   if (rewardGrid) {
