@@ -327,7 +327,7 @@ const STATE = {
   loggedIn: false,
   isAnon: false,
   selectedAmt: 1000,
-  selectedPay: 'mercadopago',
+  selectedPay: 'galiopay',
   currentReplyId: null,
   currentRewardEditId: null,
   currentMediaEditId: null,
@@ -2433,7 +2433,7 @@ function revCardHTML(r, isDash) {
   const maskedPhone = maskPhone(r.phone);
   const reviewPhone = maskedPhone ? `<span class="rev-contact">${maskedPhone}</span>` : '';
   const reviewLocation = [r.locality, r.province].filter(Boolean).join(', ');
-  const reviewLocationHtml = reviewLocation ? `<span class="rev-contact rev-location">${reviewLocation}</span>` : '';
+  const reviewLocationHtml = reviewLocation ? `<div class="rev-contact rev-location">Ciudad / localidad: ${reviewLocation}</div>` : '';
   const reviewImage = r.reviewImageUrl ? `<button class="rev-media" type="button" onclick="openImageLightbox('${r.reviewImageUrl}')" style="background-image:url('${r.reviewImageUrl}')"><span class="rev-media-zoom">Ver completa</span></button>` : '';
   const topRewardBadge = isTopReward ? `<span class="rev-top-badge">Mayor recompensa verificada</span>` : '';
 
@@ -2447,7 +2447,8 @@ function revCardHTML(r, isDash) {
           <span class="badge badge-amber"> $${r.amount.toLocaleString('es-AR')}</span>
           <span style="font-size:11px;color:var(--text3)">${r.date}</span>
         </div>
-        ${reviewPhone}${reviewLocationHtml}
+        ${reviewPhone}
+        ${reviewLocationHtml}
         <div class="d-rev-text">"${r.text.substring(0,120)}${r.text.length>120?'...':''}"</div>
         ${reviewImage}
         ${replyBlock}
