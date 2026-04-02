@@ -378,11 +378,24 @@ const STATE = {
   publicReviewSort: 'amount_desc',
   publicReviewDateFilter: 'all',
   publicReviewVisibleCount: 6,
+  rewardItemsSchemaMode: loadRewardItemsSchemaMode(),
   searchDebounce: null,
 };
 
 const PUBLIC_REVIEW_BATCH_SIZE = 6;
 let publicReviewObserver = null;
+
+function loadRewardItemsSchemaMode() {
+  try {
+    return localStorage.getItem('aplauso_reward_items_schema_mode') || 'legacy';
+  } catch {
+    return 'legacy';
+  }
+}
+
+function saveRewardItemsSchemaMode(mode = 'full') {
+  try { localStorage.setItem('aplauso_reward_items_schema_mode', mode); } catch {}
+}
 
 const CHART_DATA = [
   {day:'Lun',val:8500},{day:'Mar',val:12000},{day:'Mi?',val:5000},{day:'Jue',val:18500},
@@ -1282,11 +1295,21 @@ async function fetchRewardItems(profileId, isOwner = false) {
     if (!isOwner) query = query.eq('active', true);
     return query;
   };
-  let { data, error } = await buildQuery('id, title, description, image_url, download_url, show_in_form, active, sort_order');
-  if (error && /download_url|show_in_form/i.test(error.message || '')) {
-    const fallback = await buildQuery('id, title, description, image_url, active, sort_order');
+  const fullSelect = 'id, title, description, image_url, download_url, show_in_form, active, sort_order';
+  const legacySelect = 'id, title, description, image_url, active, sort_order';
+  const prefersLegacy = STATE.rewardItemsSchemaMode === 'legacy';
+  let { data, error } = await buildQuery(prefersLegacy ? legacySelect : fullSelect);
+  if (!prefersLegacy && error && /download_url|show_in_form|created_at|sort_order/i.test(error.message || '')) {
+    const fallback = await buildQuery(legacySelect);
     data = fallback.data;
     error = fallback.error;
+    if (!error) {
+      STATE.rewardItemsSchemaMode = 'legacy';
+      saveRewardItemsSchemaMode('legacy');
+    }
+  } else if (!error && !prefersLegacy) {
+    STATE.rewardItemsSchemaMode = 'full';
+    saveRewardItemsSchemaMode('full');
   }
   if (error) throw error;
   return (data || []).map(mapRewardItem);
