@@ -11,51 +11,42 @@
       </div>
       <div class="pub-name" id="pubName">Cargando perfil...</div>
       <div class="pub-meta">
-        <span id="pubRole">Psicóloga clínica</span>
+        <span id="pubRole">Psicologa clinica</span>
         <div class="meta-dot"></div>
         <span id="pubCity">Buenos Aires, AR</span>
         <span class="badge badge-green" id="pubVerified">Verificada</span>
       </div>
-      <p class="pub-bio" id="pubBio">Acompañamiento terapéutico en adultos y adolescentes. Especializada en TCC y enfoque sistémico. Más de 12 años de experiencia clínica y formación continua.</p>
+      <p class="pub-bio" id="pubBio">Acompañamiento terapeutico en adultos y adolescentes. Especializada en TCC y enfoque sistemico. Mas de 12 años de experiencia clinica y formacion continua.</p>
       <div class="pub-tags" id="pubTags"></div>
     </div>
     <div class="pub-quickbar" id="pubQuickbar"></div>
-    <div class="pub-gallery-wrap" id="pubRewardsSection">
-      <div class="pub-gallery-head">
-        <div>
-          <div class="pub-gallery-title">Recompensas por dejar tu reseña</div>
-          <div class="pub-gallery-sub">Estos premios se entregan cuando tu pago queda aprobado. No tienen precio aparte: son un reconocimiento adicional por tomarte el tiempo de dejar una reseña valiosa.</div>
-        </div>
-      </div>
-      <div class="pub-gallery-grid" id="pubRewardsGrid"></div>
-    </div>
     <div class="pub-gallery-wrap" id="pubMediaSection">
       <div class="pub-gallery-head">
         <div>
-          <div class="pub-gallery-title">Galería y contenido desbloqueable</div>
-          <div class="pub-gallery-sub">Podés publicar imágenes, videos, PDFs u otros archivos. El perfil decide cuáles se ven gratis, cuáles requieren pago y si el contenido se descarga o solo se visualiza desde la página.</div>
+          <div class="pub-gallery-title">Recompensas y contenido</div>
+          <div class="pub-gallery-sub">Las recompensas por reseña y el contenido del perfil viven en una vista dedicada. Desde ahi podes ver todas, compartir una promo puntual o enviar el formulario libre.</div>
         </div>
-        <button class="btn btn-amber btn-md" onclick="nav('media')">Ver galería completa</button>
+        <button class="btn btn-amber btn-md" onclick="nav('media')">Ver recompensas y galeria</button>
       </div>
       <div class="pub-gallery-grid" id="pubMediaPreviewGrid"></div>
     </div>
     <div class="pub-section-head">
       <div>
         <div class="pub-section-title">Reseñas recibidas</div>
-        <div class="pub-section-sub">La prueba social principal del perfil. Acá se ve la experiencia real de quienes ya dejaron su reconocimiento.</div>
+        <div class="pub-section-sub">La prueba social principal del perfil. Aca se ve la experiencia real de quienes ya dejaron su reconocimiento.</div>
       </div>
       <div class="pub-review-summary" id="pubReviewSummary"></div>
       <div class="pub-review-tools">
         <select class="field-select field-input pub-review-select" id="reviewSortSelect" onchange="setPublicReviewSort(this.value)">
           <option value="amount_desc">Mayor recompensa</option>
-          <option value="recent">Más recientes</option>
-          <option value="oldest">Más antiguas</option>
+          <option value="recent">Mas recientes</option>
+          <option value="oldest">Mas antiguas</option>
           <option value="amount_asc">Menor recompensa</option>
         </select>
         <select class="field-select field-input pub-review-select" id="reviewDateFilterSelect" onchange="setPublicReviewDateFilter(this.value)">
           <option value="all">Todas las fechas</option>
-          <option value="7d">Últimos 7 días</option>
-          <option value="30d">Últimos 30 días</option>
+          <option value="7d">Ultimos 7 dias</option>
+          <option value="30d">Ultimos 30 dias</option>
         </select>
         <div style="font-size:12px;color:var(--text3)" id="revCount"></div>
       </div>
