@@ -331,6 +331,7 @@ const STATE = {
   currentReplyId: null,
   currentRewardEditId: null,
   currentMediaEditId: null,
+  rewardSavePending: false,
   mpConfig: loadMpConfig(),
   user: {
     id: null,
@@ -728,7 +729,8 @@ function getPrimaryRewardItem(items = STATE.publicRewardItems || []) {
 }
 
 function getFeaturedPublicRewardItems(items = STATE.publicRewardItems || []) {
-  const featured = getPrimaryRewardItem(items);
+  const activeItems = (items || []).filter(item => item && item.active !== false);
+  const featured = activeItems.find(item => item.showInForm) || activeItems[0] || null;
   return featured ? [featured] : [];
 }
 
@@ -2194,19 +2196,26 @@ async function fetchRewardItems(profileId, isOwner = false) {
     return query;
   };
   let { data, error } = await buildQuery('id, title, description, image_url, download_url, reward_kind, visibility, delivery_mode, teaser, is_surprise, stock_total, stock_claimed, available_until, show_in_form, active, sort_order');
-  if (error && /reward_kind|delivery_mode|is_surprise|stock_total|available_until|show_in_form|download_url/i.test(error.message || '')) {
-    const fallback = await buildQuery('id, title, description, image_url, download_url, show_in_form, active, sort_order');
-    data = fallback.data;
-    error = fallback.error;
+  if (error && /reward_kind|visibility|delivery_mode|teaser|is_surprise|stock_total|stock_claimed|available_until|show_in_form|download_url/i.test(error.message || '')) {
+    const fallbackWithDownloads = await buildQuery('id, title, description, image_url, download_url, show_in_form, active, sort_order');
+    data = fallbackWithDownloads.data;
+    error = fallbackWithDownloads.error;
+  }
+  if (error && /download_url|show_in_form/i.test(error.message || '')) {
+    const fallbackBasic = await buildQuery('id, title, description, image_url, active, sort_order');
+    data = fallbackBasic.data;
+    error = fallbackBasic.error;
   }
   if (error) throw error;
   return (data || []).map(mapRewardItem);
 }
 
 async function saveRewardItem() {
+  if (STATE.rewardSavePending) return;
   if (!sb || !STATE.user.id) return toast('Inicia sesion para guardar recompensas','error');
   const title = document.getElementById('rewardTitle')?.value?.trim() || '';
   if (!title) return toast('Escribe un titulo para la recompensa','error');
+  STATE.rewardSavePending = true;
   const description = document.getElementById('rewardDescription')?.value?.trim() || '';
   const imageFile = document.getElementById('rewardImageFile')?.files?.[0] || null;
   const assetFile = document.getElementById('rewardAssetFile')?.files?.[0] || null;
@@ -2244,47 +2253,51 @@ async function saveRewardItem() {
   const query = STATE.currentRewardEditId
     ? sb.from('profile_reward_items').update(payload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id).select('id').single()
     : sb.from('profile_reward_items').insert(payload).select('id').single();
-  let { data, error } = await query;
-  if (error && /reward_kind|visibility|delivery_mode|teaser|is_surprise|stock_total|available_until|download_url|show_in_form/i.test(error.message || '')) {
-    const fallbackPayload = { ...payload };
-    delete fallbackPayload.reward_kind;
-    delete fallbackPayload.visibility;
-    delete fallbackPayload.delivery_mode;
-    delete fallbackPayload.teaser;
-    delete fallbackPayload.is_surprise;
-    delete fallbackPayload.stock_total;
-    delete fallbackPayload.available_until;
-    delete fallbackPayload.download_url;
-    delete fallbackPayload.show_in_form;
-    const fallbackQuery = STATE.currentRewardEditId
-      ? sb.from('profile_reward_items').update(fallbackPayload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id).select('id').single()
-      : sb.from('profile_reward_items').insert(fallbackPayload).select('id').single();
-    const fallbackResponse = await fallbackQuery;
-    data = fallbackResponse.data;
-    error = fallbackResponse.error;
-    if (!error) {
-      toast('La recompensa se guardo, pero faltan columnas nuevas en la base para tipos, archivos y reglas avanzadas.', 'info');
+  try {
+    let { data, error } = await query;
+    if (error && /reward_kind|visibility|delivery_mode|teaser|is_surprise|stock_total|available_until|download_url|show_in_form/i.test(error.message || '')) {
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.reward_kind;
+      delete fallbackPayload.visibility;
+      delete fallbackPayload.delivery_mode;
+      delete fallbackPayload.teaser;
+      delete fallbackPayload.is_surprise;
+      delete fallbackPayload.stock_total;
+      delete fallbackPayload.available_until;
+      delete fallbackPayload.download_url;
+      delete fallbackPayload.show_in_form;
+      const fallbackQuery = STATE.currentRewardEditId
+        ? sb.from('profile_reward_items').update(fallbackPayload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id).select('id').single()
+        : sb.from('profile_reward_items').insert(fallbackPayload).select('id').single();
+      const fallbackResponse = await fallbackQuery;
+      data = fallbackResponse.data;
+      error = fallbackResponse.error;
+      if (!error) {
+        toast('La recompensa se guardo, pero faltan columnas nuevas en la base para tipos, archivos y reglas avanzadas.', 'info');
+      }
     }
-  }
-  if (error) return toast(error.message || 'No se pudo guardar la recompensa','error');
-  if (!error && showInForm) {
-    const selectedRewardId = data?.id || STATE.currentRewardEditId || '';
-    setSelectedFormRewardId(STATE.user.id, selectedRewardId);
-    const rewardsToHide = (STATE.rewardItems || []).filter(item => item.id && item.id !== selectedRewardId && item.showInForm);
-    for (const item of rewardsToHide) {
-      await sb.from('profile_reward_items').update({ show_in_form: false }).eq('profile_id', STATE.user.id).eq('id', item.id);
+    if (error) return toast(error.message || 'No se pudo guardar la recompensa','error');
+    if (!error && showInForm) {
+      const selectedRewardId = data?.id || STATE.currentRewardEditId || '';
+      setSelectedFormRewardId(STATE.user.id, selectedRewardId);
+      const rewardsToHide = (STATE.rewardItems || []).filter(item => item.id && item.id !== selectedRewardId && item.showInForm);
+      for (const item of rewardsToHide) {
+        await sb.from('profile_reward_items').update({ show_in_form: false }).eq('profile_id', STATE.user.id).eq('id', item.id);
+      }
+      await sb.from('profile_reward_items').update({ show_in_form: true }).eq('profile_id', STATE.user.id).eq('id', selectedRewardId);
+    } else if (!error && !showInForm && (data?.id || STATE.currentRewardEditId) === getSelectedFormRewardId(STATE.user.id)) {
+      setSelectedFormRewardId(STATE.user.id, '');
     }
-    await sb.from('profile_reward_items').update({ show_in_form: true }).eq('profile_id', STATE.user.id).eq('id', selectedRewardId);
-  } else if (!error && !showInForm && (data?.id || STATE.currentRewardEditId) === getSelectedFormRewardId(STATE.user.id)) {
-    setSelectedFormRewardId(STATE.user.id, '');
+    STATE.rewardItems = await fetchRewardItems(STATE.user.id, true);
+    STATE.publicRewardItems = STATE.rewardItems.filter(item => item.active);
+    renderRewardAdmin();
+    renderPublicRewards();
+    renderFormRewardSpotlight();
+    resetRewardForm();
+    toast('Recompensa guardada ','success');
+  } finally {
+    STATE.rewardSavePending = false;
   }
-  STATE.rewardItems = await fetchRewardItems(STATE.user.id, true);
-  STATE.publicRewardItems = STATE.rewardItems.filter(item => item.active);
-  renderRewardAdmin();
-  renderPublicRewards();
-  renderFormRewardSpotlight();
-  resetRewardForm();
-  toast('Recompensa guardada ','success');
 }
 
 function resetMediaForm() {
