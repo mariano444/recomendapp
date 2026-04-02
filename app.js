@@ -370,8 +370,12 @@ const STATE = {
   publicReviewsCache: {},
   publicReviewSort: 'amount_desc',
   publicReviewDateFilter: 'all',
+  publicReviewVisibleCount: 6,
   searchDebounce: null,
 };
+
+const PUBLIC_REVIEW_BATCH_SIZE = 6;
+let publicReviewObserver = null;
 
 const CHART_DATA = [
   {day:'Lun',val:8500},{day:'Mar',val:12000},{day:'Mi?',val:5000},{day:'Jue',val:18500},
@@ -540,6 +544,18 @@ function profileLink(slug) {
   return base + '?slug=' + encodeURIComponent(slug);
 }
 
+function appendUrlParams(url, params = {}) {
+  const [baseWithQuery, hash = ''] = String(url || '').split('#');
+  const [basePath, queryString = ''] = baseWithQuery.split('?');
+  const search = new URLSearchParams(queryString);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '' || value === false) search.delete(key);
+    else search.set(key, String(value));
+  });
+  const nextQuery = search.toString();
+  return `${basePath}${nextQuery ? `?${nextQuery}` : ''}${hash ? `#${hash}` : ''}`;
+}
+
 function profileShareLink(slug) {
   if (!slug) return profileLink(slug);
   const base = (CONFIG.appUrl || window.location.origin || '').replace(/\/+$/, '');
@@ -550,14 +566,72 @@ function profileShareId(profile = {}) {
   return profile.id || profile.slug || '';
 }
 
-function profileLinkFromProfile(profile = {}) {
-  return profileLink(profileShareId(profile));
+function profileLinkFromProfile(profile = {}, options = {}) {
+  return appendUrlParams(profileLink(profileShareId(profile)), {
+    view: options.view === 'form' ? 'form' : '',
+  });
 }
 
-function profileShareLinkFromProfile(profile = {}) {
+function profileShareLinkFromProfile(profile = {}, options = {}) {
   const base = profileShareLink(profileShareId(profile));
   const version = encodeURIComponent(String(profile?.updatedAt || '').trim());
-  return version ? `${base}?v=${version}` : base;
+  return appendUrlParams(base, {
+    v: version || '',
+    view: options.view === 'form' ? 'form' : '',
+  });
+}
+
+function getRequestedPublicView() {
+  return new URLSearchParams(window.location.search).get('view') === 'form' ? 'form' : 'profile';
+}
+
+function replaceProfileHistoryState(slug, viewId = 'profile') {
+  const query = new URLSearchParams();
+  if (slug) query.set('slug', slug);
+  if (viewId === 'form') query.set('view', 'form');
+  const nextPath = `${window.location.pathname}${query.toString() ? `?${query.toString()}` : ''}`;
+  history.replaceState({}, '', nextPath);
+}
+
+function resetPublicReviewFeed() {
+  STATE.publicReviewVisibleCount = PUBLIC_REVIEW_BATCH_SIZE;
+}
+
+function disconnectPublicReviewObserver() {
+  if (!publicReviewObserver) return;
+  publicReviewObserver.disconnect();
+  publicReviewObserver = null;
+}
+
+function renderPublicReviewList(containerId, reviews, emptyHtml = '') {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const visibleCount = Math.min(STATE.publicReviewVisibleCount || PUBLIC_REVIEW_BATCH_SIZE, reviews.length);
+  const visibleReviews = reviews.slice(0, visibleCount);
+  container.innerHTML = visibleReviews.length
+    ? visibleReviews.map(review => revCardHTML(review, false)).join('')
+    : emptyHtml;
+}
+
+function syncActivePublicReviewObserver(reviews = getFilteredPublicReviews(STATE.publicReviews || [])) {
+  disconnectPublicReviewObserver();
+  const activeViewId = document.querySelector('.view.active')?.id || '';
+  const sentinelId = activeViewId === 'view-form' ? 'formReviewsSentinel' : 'pubReviewsSentinel';
+  const sentinel = document.getElementById(sentinelId);
+  const hasMore = (STATE.publicReviewVisibleCount || 0) < reviews.length;
+  if (!sentinel) return;
+  sentinel.style.display = hasMore ? '' : 'none';
+  if (!hasMore) return;
+  publicReviewObserver = new IntersectionObserver((entries) => {
+    const entry = entries[0];
+    if (!entry?.isIntersecting) return;
+    STATE.publicReviewVisibleCount = Math.min(
+      (STATE.publicReviewVisibleCount || PUBLIC_REVIEW_BATCH_SIZE) + PUBLIC_REVIEW_BATCH_SIZE,
+      reviews.length
+    );
+    renderProfile();
+  }, { rootMargin: '220px 0px' });
+  publicReviewObserver.observe(sentinel);
 }
 
 function defaultReviewPromptSuggestions() {
@@ -704,6 +778,7 @@ function renderFormHeader() {
   }
   renderFormRewardSpotlight();
   renderReviewPromptChips();
+  renderFormPublicReviews();
 }
 
 function getPrimaryRewardItem(items = STATE.publicRewardItems || []) {
@@ -720,6 +795,12 @@ function openReviewForm(rewardId = '') {
 }
 
 window.openReviewForm = openReviewForm;
+
+function goToPublicProfile() {
+  nav('profile');
+}
+
+window.goToPublicProfile = goToPublicProfile;
 
 function triggerRewardDownload(rewardItem) {
   if (!rewardItem?.downloadUrl) return false;
@@ -1098,11 +1179,13 @@ function getFilteredPublicReviews(reviews = STATE.publicReviews || []) {
 
 function setPublicReviewSort(value) {
   STATE.publicReviewSort = value || 'amount_desc';
+  resetPublicReviewFeed();
   renderProfile();
 }
 
 function setPublicReviewDateFilter(value) {
   STATE.publicReviewDateFilter = value || 'all';
+  resetPublicReviewFeed();
   renderProfile();
 }
 
@@ -1270,8 +1353,9 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
       STATE.publicRewardItems = STATE.rewardItems.filter(item => item.active);
       STATE.publicMediaItems = STATE.mediaItems.filter(item => item.active);
     }
+    resetPublicReviewFeed();
     renderProfile();
-    if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(STATE.user.id || STATE.user.slug || slug));
+    if (pushState) replaceProfileHistoryState(STATE.user.id || STATE.user.slug || slug, getRequestedPublicView());
     return;
   }
 
@@ -1302,6 +1386,7 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
   STATE.publicReviews = [];
   STATE.publicRewardItems = [];
   STATE.publicMediaItems = [];
+  resetPublicReviewFeed();
   renderProfile();
   const [publicReviews, publicRewardItems, publicMediaItems] = await Promise.all([
     fetchPublicReviews(profile.id, forceRefresh),
@@ -1311,8 +1396,9 @@ async function loadViewedProfileBySlug(slug, pushState = true, forceRefresh = fa
   STATE.publicReviews = publicReviews;
   STATE.publicRewardItems = publicRewardItems;
   STATE.publicMediaItems = publicMediaItems;
+  resetPublicReviewFeed();
   renderProfile();
-  if (pushState) history.replaceState({}, '', '?slug=' + encodeURIComponent(profile.id || profile.slug || slug));
+  if (pushState) replaceProfileHistoryState(profile.id || profile.slug || slug, getRequestedPublicView());
 }
 
 async function hydrateUser(session, navigateToDashboard = false) {
@@ -1361,12 +1447,13 @@ async function hydrateUser(session, navigateToDashboard = false) {
 async function bootstrapSupabaseData() {
   if (!sb) return;
   const requestedSlug = new URLSearchParams(window.location.search).get('slug') || CONFIG.profileSlug;
+  const requestedView = getRequestedPublicView();
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     await hydrateUser(session, false);
-    if (requestedSlug) await nav('profile');
+    if (requestedSlug) await nav(requestedView);
   } else if (requestedSlug) {
-    await nav('profile');
+    await nav(requestedView);
     await loadViewedProfileBySlug(requestedSlug, false);
   }
 }
@@ -1398,7 +1485,7 @@ async function ensureViewsLoaded(viewIds = []) {
 async function loadViews() {
   if (viewsLoaded) return;
   const requestedSlug = new URLSearchParams(window.location.search).get('slug') || CONFIG.profileSlug;
-  await ensureViewsLoaded(requestedSlug ? ['profile'] : INITIAL_VIEW_IDS);
+  await ensureViewsLoaded(requestedSlug ? ['profile', 'form'] : INITIAL_VIEW_IDS);
   viewsLoaded = true;
 }
 
@@ -1417,6 +1504,7 @@ function runViewLifecycle(viewId) {
     initFormMp();
   }
   hydrateIcons(document.getElementById('view-' + viewId) || document);
+  syncActivePublicReviewObserver();
 }
 
 /* ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.?
@@ -1432,6 +1520,9 @@ async function nav(viewId, options = {}) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const el = document.getElementById('view-' + viewId);
   if (el) { el.classList.add('active'); window.scrollTo(0,0); }
+  if ((viewId === 'profile' || viewId === 'form') && (STATE.viewedProfile?.id || STATE.user.id || CONFIG.profileSlug)) {
+    replaceProfileHistoryState((STATE.viewedProfile?.id || STATE.user.id || CONFIG.profileSlug || ''), viewId);
+  }
   runViewLifecycle(viewId);
 }
 
@@ -2420,12 +2511,42 @@ function renderProfile() {
     pubReviews.innerHTML = `<div class="rev-card"><p class="rev-text">No hay resenas que coincidan con estos filtros todavia.</p><button class="btn btn-amber btn-sm" onclick="setPublicReviewDateFilter('all'); setPublicReviewSort('amount_desc')">Ver todas</button></div>`;
   }
 
+  if (pubReviews) {
+    renderPublicReviewList(
+      'pubReviews',
+      reviews,
+      allReviews.length
+        ? `<div class="rev-card"><p class="rev-text">No hay resenas que coincidan con estos filtros todavia.</p><button class="btn btn-amber btn-sm" onclick="setPublicReviewDateFilter('all'); setPublicReviewSort('amount_desc')">Ver todas</button></div>`
+        : `<div class="rev-card"><p class="rev-text">Todavía no hay reseñas publicadas. La primera puede ser la tuya.</p><button class="btn btn-amber btn-sm" onclick="openReviewForm()">Escribir la primera reseña</button></div>`
+    );
+  }
+
   renderPublicRewards(rewardItems);
   renderPublicMediaPreview(mediaItems);
+  renderFormPublicReviews();
+  syncActivePublicReviewObserver(reviews);
 
   if (document.getElementById('view-media')?.classList.contains('active')) {
     renderMediaVault();
   }
+}
+
+function renderFormPublicReviews() {
+  const profile = STATE.viewedProfile || STATE.user || {};
+  const reviews = getFilteredPublicReviews(STATE.publicReviews || []);
+  const displayName = [profile.name, profile.lastName].filter(Boolean).join(' ').trim() || 'este perfil';
+  const metaNode = document.getElementById('formReviewsMeta');
+  if (metaNode) {
+    const visibleCount = Math.min(STATE.publicReviewVisibleCount || PUBLIC_REVIEW_BATCH_SIZE, reviews.length);
+    metaNode.textContent = reviews.length
+      ? `Mostrando ${visibleCount} de ${reviews.length} reseñas publicadas`
+      : `Todavía no hay reseñas publicadas para ${displayName}`;
+  }
+  renderPublicReviewList(
+    'formPublicReviews',
+    reviews,
+    `<div class="rev-card"><p class="rev-text">Todavía no hay reseñas publicadas. La primera puede aparecer acá cuando se apruebe el pago.</p><button class="btn btn-amber btn-sm" onclick="goToPublicProfile()">Ver perfil público</button></div>`
+  );
 }
 
 function revCardHTML(r, isDash) {
@@ -2671,6 +2792,8 @@ function renderDashboard() {
   // Link
   const pl = document.getElementById('profileLinkDisplay');
   if (pl) pl.textContent = profileShareLinkFromProfile(STATE.user);
+  const fl = document.getElementById('formLinkDisplay');
+  if (fl) fl.textContent = profileShareLinkFromProfile(STATE.user, { view: 'form' });
 }
 
 function dashTab(btn, tabId) {
@@ -3305,16 +3428,30 @@ async function openPublicProfile(slug) {
    SHARE
 ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.? */
 async function doShare() {
+  return shareProfileLink();
+}
+
+async function doShareForm() {
+  return shareProfileLink({ view: 'form' });
+}
+
+window.doShareForm = doShareForm;
+
+async function shareProfileLink(options = {}) {
   const targetProfile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
   const targetName = STATE.viewedProfile?.name || STATE.user.name;
-  const url = profileShareLinkFromProfile(targetProfile);
+  const view = options.view === 'form' ? 'form' : 'profile';
+  const url = profileShareLinkFromProfile(targetProfile, { view });
+  const text = view === 'form'
+    ? 'Te comparto el formulario directo para dejar una reseña en Recomendapp'
+    : 'Mira este perfil en Recomendapp';
   if (navigator.share) {
     if (shareInFlight) return;
     shareInFlight = true;
     try {
       await navigator.share({
         title: `${targetName} | Recomendapp`,
-        text: 'Mira este perfil en Recomendapp',
+        text,
         url,
       });
     } catch (error) {
@@ -3327,7 +3464,7 @@ async function doShare() {
     return;
   }
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => toast('Enlace copiado ','success'));
+    navigator.clipboard.writeText(url).then(() => toast(view === 'form' ? 'Enlace del formulario copiado' : 'Enlace copiado ','success'));
   } else {
     toast('Enlace: ' + url,'info');
   }
