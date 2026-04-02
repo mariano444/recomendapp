@@ -546,6 +546,7 @@ function mapRewardItem(row) {
     description: row.description || '',
     imageUrl: row.image_url || '',
     downloadUrl: row.download_url || '',
+    showInForm: row.show_in_form === true,
     active: row.active !== false,
     sortOrder: row.sort_order || 0,
   };
@@ -608,7 +609,7 @@ function renderFormHeader() {
 }
 
 function getPrimaryRewardItem(items = STATE.publicRewardItems || []) {
-  return (items || []).find(item => item.active !== false) || null;
+  return (items || []).find(item => item.active !== false && item.showInForm) || null;
 }
 
 function triggerRewardDownload(rewardItem) {
@@ -1068,8 +1069,8 @@ async function fetchRewardItems(profileId, isOwner = false) {
     if (!isOwner) query = query.eq('active', true);
     return query;
   };
-  let { data, error } = await buildQuery('id, title, description, image_url, download_url, active, sort_order');
-  if (error && /download_url/i.test(error.message || '')) {
+  let { data, error } = await buildQuery('id, title, description, image_url, download_url, show_in_form, active, sort_order');
+  if (error && /download_url|show_in_form/i.test(error.message || '')) {
     const fallback = await buildQuery('id, title, description, image_url, active, sort_order');
     data = fallback.data;
     error = fallback.error;
@@ -1610,7 +1611,7 @@ function renderRewardAdmin() {
       <div class="gallery-admin-thumb" style="${item.imageUrl ? `background-image:url('${item.imageUrl}')` : ''}"></div>
       <div>
         <div class="gallery-admin-title">${item.title}</div>
-        <div class="gallery-admin-meta">${item.description || 'Sin descripción'}<br>${item.downloadUrl ? 'Archivo listo para descarga automática' : 'Sin archivo descargable cargado'}<br>${item.active ? 'Activa y visible cuando corresponda' : 'Oculta'}</div>
+        <div class="gallery-admin-meta">${item.description || 'Sin descripción'}<br>${item.showInForm ? 'Visible en el formulario de reseña' : 'No se muestra en el formulario'}<br>${item.downloadUrl ? 'Archivo listo para descarga automática' : 'Sin archivo descargable cargado'}<br>${item.active ? 'Activa y visible cuando corresponda' : 'Oculta'}</div>
       </div>
       <div class="gallery-admin-actions">
         <button class="btn btn-ghost btn-sm" onclick="editRewardItem('${item.id}')">Editar</button>
@@ -1729,6 +1730,8 @@ function resetRewardForm() {
   if (imageFile) imageFile.value = '';
   const active = document.getElementById('rewardActive');
   if (active) active.value = 'true';
+  const showInForm = document.getElementById('rewardShowInForm');
+  if (showInForm) showInForm.value = 'false';
 }
 
 function editRewardItem(id) {
@@ -1740,6 +1743,7 @@ function editRewardItem(id) {
   document.getElementById('rewardImageUrl').value = item.imageUrl || '';
   document.getElementById('rewardDownloadUrl').value = item.downloadUrl || '';
   document.getElementById('rewardActive').value = String(item.active !== false);
+  document.getElementById('rewardShowInForm').value = String(item.showInForm === true);
 }
 
 async function saveRewardItem() {
@@ -1750,6 +1754,7 @@ async function saveRewardItem() {
   const imageFile = document.getElementById('rewardImageFile')?.files?.[0] || null;
   const imageUrlField = document.getElementById('rewardImageUrl')?.value?.trim() || '';
   const download_url = document.getElementById('rewardDownloadUrl')?.value?.trim() || '';
+  const show_in_form = (document.getElementById('rewardShowInForm')?.value || 'false') === 'true';
   const image_url = (imageFile ? await uploadProfileAsset(imageFile, 'reward') : '') || imageUrlField || '';
   const payload = {
     profile_id: STATE.user.id,
@@ -1757,28 +1762,43 @@ async function saveRewardItem() {
     description,
     image_url,
     download_url,
+    show_in_form,
     active: (document.getElementById('rewardActive')?.value || 'true') === 'true',
     sort_order: STATE.currentRewardEditId
       ? (STATE.rewardItems.find(item => item.id === STATE.currentRewardEditId)?.sortOrder || 0)
       : STATE.rewardItems.length,
   };
   const query = STATE.currentRewardEditId
-    ? sb.from('profile_reward_items').update(payload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id)
-    : sb.from('profile_reward_items').insert(payload);
-  let { error } = await query;
-  if (error && /download_url/i.test(error.message || '')) {
+    ? sb.from('profile_reward_items').update(payload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id).select('id').single()
+    : sb.from('profile_reward_items').insert(payload).select('id').single();
+  let { data, error } = await query;
+  if (error && /download_url|show_in_form/i.test(error.message || '')) {
     const fallbackPayload = { ...payload };
     delete fallbackPayload.download_url;
+    delete fallbackPayload.show_in_form;
     const fallbackQuery = STATE.currentRewardEditId
-      ? sb.from('profile_reward_items').update(fallbackPayload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id)
-      : sb.from('profile_reward_items').insert(fallbackPayload);
+      ? sb.from('profile_reward_items').update(fallbackPayload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id).select('id').single()
+      : sb.from('profile_reward_items').insert(fallbackPayload).select('id').single();
     const fallbackResponse = await fallbackQuery;
+    data = fallbackResponse.data;
     error = fallbackResponse.error;
     if (!error) {
       toast('La recompensa se guardó, pero para habilitar descarga automática falta aplicar la migración SQL.', 'info');
     }
   }
   if (error) return toast(error.message || 'No se pudo guardar la recompensa','error');
+  if (!error && show_in_form) {
+    await sb
+      .from('profile_reward_items')
+      .update({ show_in_form: false })
+      .eq('profile_id', STATE.user.id)
+      .neq('id', data?.id || STATE.currentRewardEditId || '00000000-0000-0000-0000-000000000000');
+    await sb
+      .from('profile_reward_items')
+      .update({ show_in_form: true })
+      .eq('profile_id', STATE.user.id)
+      .eq('id', data?.id || STATE.currentRewardEditId || '');
+  }
   STATE.rewardItems = await fetchRewardItems(STATE.user.id, true);
   STATE.publicRewardItems = STATE.rewardItems.filter(item => item.active);
   renderRewardAdmin();
