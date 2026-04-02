@@ -181,6 +181,7 @@ function createSbCompat(url, key) {
     update(payload) { this.mode = 'update'; this.payload = payload; return this; }
     delete() { this.mode = 'delete'; return this; }
     eq(field, value) { this.filters.push({ field, op: 'eq', value }); return this; }
+    neq(field, value) { this.filters.push({ field, op: 'neq', value }); return this; }
     order(field, opts={}) { this.orderBy = { field, ascending: opts.ascending !== false }; return this; }
     limit(value) { this.limitBy = value; return this; }
     single() { this.expectSingle = true; return this; }
