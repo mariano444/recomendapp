@@ -10,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS unaccent;
 
 -- ─── ENUM TYPES ───────────────────────────────────────────────
 CREATE TYPE payment_status AS ENUM ('pending', 'approved', 'rejected', 'cancelled', 'in_process', 'refunded');
-CREATE TYPE payment_method AS ENUM ('mercadopago', 'card', 'transfer', 'cash');
+CREATE TYPE payment_method AS ENUM ('mercadopago', 'galiopay', 'card', 'transfer', 'cash');
 CREATE TYPE plan_type AS ENUM ('free', 'pro');
 CREATE TYPE gallery_visibility AS ENUM ('public', 'private');
 CREATE TYPE media_unlock_status AS ENUM ('pending', 'approved', 'rejected', 'cancelled');
@@ -122,6 +122,8 @@ CREATE TABLE IF NOT EXISTS reviews (
   payment_status  payment_status NOT NULL DEFAULT 'pending',
   mp_payment_id   TEXT,                        -- ID de pago de MercadoPago
   mp_preference_id TEXT,                       -- ID de preferencia MP
+  gp_payment_id   TEXT,                        -- ID de pago de GalioPay
+  gp_payment_link_id TEXT,                     -- ID del payment link de GalioPay
   reply           TEXT,
   replied_at      TIMESTAMPTZ,
   published       BOOLEAN NOT NULL DEFAULT FALSE,
@@ -137,6 +139,7 @@ CREATE TRIGGER reviews_updated_at
 CREATE INDEX idx_reviews_profile_id ON reviews(profile_id);
 CREATE INDEX idx_reviews_payment_status ON reviews(payment_status);
 CREATE INDEX idx_reviews_mp_payment_id ON reviews(mp_payment_id);
+CREATE INDEX idx_reviews_gp_payment_id ON reviews(gp_payment_id);
 CREATE INDEX idx_reviews_published ON reviews(published) WHERE published = TRUE;
 CREATE INDEX idx_reviews_created_at ON reviews(created_at DESC);
 
@@ -171,19 +174,39 @@ CREATE TABLE IF NOT EXISTS mp_notifications (
 CREATE INDEX idx_mp_notifications_mp_id ON mp_notifications(mp_id);
 CREATE INDEX idx_mp_notifications_processed ON mp_notifications(processed);
 
+CREATE TABLE IF NOT EXISTS gp_notifications (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  gp_payment_id     TEXT,
+  reference_id      TEXT,
+  payment_method_id TEXT,
+  status            TEXT,
+  raw_body          JSONB,
+  processed         BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_gp_notifications_payment_id ON gp_notifications(gp_payment_id);
+CREATE INDEX idx_gp_notifications_reference_id ON gp_notifications(reference_id);
+CREATE INDEX idx_gp_notifications_processed ON gp_notifications(processed);
+
 -- ─── TABLA: profile_payment_credentials ──────────────────────
 -- Credenciales privadas por perfil para cobrar reseñas con MercadoPago
 CREATE TABLE IF NOT EXISTS profile_payment_credentials (
   profile_id       UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
   provider         TEXT NOT NULL DEFAULT 'mercadopago',
   mp_public_key    TEXT,
-  mp_access_token  TEXT NOT NULL,
+  mp_access_token  TEXT,
   mp_mode          TEXT NOT NULL DEFAULT 'production',
   mp_checkout_label TEXT NOT NULL DEFAULT 'Recomendapp',
+  gp_client_id     TEXT,
+  gp_api_key       TEXT,
+  gp_mode          TEXT NOT NULL DEFAULT 'sandbox',
+  gp_checkout_label TEXT NOT NULL DEFAULT 'Recomendapp',
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT profile_payment_credentials_provider_check CHECK (provider = 'mercadopago'),
-  CONSTRAINT profile_payment_credentials_mode_check CHECK (mp_mode IN ('sandbox', 'production'))
+  CONSTRAINT profile_payment_credentials_provider_check CHECK (provider IN ('mercadopago', 'galiopay', 'mixed')),
+  CONSTRAINT profile_payment_credentials_mode_check CHECK (mp_mode IN ('sandbox', 'production')),
+  CONSTRAINT profile_payment_credentials_gp_mode_check CHECK (gp_mode IN ('sandbox', 'production'))
 );
 
 CREATE TRIGGER profile_payment_credentials_updated_at
@@ -344,6 +367,7 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mp_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mp_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gp_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profile_payment_credentials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profile_reward_items ENABLE ROW LEVEL SECURITY;
@@ -416,6 +440,10 @@ CREATE POLICY "service_manage_preferences"
 -- mp_notifications: solo service_role
 CREATE POLICY "service_manage_notifications"
   ON mp_notifications FOR ALL
+  USING (auth.role() = 'service_role');
+
+CREATE POLICY "service_manage_gp_notifications"
+  ON gp_notifications FOR ALL
   USING (auth.role() = 'service_role');
 
 -- credenciales privadas: solo el dueño y service_role
@@ -575,6 +603,7 @@ GRANT SELECT, INSERT, UPDATE ON profile_payment_credentials TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON profile_gallery_items TO authenticated;
 GRANT ALL ON mp_preferences TO service_role;
 GRANT ALL ON mp_notifications TO service_role;
+GRANT ALL ON gp_notifications TO service_role;
 GRANT ALL ON profile_payment_credentials TO service_role;
 
 CREATE OR REPLACE FUNCTION publish_review_payment(
