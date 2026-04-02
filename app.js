@@ -3522,6 +3522,83 @@ async function doShareForm(rewardId) {
 
 window.doShareForm = doShareForm;
 
+async function saveRewardItem() {
+  if (!sb || !STATE.user.id) return toast('Inicia sesion para guardar recompensas','error');
+  const title = document.getElementById('rewardTitle')?.value?.trim() || '';
+  if (!title) return toast('Escribi un titulo para la recompensa','error');
+  const description = document.getElementById('rewardDescription')?.value?.trim() || '';
+  const imageFile = document.getElementById('rewardImageFile')?.files?.[0] || null;
+  const imageUrlField = document.getElementById('rewardImageUrl')?.value?.trim() || '';
+  const download_url = document.getElementById('rewardDownloadUrl')?.value?.trim() || '';
+  const show_in_form = (document.getElementById('rewardShowInForm')?.value || 'false') === 'true';
+  const image_url = (imageFile ? await uploadProfileAsset(imageFile, 'reward') : '') || imageUrlField || '';
+  const payload = {
+    profile_id: STATE.user.id,
+    title,
+    description,
+    image_url,
+    download_url,
+    show_in_form,
+    active: (document.getElementById('rewardActive')?.value || 'true') === 'true',
+    sort_order: STATE.currentRewardEditId
+      ? (STATE.rewardItems.find(item => item.id === STATE.currentRewardEditId)?.sortOrder || 0)
+      : STATE.rewardItems.length,
+  };
+  const legacyPayload = { ...payload };
+  delete legacyPayload.download_url;
+  delete legacyPayload.show_in_form;
+  const useLegacyPayload = STATE.rewardItemsSchemaMode === 'legacy';
+  const initialPayload = useLegacyPayload ? legacyPayload : payload;
+  const query = STATE.currentRewardEditId
+    ? sb.from('profile_reward_items').update(initialPayload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id).select('id').single()
+    : sb.from('profile_reward_items').insert(initialPayload).select('id').single();
+  let { data, error } = await query;
+  let usedLegacyFallback = useLegacyPayload;
+  if (!usedLegacyFallback && error && /download_url|show_in_form/i.test(error.message || '')) {
+    const fallbackQuery = STATE.currentRewardEditId
+      ? sb.from('profile_reward_items').update(legacyPayload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id).select('id').single()
+      : sb.from('profile_reward_items').insert(legacyPayload).select('id').single();
+    const fallbackResponse = await fallbackQuery;
+    data = fallbackResponse.data;
+    error = fallbackResponse.error;
+    if (!error) {
+      usedLegacyFallback = true;
+      STATE.rewardItemsSchemaMode = 'legacy';
+      saveRewardItemsSchemaMode('legacy');
+      toast('La recompensa se guardo, pero para habilitar descarga automatica falta aplicar la migracion SQL.', 'info');
+    }
+  } else if (!error && !usedLegacyFallback) {
+    STATE.rewardItemsSchemaMode = 'full';
+    saveRewardItemsSchemaMode('full');
+  }
+  if (error) return toast(error.message || 'No se pudo guardar la recompensa','error');
+  if (show_in_form) {
+    setSelectedFormRewardId(STATE.user.id, data?.id || STATE.currentRewardEditId || '');
+    if (!usedLegacyFallback) {
+      await sb
+        .from('profile_reward_items')
+        .update({ show_in_form: false })
+        .eq('profile_id', STATE.user.id)
+        .neq('id', data?.id || STATE.currentRewardEditId || '00000000-0000-0000-0000-000000000000');
+      await sb
+        .from('profile_reward_items')
+        .update({ show_in_form: true })
+        .eq('profile_id', STATE.user.id)
+        .eq('id', data?.id || STATE.currentRewardEditId || '');
+    }
+  } else if ((data?.id || STATE.currentRewardEditId) === getSelectedFormRewardId(STATE.user.id)) {
+    setSelectedFormRewardId(STATE.user.id, '');
+  }
+  STATE.rewardItems = await fetchRewardItems(STATE.user.id, true);
+  STATE.publicRewardItems = STATE.rewardItems.filter(item => item.active);
+  renderRewardAdmin();
+  renderFormRewardSpotlight();
+  if (document.getElementById('view-media')?.classList.contains('active')) renderMediaVault();
+  if (document.getElementById('view-profile')?.classList.contains('active')) renderProfile();
+  resetRewardForm();
+  toast('Recompensa guardada ','success');
+}
+
 async function shareProfileLink(options = {}) {
   const targetProfile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
   const targetName = STATE.viewedProfile?.name || STATE.user.name;
