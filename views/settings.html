@@ -7,7 +7,7 @@
     <div>
       <div class="settings-nav">
         <button class="s-nav-item act" onclick="settTab(this,'stCuenta')">Cuenta</button>
-        <button class="s-nav-item" onclick="settTab(this,'stPagos')">Pago MercadoPago</button>
+        <button class="s-nav-item" onclick="settTab(this,'stPagos')">Pagos</button>
         <button class="s-nav-item" onclick="settTab(this,'stPlan')">⭐ Plan</button>
         <button class="s-nav-item" onclick="settTab(this,'stNotif')">Notificaciones</button>
         <button class="s-nav-item" onclick="settTab(this,'stDanger')">Zona peligrosa</button>
@@ -33,7 +33,7 @@
 
       <!-- MERCADOPAGO -->
       <div class="settings-panel" id="stPagos" style="display:none">
-        <h3>MercadoPago</h3>
+        <h3>Pagos</h3>
         <p class="s-sub">Configurá tu integración de pagos para recibir las recompensas directamente en tu cuenta.</p>
 
         <div id="mpStatusBadge" class="mp-status disconnected">Sin configurar</div>
@@ -104,6 +104,52 @@
           <button class="link-copy-btn" onclick="copyWebhook()">Copiar</button>
         </div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Configurá esta URL en MercadoPago -> Integraciones -> Webhooks</div>
+
+        <div class="s-section-title" style="margin-top:30px">GalioPay</div>
+        <div class="mp-info-box" style="margin-bottom:24px">
+          <span class="icon">Pago</span>
+          <div>
+            GalioPay te permite cobrar con <strong>transferencia</strong> o <strong>Mercado Pago</strong> desde un payment link y confirmar el pago por webhook.
+            <br><a href="https://pay.galio.app/docs/api/paymentlink" target="_blank" style="color:var(--blue);text-decoration:underline">Ver documentaciÃ³n de payment links -></a>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="field">
+            <label class="field-label">Client ID</label>
+            <input class="field-input" id="stGalioClientId" placeholder="Tu Client ID de GalioPay">
+            <div class="field-hint">Se envÃ­a como header <strong>x-client-id</strong> al crear y validar pagos.</div>
+          </div>
+          <div class="field">
+            <label class="field-label">Modo</label>
+            <select class="field-select field-input" id="stGalioMode">
+              <option value="sandbox">Sandbox (pruebas)</option>
+              <option value="production">ProducciÃ³n (pagos reales)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">API Key</label>
+          <div class="field-pw-wrap">
+            <input class="field-input" type="password" id="stGalioApiKey" placeholder="Tu API Key privada de GalioPay">
+            <button class="pw-toggle" onclick="togglePw('stGalioApiKey',this)">Ver</button>
+          </div>
+          <div class="field-hint">Solo se usa en el servidor. No se expone al cliente.</div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Texto del checkout</label>
+          <input class="field-input" id="stGalioCheckoutLabel" maxlength="60" placeholder="Recomendapp">
+          <div class="field-hint">Texto base del payment link. Si lo dejÃ¡s vacÃ­o, usamos <strong>Recomendapp</strong>.</div>
+        </div>
+
+        <div class="s-section-title">Webhook URL de GalioPay</div>
+        <div class="link-copy-row">
+          <span id="galioWebhookUrl">https://tu-proyecto.supabase.co/functions/v1/galiopay-webhook</span>
+          <button class="link-copy-btn" onclick="copyGalioWebhook()">Copiar</button>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:20px">ConfigurÃ¡ esta URL en GalioPay para recibir notificaciones POST y responder siempre con cÃ³digo 200.</div>
 
         <div style="display:flex;gap:10px">
           <button class="btn btn-green btn-md" onclick="savePaymentSettings()">Guardar datos de cobro</button>
