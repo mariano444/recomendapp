@@ -383,8 +383,30 @@ const CHART_DATA = [
 function loadMpConfig() {
   try {
     const raw = localStorage.getItem('aplauso_mp_config');
-    return raw ? JSON.parse(raw) : { publicKey: '', accessToken: '', mode: 'sandbox', checkoutLabel: 'Recomendapp', profileId: null };
-  } catch { return { publicKey: '', accessToken: '', mode: 'sandbox', checkoutLabel: 'Recomendapp', profileId: null }; }
+    return raw ? JSON.parse(raw) : {
+      publicKey: '',
+      accessToken: '',
+      mode: 'sandbox',
+      checkoutLabel: 'Recomendapp',
+      gpClientId: '',
+      gpApiKey: '',
+      gpMode: 'sandbox',
+      gpCheckoutLabel: 'Recomendapp',
+      profileId: null
+    };
+  } catch {
+    return {
+      publicKey: '',
+      accessToken: '',
+      mode: 'sandbox',
+      checkoutLabel: 'Recomendapp',
+      gpClientId: '',
+      gpApiKey: '',
+      gpMode: 'sandbox',
+      gpCheckoutLabel: 'Recomendapp',
+      profileId: null
+    };
+  }
 }
 
 function saveMpConfigToStorage(cfg) {
@@ -395,15 +417,50 @@ function getMpPublicKey() {
   return CONFIG.mpPublicKey || STATE.mpConfig.publicKey || '';
 }
 
+function hasMpCredentials() {
+  return !!(STATE.mpConfig.accessToken && getMpPublicKey());
+}
+
+function hasGalioCredentials() {
+  return !!(STATE.mpConfig.gpClientId && STATE.mpConfig.gpApiKey);
+}
+
+function getGalioMode() {
+  return STATE.mpConfig.gpMode || 'sandbox';
+}
+
+function renderPaymentMethodOptions() {
+  const container = document.getElementById('payChips');
+  if (!container) return;
+
+  const methods = [];
+  methods.push({ id: 'galiopay', label: 'GalioPay' });
+  methods.push({ id: 'mercadopago', label: 'MercadoPago / Tarjeta' });
+  methods.push({ id: 'transfer', label: 'Transferencia' });
+
+  if (!methods.some(method => method.id === STATE.selectedPay)) {
+    STATE.selectedPay = methods[0]?.id || 'mercadopago';
+  }
+
+  container.innerHTML = methods.map(method => `
+    <div class="pay-chip ${STATE.selectedPay === method.id ? 'sel' : ''}" onclick="selPay(this,'${method.id}')">${method.label}</div>
+  `).join('');
+}
+
 async function loadStoredMpConfig(force = false) {
   if (!sb || !STATE.user.id) return STATE.mpConfig;
-  if (!force && STATE.mpConfig.profileId === STATE.user.id && (STATE.mpConfig.accessToken || STATE.mpConfig.publicKey)) {
+  if (!force && STATE.mpConfig.profileId === STATE.user.id && (
+    STATE.mpConfig.accessToken ||
+    STATE.mpConfig.publicKey ||
+    STATE.mpConfig.gpClientId ||
+    STATE.mpConfig.gpApiKey
+  )) {
     return STATE.mpConfig;
   }
 
   const { data, error } = await sb
     .from('profile_payment_credentials')
-    .select('profile_id, mp_public_key, mp_access_token, mp_mode, mp_checkout_label')
+    .select('profile_id, mp_public_key, mp_access_token, mp_mode, mp_checkout_label, gp_client_id, gp_api_key, gp_mode, gp_checkout_label')
     .eq('profile_id', STATE.user.id)
     .single();
 
@@ -411,7 +468,17 @@ async function loadStoredMpConfig(force = false) {
     if (!/0 rows|no rows/i.test(error.message || '')) {
       console.warn('No se pudieron cargar las credenciales de MercadoPago:', error.message);
     }
-    STATE.mpConfig = { publicKey: '', accessToken: '', mode: 'sandbox', checkoutLabel: 'Recomendapp', profileId: STATE.user.id };
+    STATE.mpConfig = {
+      publicKey: '',
+      accessToken: '',
+      mode: 'sandbox',
+      checkoutLabel: 'Recomendapp',
+      gpClientId: '',
+      gpApiKey: '',
+      gpMode: 'sandbox',
+      gpCheckoutLabel: 'Recomendapp',
+      profileId: STATE.user.id
+    };
     saveMpConfigToStorage(STATE.mpConfig);
     return STATE.mpConfig;
   }
@@ -421,6 +488,10 @@ async function loadStoredMpConfig(force = false) {
     accessToken: data?.mp_access_token || '',
     mode: data?.mp_mode || 'production',
     checkoutLabel: data?.mp_checkout_label || 'Recomendapp',
+    gpClientId: data?.gp_client_id || '',
+    gpApiKey: data?.gp_api_key || '',
+    gpMode: data?.gp_mode || 'sandbox',
+    gpCheckoutLabel: data?.gp_checkout_label || 'Recomendapp',
     profileId: data?.profile_id || STATE.user.id,
   };
   CONFIG.mpPublicKey = STATE.mpConfig.publicKey;
@@ -1402,20 +1473,21 @@ document.addEventListener('click', e => {
 function initFormMp() {
   const pk = getMpPublicKey();
   renderFormHeader();
+  renderPaymentMethodOptions();
   if (pk && mpInstance === null) initMP(pk);
   // Reset brick al entrar al form
   const brickContainer = document.getElementById('mp-brick-container');
   if (!brickContainer) return;
   brickContainer.innerHTML = '';
   mpBrick = null;
-  if (STATE.selectedPay === 'mercadopago') renderMpBrick();
+  selPay(document.querySelector(`.pay-chip[onclick*="'${STATE.selectedPay}'"]`), STATE.selectedPay);
 }
 
 async function renderMpBrick() {
   const brickContainer = document.getElementById('mp-brick-container');
   if (!brickContainer) return;
   const pk = getMpPublicKey();
-  const hasCredentials = !!STATE.mpConfig.accessToken;
+  const hasCredentials = hasMpCredentials();
   if (!hasCredentials) {
     // Modo demo: sin brick, el bot?n simula
     brickContainer.innerHTML = `
@@ -1462,6 +1534,35 @@ async function createMpPreference(reviewDraft = {}) {
   }
   // Simulaci?n
   return { preference_id: 'demo-' + Date.now(), init_point: '#' };
+}
+
+async function createGalioPaymentLink(reviewDraft = {}) {
+  const amount = STATE.selectedAmt;
+  if (!amount || amount < 100) { toast('El monto minimo es $100','error'); return null; }
+  if (!sb) return null;
+
+  try {
+    const { data, error } = await sb.functions.invoke('galiopay-create-payment-link', {
+      body: {
+        amount,
+        profileSlug: STATE.viewedProfile?.slug || STATE.user.slug,
+        reviewerName: reviewDraft.reviewerName || '',
+        reviewerPhone: reviewDraft.reviewerPhone || '',
+        reviewerProvince: reviewDraft.reviewerProvince || '',
+        reviewerLocality: reviewDraft.reviewerLocality || '',
+        reviewerAvatarUrl: reviewDraft.reviewerAvatarUrl || '',
+        reviewImageUrl: reviewDraft.reviewImageUrl || '',
+        message: reviewDraft.message || document.getElementById('fMsg')?.value || '',
+        appUrl: window.location.origin + window.location.pathname,
+      }
+    });
+    if (error) throw error;
+    return data;
+  } catch (e) {
+    console.error('Error al crear payment link de GalioPay:', e);
+    toast('Error al conectar con GalioPay','error');
+    return null;
+  }
 }
 
 /* ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.?
@@ -1599,7 +1700,7 @@ function selAmt(el, val) {
 
 function selPay(el, method) {
   document.querySelectorAll('.pay-chip').forEach(c => c.classList.remove('sel'));
-  el.classList.add('sel');
+  if (el) el.classList.add('sel');
   STATE.selectedPay = method;
   const brick = document.getElementById('mp-brick-container');
   const transferBox = document.getElementById('transferInfoBox');
@@ -1620,7 +1721,12 @@ function selPay(el, method) {
         const alias = STATE.viewedProfile?.mpAlias || 'Sin alias configurado';
         const cbu = STATE.viewedProfile?.mpCbu || 'Sin CBU/CVU configurado';
         transferBox.style.display = '';
-        if (transferText) transferText.textContent = `Alias: ${alias} ? CBU/CVU: ${cbu}`;
+        if (transferText) transferText.textContent = `Alias: ${alias} | CBU/CVU: ${cbu}`;
+      } else if (method === 'galiopay') {
+        transferBox.style.display = '';
+        if (transferText) {
+          transferText.textContent = 'Vas a continuar con GalioPay. Dentro del payment link podras pagar por transferencia o Mercado Pago segun la configuracion del comercio.';
+        }
       } else {
         transferBox.style.display = 'none';
       }
@@ -2040,8 +2146,7 @@ async function submitReview() {
     message: msg,
   };
 
-  // Si hay MP configurado ??' crear preferencia y redirigir
-  const pk = getMpPublicKey();
+  // Si hay proveedor online configurado, crear pago y redirigir
   if (STATE.selectedPay === 'mercadopago') {
     const pref = await createMpPreference(reviewDraft);
     if (!pref) { btn.disabled = false; btnTxt.textContent = 'Pagar y publicar reseña'; return; }
@@ -2068,6 +2173,33 @@ async function submitReview() {
     }
   }
 
+  if (STATE.selectedPay === 'galiopay') {
+    const paymentLink = await createGalioPaymentLink(reviewDraft);
+    if (!paymentLink) { btn.disabled = false; btnTxt.textContent = 'Pagar y publicar reseÃ±a'; return; }
+
+    sessionStorage.setItem('aplauso_pending', JSON.stringify({
+      reviewId: paymentLink.review_id || '',
+      profileSlug: STATE.viewedProfile?.slug || STATE.user.slug || '',
+      nombre: reviewerName,
+      pay: 'GalioPay',
+      amount: STATE.selectedAmt,
+      msg,
+      reviewerPhone: reviewDraft.reviewerPhone,
+      reviewerProvince: reviewDraft.reviewerProvince,
+      reviewerLocality: reviewDraft.reviewerLocality,
+      reviewerAvatarUrl: reviewDraft.reviewerAvatarUrl,
+      reviewImageUrl: reviewDraft.reviewImageUrl,
+      paymentLinkId: paymentLink.payment_link_id || '',
+      proofToken: paymentLink.proof_token || '',
+      provider: 'galiopay'
+    }));
+
+    if (paymentLink.init_point) {
+      window.location.href = paymentLink.init_point;
+      return;
+    }
+  }
+
   if (sb) {
     try {
       const reviewPayload = {
@@ -2081,9 +2213,9 @@ async function submitReview() {
         is_anon: STATE.isAnon,
         message: msg,
         amount_cents: Math.round(STATE.selectedAmt * 100),
-        payment_method: STATE.selectedPay === 'transfer' ? 'transfer' : STATE.selectedPay === 'cash' ? 'cash' : 'mercadopago',
-        payment_status: STATE.selectedPay === 'mercadopago' ? 'pending' : 'approved',
-        published: STATE.selectedPay === 'mercadopago' ? false : true,
+        payment_method: STATE.selectedPay === 'transfer' ? 'transfer' : STATE.selectedPay === 'galiopay' ? 'galiopay' : STATE.selectedPay === 'cash' ? 'cash' : 'mercadopago',
+        payment_status: (STATE.selectedPay === 'mercadopago' || STATE.selectedPay === 'galiopay') ? 'pending' : 'approved',
+        published: (STATE.selectedPay === 'mercadopago' || STATE.selectedPay === 'galiopay') ? false : true,
       };
       let { data, error } = await sb
         .from('reviews')
@@ -2115,9 +2247,11 @@ async function submitReview() {
       document.getElementById('csAuthor').textContent = reviewerName;
       document.getElementById('csPago').textContent = STATE.selectedPay === 'mercadopago'
         ? 'MercadoPago'
-        : STATE.selectedPay === 'transfer'
-          ? 'Transferencia'
-          : 'Efectivo';
+        : STATE.selectedPay === 'galiopay'
+          ? 'GalioPay'
+          : STATE.selectedPay === 'transfer'
+            ? 'Transferencia'
+            : 'Efectivo';
       document.getElementById('csAmount').textContent = '$' + STATE.selectedAmt.toLocaleString('es-AR') + ' ';
       document.getElementById('fMsg').value = '';
       resetReviewMediaFields();
@@ -2165,9 +2299,11 @@ async function submitReview() {
   document.getElementById('csAuthor').textContent = displayName;
   document.getElementById('csPago').textContent = STATE.selectedPay === 'mercadopago'
     ? 'MercadoPago'
-    : STATE.selectedPay === 'transfer'
-      ? 'Transferencia'
-      : 'Efectivo';
+    : STATE.selectedPay === 'galiopay'
+      ? 'GalioPay'
+      : STATE.selectedPay === 'transfer'
+        ? 'Transferencia'
+        : 'Efectivo';
   document.getElementById('csAmount').textContent = '$' + STATE.selectedAmt.toLocaleString('es-AR') + ' ';
 
   document.getElementById('fMsg').value = '';
@@ -2641,6 +2777,10 @@ async function loadSettingsForm() {
   const atEl = document.getElementById('stMpAccessToken');
   const modeEl = document.getElementById('stMpMode');
   const checkoutLabelEl = document.getElementById('stMpCheckoutLabel');
+  const gpClientIdEl = document.getElementById('stGalioClientId');
+  const gpApiKeyEl = document.getElementById('stGalioApiKey');
+  const gpModeEl = document.getElementById('stGalioMode');
+  const gpCheckoutLabelEl = document.getElementById('stGalioCheckoutLabel');
   const aliasEl = document.getElementById('stMpAliasCobro');
   const cbuEl = document.getElementById('stMpCbuCobro');
   const minEl = document.getElementById('stMinAmount');
@@ -2649,6 +2789,10 @@ async function loadSettingsForm() {
   if (atEl) atEl.value = cfg.accessToken || '';
   if (modeEl) modeEl.value = cfg.mode || 'sandbox';
   if (checkoutLabelEl) checkoutLabelEl.value = cfg.checkoutLabel || 'Recomendapp';
+  if (gpClientIdEl) gpClientIdEl.value = cfg.gpClientId || '';
+  if (gpApiKeyEl) gpApiKeyEl.value = cfg.gpApiKey || '';
+  if (gpModeEl) gpModeEl.value = cfg.gpMode || 'sandbox';
+  if (gpCheckoutLabelEl) gpCheckoutLabelEl.value = cfg.gpCheckoutLabel || 'Recomendapp';
   if (aliasEl) aliasEl.value = STATE.user.mpAlias || '';
   if (cbuEl) cbuEl.value = STATE.user.mpCbu || '';
   if (minEl) minEl.value = Math.round((STATE.user.minAmount || 0) / 100);
@@ -2737,15 +2881,22 @@ function updateMpStatusBadge() {
   const badge = document.getElementById('mpStatusBadge');
   if (!badge) return;
   const pk = getMpPublicKey();
-  if (!pk) {
+  const gpReady = hasGalioCredentials();
+  if (!pk && !gpReady) {
     badge.className = 'mp-status disconnected';
-    badge.textContent = '?s? Sin configurar';
+    badge.textContent = 'Sin configurar';
+  } else if (gpReady && getGalioMode() === 'production') {
+    badge.className = 'mp-status connected';
+    badge.textContent = 'GalioPay activo en produccion';
+  } else if (gpReady) {
+    badge.className = 'mp-status configured';
+    badge.textContent = 'GalioPay configurado en sandbox';
   } else if (STATE.mpConfig.mode === 'production' || CONFIG.mpMode === 'production') {
     badge.className = 'mp-status connected';
     badge.textContent = 'Activo en producci?n';
   } else {
     badge.className = 'mp-status configured';
-    badge.textContent = '?Y?? Configurado en sandbox';
+    badge.textContent = 'Configurado en sandbox';
   }
 }
 
@@ -2861,6 +3012,173 @@ function copyWebhook() {
   }
 }
 
+async function saveMpCredentials() {
+  const pk = document.getElementById('stMpPublicKey')?.value?.trim() || '';
+  const at = document.getElementById('stMpAccessToken')?.value?.trim() || '';
+  const mode = document.getElementById('stMpMode')?.value || 'sandbox';
+  const checkoutLabel = document.getElementById('stMpCheckoutLabel')?.value?.trim() || 'Recomendapp';
+  const gpClientId = document.getElementById('stGalioClientId')?.value?.trim() || '';
+  const gpApiKey = document.getElementById('stGalioApiKey')?.value?.trim() || '';
+  const gpMode = document.getElementById('stGalioMode')?.value || 'sandbox';
+  const gpCheckoutLabel = document.getElementById('stGalioCheckoutLabel')?.value?.trim() || 'Recomendapp';
+  const wantsMp = !!(pk || at);
+  const wantsGalio = !!(gpClientId || gpApiKey);
+
+  if (!wantsMp && !wantsGalio) { toast('Complet? credenciales de Mercado Pago o GalioPay','error'); return; }
+  if (wantsMp && (!pk || !at)) { toast('Complet? Public Key y Access Token','error'); return; }
+  if (wantsMp && !pk.startsWith('APP_USR-') && !pk.startsWith('TEST-')) { toast('La Public Key no parece v?lida','error'); return; }
+  if (wantsGalio && (!gpClientId || !gpApiKey)) { toast('Complet? Client ID y API Key de GalioPay','error'); return; }
+  if (!sb || !STATE.user.id) { toast('Inici? sesi?n para guardar tus credenciales','error'); return; }
+
+  const { data: existing, error: existingError } = await sb
+    .from('profile_payment_credentials')
+    .select('profile_id')
+    .eq('profile_id', STATE.user.id)
+    .single();
+
+  if (existingError && !/0 rows|no rows/i.test(existingError.message || '')) {
+    toast(existingError.message || 'No se pudo revisar la configuraci?n actual','error');
+    return;
+  }
+
+  const payload = {
+    profile_id: STATE.user.id,
+    mp_public_key: pk || null,
+    mp_access_token: at || null,
+    mp_mode: mode,
+    mp_checkout_label: checkoutLabel,
+    gp_client_id: gpClientId || null,
+    gp_api_key: gpApiKey || null,
+    gp_mode: gpMode,
+    gp_checkout_label: gpCheckoutLabel,
+  };
+
+  const query = existing
+    ? sb.from('profile_payment_credentials').update(payload).eq('profile_id', STATE.user.id)
+    : sb.from('profile_payment_credentials').insert(payload);
+
+  const { error } = await query;
+  if (error) {
+    toast(error.message || 'No se pudieron guardar las credenciales','error');
+    return;
+  }
+
+  STATE.mpConfig = {
+    publicKey: pk,
+    accessToken: at,
+    mode,
+    checkoutLabel,
+    gpClientId,
+    gpApiKey,
+    gpMode,
+    gpCheckoutLabel,
+    profileId: STATE.user.id
+  };
+  saveMpConfigToStorage(STATE.mpConfig);
+  CONFIG.mpPublicKey = pk;
+  CONFIG.mpMode = mode;
+  if (pk) initMP(pk);
+  updateMpStatusBadge();
+  toast('Credenciales de pago guardadas para este perfil','success');
+}
+
+async function testMpConnection() {
+  const pk = getMpPublicKey();
+  const gpReady = hasGalioCredentials();
+  if (!pk && !gpReady) { toast('Primero configur? Mercado Pago o GalioPay','error'); return; }
+  toast('Probando conexiÃ³n...','info');
+  setTimeout(() => {
+    if (gpReady) {
+      toast('GalioPay configurado. Client ID y API Key listos para usar','success');
+    } else if (pk.startsWith('APP_USR-') || pk.startsWith('TEST-')) {
+      toast('Public Key v?lida ? Conexi?n OK','success');
+    } else {
+      toast('Public Key con formato inv?lido','error');
+    }
+  }, 1000);
+}
+
+function copyGalioWebhook() {
+  const url = CONFIG.supabaseUrl.includes('TU-PROYECTO')
+    ? 'https://avwqmeberbjadrrlvaaa.supabase.co/functions/v1/galiopay-webhook'
+    : CONFIG.supabaseUrl + '/functions/v1/galiopay-webhook';
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => toast('URL copiada ','success'));
+  } else {
+    toast('URL: ' + url,'info');
+  }
+}
+
+async function loadStoredMpConfig(force = false) {
+  if (!sb || !STATE.user.id) return STATE.mpConfig;
+  if (!force && STATE.mpConfig.profileId === STATE.user.id && (
+    STATE.mpConfig.accessToken ||
+    STATE.mpConfig.publicKey ||
+    STATE.mpConfig.gpClientId ||
+    STATE.mpConfig.gpApiKey
+  )) {
+    return STATE.mpConfig;
+  }
+
+  let data = null;
+  let error = null;
+
+  const extended = await sb
+    .from('profile_payment_credentials')
+    .select('profile_id, mp_public_key, mp_access_token, mp_mode, mp_checkout_label, gp_client_id, gp_api_key, gp_mode, gp_checkout_label')
+    .eq('profile_id', STATE.user.id)
+    .single();
+
+  data = extended.data;
+  error = extended.error;
+
+  if (error && /gp_client_id|gp_api_key|gp_mode|gp_checkout_label/i.test(error.message || '')) {
+    const fallback = await sb
+      .from('profile_payment_credentials')
+      .select('profile_id, mp_public_key, mp_access_token, mp_mode, mp_checkout_label')
+      .eq('profile_id', STATE.user.id)
+      .single();
+    data = fallback.data;
+    error = fallback.error;
+  }
+
+  if (error) {
+    if (!/0 rows|no rows/i.test(error.message || '')) {
+      console.warn('No se pudieron cargar las credenciales de pago:', error.message);
+    }
+    STATE.mpConfig = {
+      publicKey: '',
+      accessToken: '',
+      mode: 'sandbox',
+      checkoutLabel: 'Recomendapp',
+      gpClientId: '',
+      gpApiKey: '',
+      gpMode: 'sandbox',
+      gpCheckoutLabel: 'Recomendapp',
+      profileId: STATE.user.id
+    };
+    saveMpConfigToStorage(STATE.mpConfig);
+    return STATE.mpConfig;
+  }
+
+  STATE.mpConfig = {
+    publicKey: data?.mp_public_key || '',
+    accessToken: data?.mp_access_token || '',
+    mode: data?.mp_mode || 'production',
+    checkoutLabel: data?.mp_checkout_label || 'Recomendapp',
+    gpClientId: data?.gp_client_id || '',
+    gpApiKey: data?.gp_api_key || '',
+    gpMode: data?.gp_mode || 'sandbox',
+    gpCheckoutLabel: data?.gp_checkout_label || 'Recomendapp',
+    profileId: data?.profile_id || STATE.user.id,
+  };
+  CONFIG.mpPublicKey = STATE.mpConfig.publicKey;
+  CONFIG.mpMode = STATE.mpConfig.mode;
+  saveMpConfigToStorage(STATE.mpConfig);
+  if (STATE.mpConfig.publicKey) initMP(STATE.mpConfig.publicKey);
+  return STATE.mpConfig;
+}
+
 // Modal MP Config (acceso rapido)
 function openMpModal() { document.getElementById('mpConfigModal').classList.add('open'); }
 function closeMpModal() { document.getElementById('mpConfigModal').classList.remove('open'); }
@@ -2869,7 +3187,13 @@ function saveMpConfig() {
   const at   = document.getElementById('mpAccessTokenInput')?.value?.trim();
   const mode = document.getElementById('mpModeSelect')?.value;
   if (!pk || !at) { toast('Complet? ambos campos','error'); return; }
-  STATE.mpConfig = { publicKey: pk, accessToken: at, mode, checkoutLabel: STATE.mpConfig.checkoutLabel || 'Recomendapp' };
+  STATE.mpConfig = {
+    ...STATE.mpConfig,
+    publicKey: pk,
+    accessToken: at,
+    mode,
+    checkoutLabel: STATE.mpConfig.checkoutLabel || 'Recomendapp'
+  };
   saveMpConfigToStorage(STATE.mpConfig);
   CONFIG.mpPublicKey = pk;
   initMP(pk);
@@ -3073,6 +3397,18 @@ async function confirmApprovedPayment(reviewId, paymentId, profileSlug) {
   return data;
 }
 
+async function confirmApprovedGalioPayment(reviewId, paymentLinkId, proofToken, profileSlug) {
+  if (!sb || !reviewId || !paymentLinkId || !proofToken || !profileSlug) return null;
+  const { data, error } = await sb.functions.invoke('galiopay-confirm-return', {
+    body: { reviewId, paymentLinkId, proofToken, profileSlug }
+  });
+  if (error) {
+    console.warn('No se pudo confirmar el pago de GalioPay en el retorno:', error.message || error);
+    return null;
+  }
+  return data;
+}
+
 async function confirmApprovedMediaUnlock(unlockId, paymentId, profileSlug) {
   const merchantOrderId = new URLSearchParams(window.location.search).get('merchant_order_id') || '';
   if (!sb || !unlockId || (!paymentId && !merchantOrderId) || !profileSlug) return null;
@@ -3122,6 +3458,7 @@ async function syncApprovedReview(targetReviewId, targetSlug, attempts = 24, del
 async function checkMpReturn() {
   const params = new URLSearchParams(window.location.search);
   const status = params.get('payment') || params.get('status');
+  const provider = params.get('provider') || '';
   const reviewId = params.get('review_id') || '';
   const unlockId = params.get('unlock_id') || '';
   const mediaItemId = params.get('media_item_id') || '';
@@ -3163,7 +3500,10 @@ async function checkMpReturn() {
       const targetReviewId = reviewId || data.reviewId || '';
       const targetSlug = returnSlug || data.profileSlug || STATE.viewedProfile?.slug || '';
       let confirmation = null;
-      if (targetReviewId && targetSlug && (paymentId || merchantOrderId)) {
+      const returnProvider = provider || data.provider || (data.pay === 'GalioPay' ? 'galiopay' : 'mercadopago');
+      if (returnProvider === 'galiopay' && targetReviewId && targetSlug && data.paymentLinkId && data.proofToken) {
+        confirmation = await confirmApprovedGalioPayment(targetReviewId, data.paymentLinkId, data.proofToken, targetSlug);
+      } else if (targetReviewId && targetSlug && (paymentId || merchantOrderId)) {
         confirmation = await confirmApprovedPayment(targetReviewId, paymentId, targetSlug);
       }
       const publishedReview = confirmation?.payment_status === 'approved'
@@ -3175,7 +3515,7 @@ async function checkMpReturn() {
       const csPago = document.getElementById('csPago');
       const csAmount = document.getElementById('csAmount');
       if (csAuthor) csAuthor.textContent = data.nombre;
-      if (csPago) csPago.textContent = 'MercadoPago';
+      if (csPago) csPago.textContent = returnProvider === 'galiopay' ? 'GalioPay' : 'MercadoPago';
       if (csAmount) csAmount.textContent = data.amount ? ('$' + data.amount.toLocaleString('es-AR') + ' ARS') : 'Pago aprobado';
       renderConfirmRewardBox();
       if (publishedReview && approvedReward?.downloadUrl) {
