@@ -51,6 +51,12 @@ function getSelectedFormRewardId(profileId='') {
   return profileId ? map[profileId] || '' : '';
 }
 
+function getRequestedRewardId() {
+  const value = new URLSearchParams(window.location.search).get('reward');
+  if (value === 'none') return '';
+  return value || null;
+}
+
 function setSelectedFormRewardId(profileId='', rewardId='') {
   if (!profileId) return;
   const map = loadSelectedFormRewards();
@@ -567,17 +573,21 @@ function profileShareId(profile = {}) {
 }
 
 function profileLinkFromProfile(profile = {}, options = {}) {
+  const includeReward = options.view === 'form';
   return appendUrlParams(profileLink(profileShareId(profile)), {
     view: options.view === 'form' ? 'form' : '',
+    reward: includeReward ? (options.rewardId === '' ? 'none' : (options.rewardId || '')) : '',
   });
 }
 
 function profileShareLinkFromProfile(profile = {}, options = {}) {
   const base = profileShareLink(profileShareId(profile));
   const version = encodeURIComponent(String(profile?.updatedAt || '').trim());
+  const includeReward = options.view === 'form';
   return appendUrlParams(base, {
     v: version || '',
     view: options.view === 'form' ? 'form' : '',
+    reward: includeReward ? (options.rewardId === '' ? 'none' : (options.rewardId || '')) : '',
   });
 }
 
@@ -585,10 +595,14 @@ function getRequestedPublicView() {
   return new URLSearchParams(window.location.search).get('view') === 'form' ? 'form' : 'profile';
 }
 
-function replaceProfileHistoryState(slug, viewId = 'profile') {
+function replaceProfileHistoryState(slug, viewId = 'profile', rewardId = null) {
   const query = new URLSearchParams();
   if (slug) query.set('slug', slug);
-  if (viewId === 'form') query.set('view', 'form');
+  if (viewId === 'form') {
+    query.set('view', 'form');
+    if (rewardId === '') query.set('reward', 'none');
+    else if (rewardId) query.set('reward', rewardId);
+  }
   const nextPath = `${window.location.pathname}${query.toString() ? `?${query.toString()}` : ''}`;
   history.replaceState({}, '', nextPath);
 }
@@ -776,6 +790,11 @@ function renderFormHeader() {
   if (avatarNode) {
     setAvatarNode(avatarNode, profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl || '');
   }
+  const requestedRewardId = getRequestedRewardId();
+  if (requestedRewardId !== null) {
+    const profileId = STATE.viewedProfile?.id || STATE.user.id || '';
+    setSelectedFormRewardId(profileId, requestedRewardId || '');
+  }
   renderFormRewardSpotlight();
   renderReviewPromptChips();
   renderFormPublicReviews();
@@ -791,7 +810,7 @@ function openReviewForm(rewardId = '') {
   const profileId = STATE.viewedProfile?.id || STATE.user.id || '';
   setSelectedFormRewardId(profileId, rewardId || '');
   renderFormRewardSpotlight();
-  nav('form', { preserveRewardSelection: true });
+  nav('form', { preserveRewardSelection: true, rewardId });
 }
 
 window.openReviewForm = openReviewForm;
@@ -1521,7 +1540,11 @@ async function nav(viewId, options = {}) {
   const el = document.getElementById('view-' + viewId);
   if (el) { el.classList.add('active'); window.scrollTo(0,0); }
   if ((viewId === 'profile' || viewId === 'form') && (STATE.viewedProfile?.id || STATE.user.id || CONFIG.profileSlug)) {
-    replaceProfileHistoryState((STATE.viewedProfile?.id || STATE.user.id || CONFIG.profileSlug || ''), viewId);
+    const profileId = STATE.viewedProfile?.id || STATE.user.id || '';
+    const selectedRewardId = viewId === 'form'
+      ? (options.rewardId !== undefined ? options.rewardId : getSelectedFormRewardId(profileId))
+      : null;
+    replaceProfileHistoryState((STATE.viewedProfile?.id || STATE.user.id || CONFIG.profileSlug || ''), viewId, selectedRewardId);
   }
   runViewLifecycle(viewId);
 }
@@ -1891,6 +1914,30 @@ function isMediaUnlocked(item) {
   return item.visibility === 'public' || (STATE.unlockedMediaIds || []).includes(item.id);
 }
 
+function renderRewardCards(items = STATE.publicRewardItems || [], options = {}) {
+  const showShare = options.showShare === true;
+  return items.map(item => `
+    <div class="gallery-card">
+      <div class="gallery-media" style="${item.imageUrl ? `background-image:url('${item.imageUrl}')` : ''}">
+        <div class="gallery-badge-row">
+          <span class="gallery-pill">Recompensa</span>
+          <span class="gallery-pill">Sin costo extra</span>
+        </div>
+      </div>
+      <div class="gallery-card-body">
+        <div class="gallery-title-row">
+          <div class="gallery-title">${item.title}</div>
+        </div>
+        <div class="gallery-desc">${item.description || 'Se entrega luego de la aprobacion del pago de tu reseña.'}</div>
+        <div class="gallery-state-note">${item.downloadUrl ? 'Incluye archivo promocional descargable al aprobarse tu reseña.' : 'Incluye beneficio visible en el perfil.'}</div>
+        <div class="gallery-cta">
+          <button class="btn btn-amber btn-sm" onclick="openReviewForm('${item.id}')">Elegir promo y dejar reseña</button>
+          ${showShare ? `<button class="btn btn-surface btn-sm" onclick="doShareForm('${item.id}')">Compartir esta promo</button>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
 function mediaKindLabel(kind='image') {
   if (kind === 'video') return 'Video';
   if (kind === 'pdf') return 'PDF';
@@ -1947,15 +1994,28 @@ function renderPublicMediaPreview(items = STATE.publicMediaItems || []) {
   const section = document.getElementById('pubMediaSection');
   const grid = document.getElementById('pubMediaPreviewGrid');
   if (!section || !grid) return;
-  section.style.display = items.length ? '' : 'none';
-  if (!items.length) return;
+  const rewards = STATE.publicRewardItems || [];
+  section.style.display = (items.length || rewards.length) ? '' : 'none';
+  if (!items.length) {
+    grid.innerHTML = rewards.length
+      ? `<div class="gallery-empty">Este perfil tiene recompensas activas. Entrá a la vista dedicada para verlas todas y compartir una promo puntual.</div>`
+      : '';
+    return;
+  }
   grid.innerHTML = renderMediaCards(items.slice(0, 3), false);
 }
 
 function renderMediaVault() {
   const grid = document.getElementById('mediaVaultGrid');
+  const rewardGrid = document.getElementById('rewardVaultGrid');
   if (!grid) return;
   const items = STATE.publicMediaItems || [];
+  const rewards = STATE.publicRewardItems || [];
+  if (rewardGrid) {
+    rewardGrid.innerHTML = rewards.length
+      ? renderRewardCards(rewards, { showShare: true })
+      : '<div class="gallery-empty">Este perfil todavia no cargo recompensas por resena.</div>';
+  }
   if (!items.length) {
     grid.innerHTML = '<div class="gallery-empty">Este perfil todavía no publicó imágenes o combos.</div>';
     return;
@@ -2433,7 +2493,6 @@ function renderProfile() {
   const reviewSummary = document.getElementById('pubReviewSummary');
   const reviewSortSelect = document.getElementById('reviewSortSelect');
   const reviewDateFilterSelect = document.getElementById('reviewDateFilterSelect');
-  const rewardsSection = document.getElementById('pubRewardsSection');
   const mediaSection = document.getElementById('pubMediaSection');
   const pubReviews = document.getElementById('pubReviews');
   const formProfileAvatar = document.getElementById('formProfileAvatar');
@@ -2472,6 +2531,7 @@ function renderProfile() {
       </div>
       <div class="pub-quickbar-actions">
         <button class="btn btn-amber btn-md pub-cta-primary" onclick="openReviewForm()">Dejar mi resena ahora</button>
+        <button class="btn btn-surface btn-md pub-cta-secondary" onclick="nav('media')">Ver recompensas</button>
         <button class="btn btn-surface btn-md pub-cta-secondary" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver prueba social</button>
         ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
       </div>`;
@@ -2499,8 +2559,7 @@ function renderProfile() {
   if (reviewSortSelect) reviewSortSelect.value = STATE.publicReviewSort;
   if (reviewDateFilterSelect) reviewDateFilterSelect.value = STATE.publicReviewDateFilter;
   if (revCountNode) revCountNode.textContent = visibleLabel;
-  if (rewardsSection) rewardsSection.style.display = rewardItems.length ? '' : 'none';
-  if (mediaSection) mediaSection.style.display = mediaItems.length ? '' : 'none';
+  if (mediaSection) mediaSection.style.display = (mediaItems.length || rewardItems.length) ? '' : 'none';
   if (pubReviews) {
     pubReviews.innerHTML = reviews.length
       ? reviews.map(review => revCardHTML(review, false)).join('')
@@ -2521,7 +2580,6 @@ function renderProfile() {
     );
   }
 
-  renderPublicRewards(rewardItems);
   renderPublicMediaPreview(mediaItems);
   renderFormPublicReviews();
   syncActivePublicReviewObserver(reviews);
@@ -3431,8 +3489,11 @@ async function doShare() {
   return shareProfileLink();
 }
 
-async function doShareForm() {
-  return shareProfileLink({ view: 'form' });
+async function doShareForm(rewardId) {
+  const normalizedRewardId = rewardId === undefined
+    ? getSelectedFormRewardId(STATE.viewedProfile?.id || STATE.user.id || '')
+    : rewardId;
+  return shareProfileLink({ view: 'form', rewardId: normalizedRewardId });
 }
 
 window.doShareForm = doShareForm;
@@ -3441,9 +3502,64 @@ async function shareProfileLink(options = {}) {
   const targetProfile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
   const targetName = STATE.viewedProfile?.name || STATE.user.name;
   const view = options.view === 'form' ? 'form' : 'profile';
-  const url = profileShareLinkFromProfile(targetProfile, { view });
+  const rewardId = view === 'form'
+    ? (options.rewardId === undefined ? getSelectedFormRewardId(targetProfile.id || '') : options.rewardId)
+    : undefined;
+  const url = profileShareLinkFromProfile(targetProfile, { view, rewardId });
   const text = view === 'form'
     ? 'Te comparto el formulario directo para dejar una reseña en Recomendapp'
+    : 'Mira este perfil en Recomendapp';
+  if (navigator.share) {
+    if (shareInFlight) return;
+    shareInFlight = true;
+    try {
+      await navigator.share({
+        title: `${targetName} | Recomendapp`,
+        text,
+        url,
+      });
+    } catch (error) {
+      if (error?.name !== 'AbortError') {
+        console.warn('No se pudo compartir:', error);
+      }
+    } finally {
+      shareInFlight = false;
+    }
+    return;
+  }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => toast(view === 'form' ? 'Enlace del formulario copiado' : 'Enlace copiado ','success'));
+  } else {
+    toast('Enlace: ' + url,'info');
+  }
+}
+
+function renderMediaVault() {
+  const grid = document.getElementById('mediaVaultGrid');
+  const rewardGrid = document.getElementById('rewardVaultGrid');
+  if (!grid) return;
+  const rewards = STATE.publicRewardItems || [];
+  const items = STATE.publicMediaItems || [];
+  if (rewardGrid) {
+    rewardGrid.innerHTML = rewards.length
+      ? renderRewardCards(rewards, { showShare: true })
+      : '<div class="gallery-empty">Este perfil todavia no cargo recompensas por resena.</div>';
+  }
+  grid.innerHTML = items.length
+    ? renderMediaCards(items, true)
+    : '<div class="gallery-empty">Este perfil todavia no publico imagenes o combos.</div>';
+}
+
+async function shareProfileLink(options = {}) {
+  const targetProfile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
+  const targetName = STATE.viewedProfile?.name || STATE.user.name;
+  const view = options.view === 'form' ? 'form' : 'profile';
+  const rewardId = view === 'form'
+    ? (options.rewardId === undefined ? getSelectedFormRewardId(targetProfile.id || '') : options.rewardId)
+    : undefined;
+  const url = profileShareLinkFromProfile(targetProfile, { view, rewardId });
+  const text = view === 'form'
+    ? (rewardId ? 'Te comparto el formulario directo con una recompensa preseleccionada en Recomendapp' : 'Te comparto el formulario directo para dejar una reseña en Recomendapp')
     : 'Mira este perfil en Recomendapp';
   if (navigator.share) {
     if (shareInFlight) return;
