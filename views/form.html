@@ -9,13 +9,17 @@
       </div>
     </div>
     <div class="form-body">
+      <div class="form-top-actions">
+        <button class="btn btn-surface btn-sm" type="button" onclick="goToPublicProfile()">Ver perfil publico</button>
+        <button class="btn btn-amber btn-sm" type="button" onclick="doShareForm()">Compartir formulario</button>
+      </div>
       <div class="form-fastlane">
         <div class="form-fastlane-copy">
-          <h3>Dejá una reseña valiosa en menos de 1 minuto</h3>
-          <p>Contá qué hizo bien esta persona, elegí el monto y pagá seguro con Mercado Pago. Se publica automáticamente cuando el pago queda aprobado.</p>
+          <h3>Deja una reseña valiosa en menos de 1 minuto</h3>
+          <p>Conta que hizo bien esta persona, elegi el monto y paga seguro con Mercado Pago. Se publica automaticamente cuando el pago queda aprobado.</p>
         </div>
         <div class="form-fastlane-badges">
-          <span class="form-fastlane-badge">Rápido</span>
+          <span class="form-fastlane-badge">Rapido</span>
           <span class="form-fastlane-badge">Seguro</span>
           <span class="form-fastlane-badge">Con impacto real</span>
         </div>
@@ -23,8 +27,8 @@
       <div class="mp-info-box form-credibility-box">
         <span class="icon">Info</span>
         <div>
-          <strong>La reseña paga genera más credibilidad.</strong><br>
-          Hace visible un reconocimiento real, ayuda a que otras personas confíen más rápido y motiva a este perfil a seguir mejorando.
+          <strong>La reseña paga genera mas credibilidad.</strong><br>
+          Hace visible un reconocimiento real, ayuda a que otras personas confien mas rapido y motiva a este perfil a seguir mejorando.
         </div>
       </div>
       <div id="formRewardSpotlight" style="display:none"></div>
@@ -32,13 +36,13 @@
       <div class="form-section-head compact">
         <div>
           <div class="form-section-kicker">Privacidad</div>
-          <div class="form-section-title">Elegí cómo querés aparecer</div>
+          <div class="form-section-title">Elegi como queres aparecer</div>
         </div>
       </div>
       <div class="switch-row" onclick="toggleSwitch('anonSwitch','nameSection')" style="margin-bottom:20px">
         <div class="switch-row-left">
           <span class="switch-row-icon">Anon</span>
-          <div><div class="switch-row-title">Publicar anónimamente</div><div class="switch-row-sub">Tu reseña aparecerá sin nombre ni apellido</div></div>
+          <div><div class="switch-row-title">Publicar anonimamente</div><div class="switch-row-sub">Tu reseña aparecera sin nombre ni apellido</div></div>
         </div>
         <div class="switch-track" id="anonSwitch"><div class="switch-knob"></div></div>
       </div>
@@ -46,20 +50,20 @@
       <div id="nameSection" style="overflow:hidden;transition:max-height .35s cubic-bezier(.23,1,.32,1);max-height:150px">
         <div class="two-col">
           <div class="field"><label class="field-label">Nombre</label><input class="field-input" id="fNombre" placeholder="Juan"></div>
-          <div class="field"><label class="field-label">Apellido</label><input class="field-input" id="fApellido" placeholder="García"></div>
+          <div class="field"><label class="field-label">Apellido</label><input class="field-input" id="fApellido" placeholder="Garcia"></div>
         </div>
       </div>
 
       <div class="form-section-head">
         <div>
           <div class="form-section-kicker">Tu reseña</div>
-          <div class="form-section-title">Contá qué te aportó y qué destacarías</div>
+          <div class="form-section-title">Conta que te aporto y que destacarias</div>
         </div>
-        <div class="form-section-side">Mientras más concreta sea la reseña, más confianza genera.</div>
+        <div class="form-section-side">Mientras mas concreta sea la reseña, mas confianza genera.</div>
       </div>
-      <div class="field"><textarea class="field-textarea field-textarea-lg" id="fMsg" placeholder="Contá tu experiencia. ¿Qué te aportó? ¿Qué destacarías? Sé sincero..."></textarea></div>
+      <div class="field"><textarea class="field-textarea field-textarea-lg" id="fMsg" placeholder="Conta tu experiencia. ¿Que te aporto? ¿Que destacarias? Se sincero..."></textarea></div>
       <div class="review-quick-prompts" id="reviewQuickPrompts"></div>
-      <div class="field-inline-help">Mientras más concreta sea la reseña, más confianza genera en quien vea este perfil.</div>
+      <div class="field-inline-help">Mientras mas concreta sea la reseña, mas confianza genera en quien vea este perfil.</div>
       <div class="two-col">
         <div class="field"><label class="field-label">Provincia (opcional)</label><input class="field-input" id="fProvince" placeholder="Buenos Aires"></div>
         <div class="field"><label class="field-label">Localidad (opcional)</label><input class="field-input" id="fLocality" placeholder="San Justo"></div>
@@ -67,7 +71,7 @@
       <div class="field">
         <label class="field-label">Celular (opcional)</label>
         <input class="field-input" id="fPhone" placeholder="+54 9 11 1234 5678">
-        <div class="field-inline-help" style="margin:8px 0 0">Si querés, podés dejar un número para que el perfil te identifique mejor. Si publicás en anónimo no se muestra.</div>
+        <div class="field-inline-help" style="margin:8px 0 0">Si queres, podes dejar un numero para que el perfil te identifique mejor. Si publicas en anonimo no se muestra.</div>
       </div>
 
       <div class="review-upload-grid">
@@ -86,7 +90,7 @@
       <div class="form-section-head compact">
         <div>
           <div class="form-section-kicker">Reconocimiento</div>
-          <div class="form-section-title">Elegí el monto de la recompensa</div>
+          <div class="form-section-title">Elegi el monto de la recompensa</div>
         </div>
       </div>
       <div class="amount-grid" id="amtGrid">
@@ -107,7 +111,7 @@
       <div class="form-section-head compact">
         <div>
           <div class="form-section-kicker">Pago</div>
-          <div class="form-section-title">Elegí cómo querés pagar</div>
+          <div class="form-section-title">Elegi como queres pagar</div>
         </div>
       </div>
       <div class="pay-chips" id="payChips">
@@ -118,7 +122,7 @@
 
       <div id="transferInfoBox" class="mp-info-box" style="margin-top:14px;display:none">
         <span class="icon">Pago</span>
-        <div id="transferInfoText">Este perfil todavía no configuró sus datos de cobro.</div>
+        <div id="transferInfoText">Este perfil todavia no configuro sus datos de cobro.</div>
       </div>
 
       <div id="mp-brick-container"></div>
@@ -126,8 +130,19 @@
       <button class="form-submit" id="submitBtn" onclick="submitReview()">
         <span id="submitBtnText">Pagar y publicar reseña</span>
       </button>
-      <div class="form-speed-note">Tip: si querés hacerlo todavía más rápido, podés dejar tu reseña en modo anónimo y elegir uno de los montos sugeridos.</div>
-      <p class="form-disclaimer">Al publicar aceptás los <a onclick="toast('Términos de uso','info')">términos de uso</a> y la <a onclick="toast('Política de privacidad','info')">política de privacidad</a>. El pago es condición para publicar.</p>
+      <div class="form-speed-note">Tip: si queres hacerlo todavia mas rapido, podes dejar tu reseña en modo anonimo y elegir uno de los montos sugeridos.</div>
+      <div class="form-public-reviews">
+        <div class="form-public-reviews-head">
+          <div>
+            <div class="form-section-kicker">Prueba social</div>
+            <div class="form-section-title">Reseñas publicadas</div>
+          </div>
+          <div class="form-public-reviews-meta" id="formReviewsMeta">Cargando reseñas...</div>
+        </div>
+        <div class="pub-reviews-grid" id="formPublicReviews"></div>
+        <div class="review-scroll-sentinel" id="formReviewsSentinel" aria-hidden="true"></div>
+      </div>
+      <p class="form-disclaimer">Al publicar aceptas los <a onclick="toast('Terminos de uso','info')">terminos de uso</a> y la <a onclick="toast('Politica de privacidad','info')">politica de privacidad</a>. El pago es condicion para publicar.</p>
     </div>
   </div>
 </div>
