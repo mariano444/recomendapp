@@ -631,13 +631,19 @@ function renderFormHeader() {
 }
 
 function getPrimaryRewardItem(items = STATE.publicRewardItems || []) {
-  const rewardItems = items || [];
-  const explicit = rewardItems.find(item => item.active !== false && item.showInForm);
-  if (explicit) return explicit;
   const profileId = STATE.viewedProfile?.id || STATE.user.id || '';
   const selectedId = getSelectedFormRewardId(profileId);
-  return rewardItems.find(item => item.active !== false && item.id === selectedId) || null;
+  return (items || []).find(item => item.active !== false && item.id === selectedId) || null;
 }
+
+function openReviewForm(rewardId = '') {
+  const profileId = STATE.viewedProfile?.id || STATE.user.id || '';
+  setSelectedFormRewardId(profileId, rewardId || '');
+  renderFormRewardSpotlight();
+  nav('form', { preserveRewardSelection: true });
+}
+
+window.openReviewForm = openReviewForm;
 
 function triggerRewardDownload(rewardItem) {
   if (!rewardItem?.downloadUrl) return false;
@@ -670,6 +676,7 @@ function renderFormRewardSpotlight() {
         <h3>${reward.title}</h3>
         <p>${reward.description || 'Esta promo se libera automáticamente cuando el pago queda aprobado.'}</p>
         <div class="form-reward-note">${reward.downloadUrl ? 'Se mostrará en la confirmación y se intentará descargar automáticamente.' : 'El perfil todavía no cargó el archivo final de esta promo.'}</div>
+        <div class="form-reward-actions"><button type="button" class="btn btn-surface btn-sm" onclick="openReviewForm()">Quitar promo</button></div>
       </div>
     </div>`;
 }
@@ -1339,8 +1346,12 @@ function runViewLifecycle(viewId) {
 /* ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.?
    NAVIGATION
 ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.? */
-async function nav(viewId) {
+async function nav(viewId, options = {}) {
   if (!viewsLoaded) return;
+  if (viewId === 'form' && !options.preserveRewardSelection) {
+    const profileId = STATE.viewedProfile?.id || STATE.user.id || '';
+    setSelectedFormRewardId(profileId, '');
+  }
   await ensureViewsLoaded([viewId]);
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const el = document.getElementById('view-' + viewId);
@@ -1668,7 +1679,7 @@ function renderPublicRewards(items = STATE.publicRewardItems || []) {
         <div class="gallery-desc">${item.description || 'Se entrega luego de la aprobación del pago de tu reseña.'}</div>
         <div class="gallery-state-note">${item.downloadUrl ? 'Incluye archivo promocional descargable al aprobarse tu reseña.' : 'Incluye beneficio visible en el perfil.'}</div>
         <div class="gallery-cta">
-          <button class="btn btn-amber btn-sm" onclick="nav('form')">Quiero dejar mi reseña</button>
+          <button class="btn btn-amber btn-sm" onclick="openReviewForm('${item.id}')">Elegir promo y dejar reseña</button>
         </div>
       </div>
     </div>`).join('');
@@ -2194,8 +2205,6 @@ function renderProfile() {
   const mediaSection = document.getElementById('pubMediaSection');
   const pubReviews = document.getElementById('pubReviews');
   const formProfileAvatar = document.getElementById('formProfileAvatar');
-  const highestReward = allReviews.reduce((max, review) => Math.max(max, review.amount || 0), 0);
-  const latestReview = [...allReviews].sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a))[0] || null;
   const visibleLabel = reviews.length === allReviews.length
     ? `${reviews.length} resenas visibles`
     : `${reviews.length} de ${allReviews.length} resenas visibles`;
@@ -2213,7 +2222,7 @@ function renderProfile() {
   if (false && pubQuickbar) {
     pubQuickbar.innerHTML = `
       <div class="pub-quickbar-actions pub-quickbar-actions-compact">
-        <button class="btn btn-amber btn-sm" onclick="nav('form')">Dejar reseña</button>
+        <button class="btn btn-amber btn-sm" onclick="openReviewForm()">Dejar reseña</button>
         <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
         ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
       </div>`;
@@ -2226,7 +2235,7 @@ function renderProfile() {
         <span>${allReviews.length ? 'Cada reseña publicada muestra una experiencia concreta y un reconocimiento económico visible. Eso hace que este perfil transmita confianza de forma mucho más rápida.' : 'Una reseña bien escrita y con reconocimiento real puede convertirse en la señal más fuerte para generar confianza desde el primer vistazo.'}</span>
       </div>
       <div class="pub-quickbar-actions">
-        <button class="btn btn-amber btn-md pub-cta-primary" onclick="nav('form')">Dejar mi resena ahora</button>
+        <button class="btn btn-amber btn-md pub-cta-primary" onclick="openReviewForm()">Dejar mi resena ahora</button>
         <button class="btn btn-surface btn-md pub-cta-secondary" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver prueba social</button>
         ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
       </div>`;
@@ -2243,9 +2252,9 @@ function renderProfile() {
   if (revCountNode) revCountNode.textContent = `${reviews.length} reseñas`;
   if (reviewSummary) {
     reviewSummary.innerHTML = `
+      <span class="pub-review-pill">${visibleLabel}</span>
       <span class="pub-review-pill">Orden: ${STATE.publicReviewSort === 'amount_desc' ? 'Mayor recompensa' : STATE.publicReviewSort === 'recent' ? 'Mas recientes' : STATE.publicReviewSort === 'oldest' ? 'Mas antiguas' : 'Menor recompensa'}</span>
-      <span class="pub-review-pill">${highestReward ? 'Hasta $' + highestReward.toLocaleString('es-AR') : 'Sin recompensas visibles'}</span>
-      <span class="pub-review-pill">${latestReview ? 'Ultima actividad ' + latestReview.date : 'Aun sin actividad'}</span>`;
+      <span class="pub-review-pill">${allReviews.length ? 'Reconocimiento economico visible en cada resena' : 'Todavia sin actividad visible'}</span>`;
   }
   if (reviewSortSelect) reviewSortSelect.value = STATE.publicReviewSort;
   if (reviewDateFilterSelect) reviewDateFilterSelect.value = STATE.publicReviewDateFilter;
@@ -2255,7 +2264,7 @@ function renderProfile() {
   if (pubReviews) {
     pubReviews.innerHTML = reviews.length
       ? reviews.map(review => revCardHTML(review, false)).join('')
-      : `<div class="rev-card"><p class="rev-text">Todavía no hay reseñas publicadas. La primera puede ser la tuya.</p><button class="btn btn-amber btn-sm" onclick="nav('form')">Escribir la primera reseña</button></div>`;
+      : `<div class="rev-card"><p class="rev-text">Todavía no hay reseñas publicadas. La primera puede ser la tuya.</p><button class="btn btn-amber btn-sm" onclick="openReviewForm()">Escribir la primera reseña</button></div>`;
   }
 
   if (pubReviews && !reviews.length) {
