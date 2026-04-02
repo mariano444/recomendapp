@@ -436,9 +436,12 @@ function renderPaymentMethodOptions() {
   if (!container) return;
 
   const methods = [];
-  methods.push({ id: 'galiopay', label: 'GalioPay' });
+  const hasManualTransferData = !!((STATE.viewedProfile?.mpAlias || '').trim() || (STATE.viewedProfile?.mpCbu || '').trim());
+  methods.push({ id: 'galiopay', label: 'Transferencia' });
   methods.push({ id: 'mercadopago', label: 'MercadoPago / Tarjeta' });
-  methods.push({ id: 'transfer', label: 'Transferencia' });
+  if (hasManualTransferData) {
+    methods.push({ id: 'transfer', label: 'Transferencia' });
+  }
 
   if (!methods.some(method => method.id === STATE.selectedPay)) {
     STATE.selectedPay = methods[0]?.id || 'mercadopago';
@@ -1727,7 +1730,7 @@ function selPay(el, method) {
       } else if (method === 'galiopay') {
         transferBox.style.display = '';
         if (transferText) {
-          transferText.textContent = 'Vas a continuar con GalioPay. Dentro del payment link podras pagar por transferencia o Mercado Pago segun la configuracion del comercio.';
+          transferText.textContent = 'Vas a continuar para abonar por transferencia.';
         }
       } else {
         transferBox.style.display = 'none';
