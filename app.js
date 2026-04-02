@@ -644,6 +644,15 @@ function mapRewardItem(row) {
     description: row.description || '',
     imageUrl: row.image_url || '',
     downloadUrl: row.download_url || '',
+    rewardKind: row.reward_kind || 'image',
+    visibility: row.visibility || 'visible',
+    deliveryMode: row.delivery_mode || 'download',
+    teaser: row.teaser || '',
+    isSurprise: row.is_surprise === true,
+    stockTotal: row.stock_total || 0,
+    stockClaimed: row.stock_claimed || 0,
+    availableUntil: row.available_until || '',
+    allowDownload: (row.delivery_mode || 'download') !== 'view',
     showInForm: row.show_in_form === true,
     active: row.active !== false,
     sortOrder: row.sort_order || 0,
@@ -721,8 +730,31 @@ function openReviewForm(rewardId = '') {
 
 window.openReviewForm = openReviewForm;
 
+function rewardKindLabel(kind='image') {
+  if (kind === 'video') return 'Video';
+  if (kind === 'audio') return 'Audio';
+  if (kind === 'pdf') return 'PDF';
+  if (kind === 'document') return 'Documento';
+  if (kind === 'promo') return 'PromociÃ³n';
+  return 'Imagen';
+}
+
+function rewardAvailabilityLabel(rewardItem) {
+  if (!rewardItem) return '';
+  const limitedByStock = Number(rewardItem.stockTotal || 0) > 0;
+  const limitedByTime = !!rewardItem.availableUntil;
+  if (limitedByStock && limitedByTime) return `Cupos limitados y vigente hasta ${formatDateLabel(rewardItem.availableUntil)}`;
+  if (limitedByStock) return `${Math.max(0, Number(rewardItem.stockTotal || 0) - Number(rewardItem.stockClaimed || 0))} cupos estimados disponibles`;
+  if (limitedByTime) return `Vigente hasta ${formatDateLabel(rewardItem.availableUntil)}`;
+  return 'Disponible cuando el pago quede aprobado';
+}
+
 function triggerRewardDownload(rewardItem) {
   if (!rewardItem?.downloadUrl) return false;
+  if (rewardItem.deliveryMode === 'view') {
+    window.open(rewardItem.downloadUrl, '_blank', 'noopener');
+    return true;
+  }
   const anchor = document.createElement('a');
   anchor.href = rewardItem.downloadUrl;
   anchor.target = '_blank';
@@ -1974,6 +2006,247 @@ async function deleteRewardItem(id) {
   renderFormRewardSpotlight();
   resetRewardForm();
   toast('Recompensa eliminada ','success');
+}
+
+function renderRewardAdmin() {
+  const list = document.getElementById('rewardAdminList');
+  if (!list) return;
+  if (!STATE.rewardItems.length) {
+    list.innerHTML = '<div class="gallery-admin-empty">Todavia no cargaste recompensas por resena.</div>';
+    return;
+  }
+  list.innerHTML = STATE.rewardItems.map(item => `
+    <div class="gallery-admin-card">
+      <div class="gallery-admin-thumb" style="${item.imageUrl ? `background-image:url('${item.imageUrl}')` : ''}"></div>
+      <div>
+        <div class="gallery-admin-title">${item.title}</div>
+        <div class="gallery-admin-meta">${item.isSurprise ? (item.teaser || 'Recompensa sorpresa') : (item.description || 'Sin descripcion')}<br>${rewardKindLabel(item.rewardKind)} · ${item.deliveryMode === 'view' ? 'Se visualiza tras aprobar' : 'Se descarga tras aprobar'}<br>${item.visibility === 'blocked' ? 'Vista previa bloqueada antes del pago' : 'Vista previa visible antes del pago'}<br>${rewardAvailabilityLabel(item)}<br>${item.showInForm ? 'Visible en el formulario de resena' : 'No se muestra en el formulario'}<br>${item.downloadUrl ? 'Archivo de recompensa cargado' : 'Sin archivo final cargado'}<br>${item.active ? 'Activa y visible cuando corresponda' : 'Oculta'}</div>
+      </div>
+      <div class="gallery-admin-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editRewardItem('${item.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRewardItem('${item.id}')">Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderPublicRewards(items = STATE.publicRewardItems || []) {
+  const section = document.getElementById('pubRewardsSection');
+  const grid = document.getElementById('pubRewardsGrid');
+  if (!section || !grid) return;
+  section.style.display = items.length ? '' : 'none';
+  if (!items.length) return;
+  grid.innerHTML = items.map(item => `
+    <div class="gallery-card">
+      <div class="gallery-media" style="${item.imageUrl ? `background-image:url('${item.imageUrl}')` : ''}">
+        <div class="gallery-badge-row">
+          <span class="gallery-pill">${item.isSurprise ? 'Sorpresa' : rewardKindLabel(item.rewardKind)}</span>
+          <span class="gallery-pill">${item.visibility === 'blocked' ? 'Bloqueada' : 'Visible'}</span>
+        </div>
+        ${item.visibility === 'blocked' ? '<div class="gallery-media-overlay">Se revela luego del pago aprobado</div>' : ''}
+      </div>
+      <div class="gallery-card-body">
+        <div class="gallery-title-row">
+          <div class="gallery-title">${item.title}</div>
+        </div>
+        <div class="gallery-desc">${item.isSurprise ? (item.teaser || 'Recompensa sorpresa desbloqueable despues de aprobar el pago.') : (item.description || 'Se entrega luego de la aprobacion del pago de tu resena.')}</div>
+        <div class="gallery-state-note">${rewardAvailabilityLabel(item)} · ${item.deliveryMode === 'view' ? 'Se podra ver online' : 'Se podra descargar'} cuando la resena quede publicada.</div>
+        <div class="gallery-cta">
+          <button class="btn btn-amber btn-sm" onclick="openReviewForm('${item.id}')">Elegir recompensa y dejar resena</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderFormRewardSpotlight() {
+  const wrap = document.getElementById('formRewardSpotlight');
+  if (!wrap) return;
+  const reward = getPrimaryRewardItem();
+  if (!reward) {
+    wrap.style.display = 'none';
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.style.display = '';
+  wrap.innerHTML = `
+    <div class="form-reward-card">
+      <div class="form-reward-media" style="${reward.imageUrl ? `background-image:url('${reward.imageUrl}')` : ''}"></div>
+      <div class="form-reward-copy">
+        <span class="form-reward-kicker">Recompensa por resena aprobada</span>
+        <h3>${reward.title}</h3>
+        <p>${reward.isSurprise ? (reward.teaser || 'Sorpresa desbloqueable despues del pago aprobado.') : (reward.description || 'Esta recompensa se libera automaticamente cuando el pago queda aprobado.')}</p>
+        <div class="form-reward-note">${reward.downloadUrl ? `${rewardKindLabel(reward.rewardKind)} listo para ${reward.deliveryMode === 'view' ? 'ver' : 'descargar'} cuando la resena quede aprobada.` : 'El perfil todavia no cargo el archivo final de esta recompensa.'}<br>${rewardAvailabilityLabel(reward)}</div>
+        <div class="form-reward-actions"><button type="button" class="btn btn-surface btn-sm" onclick="openReviewForm()">Quitar promo</button></div>
+      </div>
+    </div>`;
+}
+
+function renderConfirmRewardBox() {
+  const box = document.getElementById('confirmRewardBox');
+  if (!box) return;
+  const reward = getPrimaryRewardItem(STATE.publicRewardItems);
+  if (!reward) {
+    box.style.display = 'none';
+    box.innerHTML = '';
+    return;
+  }
+  box.style.display = '';
+  box.innerHTML = `
+    <div class="confirm-reward-box">
+      <div class="confirm-reward-copy">
+        <span class="form-reward-kicker">Beneficio desbloqueado</span>
+        <strong>${reward.title}</strong>
+        <p>${reward.isSurprise ? (reward.teaser || 'Tu recompensa sorpresa ya esta lista.') : (reward.description || 'Tu recompensa ya esta lista.')}</p>
+      </div>
+      ${reward.downloadUrl ? `<button class="btn btn-amber btn-md" onclick="triggerRewardDownload(getPrimaryRewardItem(STATE.publicRewardItems))">${reward.deliveryMode === 'view' ? 'Ver recompensa' : 'Descargar recompensa'}</button>` : '<button class="btn btn-surface btn-md" disabled>Sin archivo cargado</button>'}
+    </div>`;
+}
+
+function resetRewardForm() {
+  STATE.currentRewardEditId = null;
+  ['rewardTitle','rewardDescription','rewardImageUrl','rewardDownloadUrl','rewardTeaser','rewardAvailableUntil'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['rewardImageFile','rewardAssetFile'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const active = document.getElementById('rewardActive');
+  if (active) active.value = 'true';
+  const showInForm = document.getElementById('rewardShowInForm');
+  if (showInForm) showInForm.value = 'false';
+  const rewardKind = document.getElementById('rewardKind');
+  if (rewardKind) rewardKind.value = 'image';
+  const rewardVisibility = document.getElementById('rewardVisibility');
+  if (rewardVisibility) rewardVisibility.value = 'visible';
+  const rewardDeliveryMode = document.getElementById('rewardDeliveryMode');
+  if (rewardDeliveryMode) rewardDeliveryMode.value = 'download';
+  const rewardIsSurprise = document.getElementById('rewardIsSurprise');
+  if (rewardIsSurprise) rewardIsSurprise.value = 'false';
+  const rewardStockTotal = document.getElementById('rewardStockTotal');
+  if (rewardStockTotal) rewardStockTotal.value = '';
+}
+
+function editRewardItem(id) {
+  const item = STATE.rewardItems.find(entry => entry.id === id);
+  if (!item) return;
+  STATE.currentRewardEditId = id;
+  document.getElementById('rewardTitle').value = item.title;
+  document.getElementById('rewardDescription').value = item.description || '';
+  document.getElementById('rewardImageUrl').value = item.imageUrl || '';
+  document.getElementById('rewardDownloadUrl').value = item.downloadUrl || '';
+  document.getElementById('rewardActive').value = String(item.active !== false);
+  document.getElementById('rewardShowInForm').value = String(item.showInForm === true);
+  const rewardKind = document.getElementById('rewardKind');
+  if (rewardKind) rewardKind.value = item.rewardKind || 'image';
+  const rewardVisibility = document.getElementById('rewardVisibility');
+  if (rewardVisibility) rewardVisibility.value = item.visibility || 'visible';
+  const rewardDeliveryMode = document.getElementById('rewardDeliveryMode');
+  if (rewardDeliveryMode) rewardDeliveryMode.value = item.deliveryMode || 'download';
+  const rewardTeaser = document.getElementById('rewardTeaser');
+  if (rewardTeaser) rewardTeaser.value = item.teaser || '';
+  const rewardIsSurprise = document.getElementById('rewardIsSurprise');
+  if (rewardIsSurprise) rewardIsSurprise.value = String(item.isSurprise === true);
+  const rewardStockTotal = document.getElementById('rewardStockTotal');
+  if (rewardStockTotal) rewardStockTotal.value = item.stockTotal || '';
+  const rewardAvailableUntil = document.getElementById('rewardAvailableUntil');
+  if (rewardAvailableUntil) rewardAvailableUntil.value = item.availableUntil ? String(item.availableUntil).slice(0, 16) : '';
+}
+
+async function fetchRewardItems(profileId, isOwner = false) {
+  if (!sb || !profileId) return [];
+  const buildQuery = (selectClause) => {
+    let query = sb
+      .from('profile_reward_items')
+      .select(selectClause)
+      .eq('profile_id', profileId)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
+    if (!isOwner) query = query.eq('active', true);
+    return query;
+  };
+  let { data, error } = await buildQuery('id, title, description, image_url, download_url, reward_kind, visibility, delivery_mode, teaser, is_surprise, stock_total, stock_claimed, available_until, show_in_form, active, sort_order');
+  if (error && /reward_kind|delivery_mode|is_surprise|stock_total|available_until|show_in_form|download_url/i.test(error.message || '')) {
+    const fallback = await buildQuery('id, title, description, image_url, download_url, show_in_form, active, sort_order');
+    data = fallback.data;
+    error = fallback.error;
+  }
+  if (error) throw error;
+  return (data || []).map(mapRewardItem);
+}
+
+async function saveRewardItem() {
+  if (!sb || !STATE.user.id) return toast('Inicia sesion para guardar recompensas','error');
+  const title = document.getElementById('rewardTitle')?.value?.trim() || '';
+  if (!title) return toast('Escribe un titulo para la recompensa','error');
+  const description = document.getElementById('rewardDescription')?.value?.trim() || '';
+  const imageFile = document.getElementById('rewardImageFile')?.files?.[0] || null;
+  const assetFile = document.getElementById('rewardAssetFile')?.files?.[0] || null;
+  const imageUrlField = document.getElementById('rewardImageUrl')?.value?.trim() || '';
+  const downloadUrlField = document.getElementById('rewardDownloadUrl')?.value?.trim() || '';
+  const rewardKind = document.getElementById('rewardKind')?.value || 'image';
+  const visibility = document.getElementById('rewardVisibility')?.value || 'visible';
+  const deliveryMode = document.getElementById('rewardDeliveryMode')?.value || 'download';
+  const teaser = document.getElementById('rewardTeaser')?.value?.trim() || '';
+  const isSurprise = (document.getElementById('rewardIsSurprise')?.value || 'false') === 'true';
+  const stockTotal = parseInt(document.getElementById('rewardStockTotal')?.value || '0', 10) || 0;
+  const availableUntilInput = document.getElementById('rewardAvailableUntil')?.value || '';
+  const showInForm = (document.getElementById('rewardShowInForm')?.value || 'false') === 'true';
+  const imageUrl = (imageFile ? await uploadProfileAsset(imageFile, 'reward-cover') : '') || imageUrlField || '';
+  const downloadUrl = (assetFile ? await uploadProfileAsset(assetFile, 'reward-file') : '') || downloadUrlField || '';
+  const payload = {
+    profile_id: STATE.user.id,
+    title,
+    description,
+    image_url: imageUrl,
+    download_url: downloadUrl,
+    reward_kind: rewardKind,
+    visibility,
+    delivery_mode: deliveryMode,
+    teaser,
+    is_surprise: isSurprise,
+    stock_total: Math.max(0, stockTotal),
+    available_until: availableUntilInput ? new Date(availableUntilInput).toISOString() : null,
+    show_in_form: showInForm,
+    active: (document.getElementById('rewardActive')?.value || 'true') === 'true',
+    sort_order: STATE.currentRewardEditId
+      ? (STATE.rewardItems.find(item => item.id === STATE.currentRewardEditId)?.sortOrder || 0)
+      : STATE.rewardItems.length,
+  };
+  const query = STATE.currentRewardEditId
+    ? sb.from('profile_reward_items').update(payload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id).select('id').single()
+    : sb.from('profile_reward_items').insert(payload).select('id').single();
+  let { data, error } = await query;
+  if (error && /reward_kind|visibility|delivery_mode|teaser|is_surprise|stock_total|available_until|download_url|show_in_form/i.test(error.message || '')) {
+    const fallbackPayload = { ...payload };
+    delete fallbackPayload.reward_kind;
+    delete fallbackPayload.visibility;
+    delete fallbackPayload.delivery_mode;
+    delete fallbackPayload.teaser;
+    delete fallbackPayload.is_surprise;
+    delete fallbackPayload.stock_total;
+    delete fallbackPayload.available_until;
+    delete fallbackPayload.download_url;
+    delete fallbackPayload.show_in_form;
+    const fallbackQuery = STATE.currentRewardEditId
+      ? sb.from('profile_reward_items').update(fallbackPayload).eq('id', STATE.currentRewardEditId).eq('profile_id', STATE.user.id).select('id').single()
+      : sb.from('profile_reward_items').insert(fallbackPayload).select('id').single();
+    const fallbackResponse = await fallbackQuery;
+    data = fallbackResponse.data;
+    error = fallbackResponse.error;
+    if (!error) {
+      toast('La recompensa se guardo, pero faltan columnas nuevas en la base para tipos, archivos y reglas avanzadas.', 'info');
+    }
+  }
+  if (error) return toast(error.message || 'No se pudo guardar la recompensa','error');
+  if (!error && showInForm) {
+    setSelectedFormRewardId(STATE.user.id, data?.id || STATE.currentRewardEditId || '');
+    await sb.from('profile_reward_items').update({ show_in_form: false }).eq('profile_id', STATE.user.id).neq('id', data?.id || STATE.currentRewardEditId || '00000000-0000-0000-0000-000000000000');
+    await sb.from('profile_reward_items').update({ show_in_form: true }).eq('profile_id', STATE.user.id).eq('id', data?.id || STATE.currentRewardEditId || '');
+  } else if (!error && !showInForm && (data?.id || STATE.currentRewardEditId) === getSelectedFormRewardId(STATE.user.id)) {
+    setSelectedFormRewardId(STATE.user.id, '');
+  }
+  STATE.rewardItems = await fetchRewardItems(STATE.user.id, true);
+  STATE.publicRewardItems = STATE.rewardItems.filter(item => item.active);
+  renderRewardAdmin();
+  renderPublicRewards();
+  renderFormRewardSpotlight();
+  resetRewardForm();
+  toast('Recompensa guardada ','success');
 }
 
 function resetMediaForm() {
