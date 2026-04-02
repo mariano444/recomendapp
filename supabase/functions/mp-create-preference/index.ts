@@ -22,7 +22,18 @@ serve(async (req) => {
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-    const { amount, profileSlug, reviewerName, reviewerPhone, reviewerAvatarUrl, reviewImageUrl, message, appUrl } = await req.json();
+    const {
+      amount,
+      profileSlug,
+      reviewerName,
+      reviewerPhone,
+      reviewerProvince,
+      reviewerLocality,
+      reviewerAvatarUrl,
+      reviewImageUrl,
+      message,
+      appUrl,
+    } = await req.json();
 
     if (!amount || Number(amount) < 100) {
       return Response.json(
@@ -69,6 +80,8 @@ serve(async (req) => {
       profile_id: profile.id,
       reviewer_nombre: reviewerName || "Anonimo",
       reviewer_phone: reviewerPhone || null,
+      reviewer_province: reviewerProvince || null,
+      reviewer_locality: reviewerLocality || null,
       reviewer_avatar_url: reviewerAvatarUrl || null,
       review_image_url: reviewImageUrl || null,
       is_anon: !reviewerName || reviewerName === "Anonimo",
@@ -79,11 +92,24 @@ serve(async (req) => {
       published: false,
     };
 
-    const { data: review, error: reviewError } = await supabase
+    let { data: review, error: reviewError } = await supabase
       .from("reviews")
       .insert(reviewInsert)
       .select("id")
       .single();
+
+    if (reviewError && /reviewer_province|reviewer_locality/i.test(reviewError.message || "")) {
+      const legacyInsert = { ...reviewInsert };
+      delete (legacyInsert as Record<string, unknown>).reviewer_province;
+      delete (legacyInsert as Record<string, unknown>).reviewer_locality;
+      const fallback = await supabase
+        .from("reviews")
+        .insert(legacyInsert)
+        .select("id")
+        .single();
+      review = fallback.data;
+      reviewError = fallback.error;
+    }
 
     if (reviewError || !review) {
       throw new Error(reviewError?.message || "No se pudo crear la resena");
