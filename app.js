@@ -1969,17 +1969,21 @@ async function saveRewardItem() {
   }
   if (error) return toast(error.message || 'No se pudo guardar la recompensa','error');
   if (!error && show_in_form) {
-    setSelectedFormRewardId(STATE.user.id, data?.id || STATE.currentRewardEditId || '');
-    await sb
-      .from('profile_reward_items')
-      .update({ show_in_form: false })
-      .eq('profile_id', STATE.user.id)
-      .neq('id', data?.id || STATE.currentRewardEditId || '00000000-0000-0000-0000-000000000000');
+    const selectedRewardId = data?.id || STATE.currentRewardEditId || '';
+    setSelectedFormRewardId(STATE.user.id, selectedRewardId);
+    const rewardsToHide = (STATE.rewardItems || []).filter(item => item.id && item.id !== selectedRewardId && item.showInForm);
+    for (const item of rewardsToHide) {
+      await sb
+        .from('profile_reward_items')
+        .update({ show_in_form: false })
+        .eq('profile_id', STATE.user.id)
+        .eq('id', item.id);
+    }
     await sb
       .from('profile_reward_items')
       .update({ show_in_form: true })
       .eq('profile_id', STATE.user.id)
-      .eq('id', data?.id || STATE.currentRewardEditId || '');
+      .eq('id', selectedRewardId);
   } else if (!error && !show_in_form && (data?.id || STATE.currentRewardEditId) === getSelectedFormRewardId(STATE.user.id)) {
     setSelectedFormRewardId(STATE.user.id, '');
   }
@@ -2234,9 +2238,13 @@ async function saveRewardItem() {
   }
   if (error) return toast(error.message || 'No se pudo guardar la recompensa','error');
   if (!error && showInForm) {
-    setSelectedFormRewardId(STATE.user.id, data?.id || STATE.currentRewardEditId || '');
-    await sb.from('profile_reward_items').update({ show_in_form: false }).eq('profile_id', STATE.user.id).neq('id', data?.id || STATE.currentRewardEditId || '00000000-0000-0000-0000-000000000000');
-    await sb.from('profile_reward_items').update({ show_in_form: true }).eq('profile_id', STATE.user.id).eq('id', data?.id || STATE.currentRewardEditId || '');
+    const selectedRewardId = data?.id || STATE.currentRewardEditId || '';
+    setSelectedFormRewardId(STATE.user.id, selectedRewardId);
+    const rewardsToHide = (STATE.rewardItems || []).filter(item => item.id && item.id !== selectedRewardId && item.showInForm);
+    for (const item of rewardsToHide) {
+      await sb.from('profile_reward_items').update({ show_in_form: false }).eq('profile_id', STATE.user.id).eq('id', item.id);
+    }
+    await sb.from('profile_reward_items').update({ show_in_form: true }).eq('profile_id', STATE.user.id).eq('id', selectedRewardId);
   } else if (!error && !showInForm && (data?.id || STATE.currentRewardEditId) === getSelectedFormRewardId(STATE.user.id)) {
     setSelectedFormRewardId(STATE.user.id, '');
   }
