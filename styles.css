@@ -535,6 +535,9 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 #mp-brick-container { margin-bottom:20px; min-height:60px; }
 .mp-info-box { background:rgba(91,159,232,.08); border:1px solid rgba(91,159,232,.2); border-radius:var(--radius); padding:14px 18px; margin-bottom:20px; font-size:13px; color:var(--blue); display:flex; align-items:flex-start; gap:10px; }
 .mp-info-box .icon { flex-shrink:0; font-size:16px; }
+.mp-secure-box,
+.mp-settings-box { background:linear-gradient(135deg, rgba(110,151,216,.14), rgba(148,184,240,.06)); border-color:rgba(148,184,240,.28); }
+.mp-secure-copy { margin-top:6px; color:rgba(240,235,226,.72); line-height:1.55; }
 .form-credibility-box { margin-top:0; margin-bottom:20px; }
 
 /* �.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.�
