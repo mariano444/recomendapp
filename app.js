@@ -7,9 +7,9 @@ const CONFIG = {
   supabaseKey:   'sb_publishable_McWl7xNoHVDbUdaR51OFew_TdJTJw30',
 
   // ?"??"??"? MERCADOPAGO ?"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"?
-  // Si mpPublicKey est? vac?o, el pago se simula (modo demo)
-  mpPublicKey:   'APP_USR-6bcfa5f3-5ae4-4df1-8bf8-cc98e6deb584',
-  mpMode:        'sandbox',                         // 'sandbox' | 'production'
+  // Las credenciales reales deben venir de Supabase o desde la configuracion del perfil.
+  mpPublicKey:   '',
+  mpMode:        'production',                         // 'sandbox' | 'production'
 
   // ?"??"??"? APP ?"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"??"?
   appUrl:        'https://recomendapp.netlify.app',
@@ -337,6 +337,7 @@ const STATE = {
     phone: '',
     role: '',
     city: '',
+    locality: '',
     bio: '',
     tags: [],
     initials: '',
@@ -383,8 +384,8 @@ const CHART_DATA = [
 function loadMpConfig() {
   try {
     const raw = localStorage.getItem('aplauso_mp_config');
-    return raw ? JSON.parse(raw) : { publicKey: '', accessToken: '', mode: 'sandbox', checkoutLabel: 'Recomendapp', profileId: null };
-  } catch { return { publicKey: '', accessToken: '', mode: 'sandbox', checkoutLabel: 'Recomendapp', profileId: null }; }
+    return raw ? JSON.parse(raw) : { publicKey: '', accessToken: '', mode: 'production', checkoutLabel: 'Recomendapp', profileId: null };
+  } catch { return { publicKey: '', accessToken: '', mode: 'production', checkoutLabel: 'Recomendapp', profileId: null }; }
 }
 
 function saveMpConfigToStorage(cfg) {
@@ -392,7 +393,7 @@ function saveMpConfigToStorage(cfg) {
 }
 
 function getMpPublicKey() {
-  return CONFIG.mpPublicKey || STATE.mpConfig.publicKey || '';
+  return STATE.mpConfig.publicKey || CONFIG.mpPublicKey || '';
 }
 
 async function loadStoredMpConfig(force = false) {
@@ -411,7 +412,7 @@ async function loadStoredMpConfig(force = false) {
     if (!/0 rows|no rows/i.test(error.message || '')) {
       console.warn('No se pudieron cargar las credenciales de MercadoPago:', error.message);
     }
-    STATE.mpConfig = { publicKey: '', accessToken: '', mode: 'sandbox', checkoutLabel: 'Recomendapp', profileId: STATE.user.id };
+    STATE.mpConfig = { publicKey: '', accessToken: '', mode: 'production', checkoutLabel: 'Recomendapp', profileId: STATE.user.id };
     saveMpConfigToStorage(STATE.mpConfig);
     return STATE.mpConfig;
   }
@@ -446,16 +447,31 @@ function initialsFromProfile(nombre='', apellido='') {
   return (first + last).toUpperCase();
 }
 
+function joinWithSeparator(parts = [], separator = ' Â· ') {
+  return parts.map(part => String(part || '').trim()).filter(Boolean).join(separator);
+}
+
+function formatProfileLocation(profile = {}, fallback = 'Argentina') {
+  return joinWithSeparator([profile.city, profile.locality]) || fallback;
+}
+
+function formatProfileRoleLocation(profile = {}) {
+  return joinWithSeparator([
+    String(profile.role || '').trim() || 'Profesional',
+    formatProfileLocation(profile, 'Argentina'),
+  ]);
+}
+
 function formatCurrency(amount=0) {
   return '$' + Number(amount || 0).toLocaleString('es-AR');
 }
 
 function formatDateLabel(value) {
-  if (!value) return 'recién';
+  if (!value) return 'reciÃ©n';
   try {
     return new Date(value).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
   } catch {
-    return 'recién';
+    return 'reciÃ©n';
   }
 }
 
@@ -488,8 +504,8 @@ function defaultReviewPromptSuggestions() {
   return [
     'Me hizo sentir en confianza desde el primer momento.',
     'Fue muy claro/a, profesional y atento/a en todo el proceso.',
-    'Lo que más valoro es la dedicación y el seguimiento.',
-    'Lo/la volvería a elegir y recomendaría sin dudas.',
+    'Lo que mÃ¡s valoro es la dedicaciÃ³n y el seguimiento.',
+    'Lo/la volverÃ­a a elegir y recomendarÃ­a sin dudas.',
   ];
 }
 
@@ -614,14 +630,12 @@ function setCoverNode(el, imageUrl) {
 function renderFormHeader() {
   const profile = STATE.viewedProfile || STATE.user || {};
   const displayName = [profile.name, profile.lastName].filter(Boolean).join(' ').trim() || 'Perfil';
-  const role = profile.role || 'Profesional';
-  const city = profile.city || 'Ciudad';
   const nameNode = document.getElementById('formProfileName');
   const metaNode = document.getElementById('formProfileMeta');
   const confirmNode = document.getElementById('csProfileName');
   const avatarNode = document.getElementById('formProfileAvatar');
   if (nameNode) nameNode.textContent = displayName;
-  if (metaNode) metaNode.textContent = `${role} ? ${city}`;
+  if (metaNode) metaNode.textContent = formatProfileRoleLocation(profile);
   if (confirmNode) confirmNode.textContent = displayName;
   if (avatarNode) {
     setAvatarNode(avatarNode, profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl || '');
@@ -672,10 +686,10 @@ function renderFormRewardSpotlight() {
     <div class="form-reward-card">
       <div class="form-reward-media" style="${reward.imageUrl ? `background-image:url('${reward.imageUrl}')` : ''}"></div>
       <div class="form-reward-copy">
-        <span class="form-reward-kicker">Recompensa por reseña aprobada</span>
+        <span class="form-reward-kicker">Recompensa por reseÃ±a aprobada</span>
         <h3>${reward.title}</h3>
-        <p>${reward.description || 'Esta promo se libera automáticamente cuando el pago queda aprobado.'}</p>
-        <div class="form-reward-note">${reward.downloadUrl ? 'Se mostrará en la confirmación y se intentará descargar automáticamente.' : 'El perfil todavía no cargó el archivo final de esta promo.'}</div>
+        <p>${reward.description || 'Esta promo se libera automÃ¡ticamente cuando el pago queda aprobado.'}</p>
+        <div class="form-reward-note">${reward.downloadUrl ? 'Se mostrarÃ¡ en la confirmaciÃ³n y se intentarÃ¡ descargar automÃ¡ticamente.' : 'El perfil todavÃ­a no cargÃ³ el archivo final de esta promo.'}</div>
         <div class="form-reward-actions"><button type="button" class="btn btn-surface btn-sm" onclick="openReviewForm()">Quitar promo</button></div>
       </div>
     </div>`;
@@ -687,10 +701,10 @@ function renderReviewPromptChips() {
   const prompts = normalizeReviewPromptSuggestions((STATE.viewedProfile || STATE.user || {}).reviewPromptSuggestions);
   wrap.innerHTML = prompts.map(prompt => {
     const shortLabel = prompt
-      .replace('Me hizo sentir en confianza desde el primer momento.', 'Generó confianza')
+      .replace('Me hizo sentir en confianza desde el primer momento.', 'GenerÃ³ confianza')
       .replace('Fue muy claro/a, profesional y atento/a en todo el proceso.', 'Muy profesional')
-      .replace('Lo que más valoro es la dedicación y el seguimiento.', 'Buena dedicación')
-      .replace('Lo/la volvería a elegir y recomendaría sin dudas.', 'Lo recomendaría');
+      .replace('Lo que mÃ¡s valoro es la dedicaciÃ³n y el seguimiento.', 'Buena dedicaciÃ³n')
+      .replace('Lo/la volverÃ­a a elegir y recomendarÃ­a sin dudas.', 'Lo recomendarÃ­a');
     return `<button type="button" class="review-prompt-chip" data-prompt="${prompt.replace(/"/g, '&quot;')}" onclick="addReviewPrompt(this.dataset.prompt)">${shortLabel}</button>`;
   }).join('');
 }
@@ -710,7 +724,7 @@ function renderConfirmRewardBox() {
       <div class="confirm-reward-copy">
         <span class="form-reward-kicker">Beneficio desbloqueado</span>
         <strong>${reward.title}</strong>
-        <p>${reward.description || 'Tu recompensa ya está lista.'}</p>
+        <p>${reward.description || 'Tu recompensa ya estÃ¡ lista.'}</p>
       </div>
       ${reward.downloadUrl ? `<button class="btn btn-amber btn-md" onclick="triggerRewardDownload(getPrimaryRewardItem(STATE.publicRewardItems))">Descargar promo</button>` : '<button class="btn btn-surface btn-md" disabled>Sin archivo cargado</button>'}
     </div>`;
@@ -834,6 +848,7 @@ function mergeUserProfile(profile) {
     phone: profile.telefono || '',
     role: profile.role || '',
     city: profile.city || '',
+    locality: profile.locality || '',
     bio: profile.bio || '',
     tags: Array.isArray(profile.tags) ? profile.tags : [],
     initials: initialsFromProfile(profile.nombre, profile.apellido),
@@ -869,6 +884,7 @@ function setViewedProfileFromProfile(profile) {
     phone: profile.telefono || '',
     role: profile.role || '',
     city: profile.city || '',
+    locality: profile.locality || '',
     bio: profile.bio || '',
     tags: Array.isArray(profile.tags) ? profile.tags : [],
     initials: initialsFromProfile(profile.nombre, profile.apellido),
@@ -891,11 +907,11 @@ function setViewedProfileFromProfile(profile) {
 }
 
 function mapReviewRow(row) {
-  const fullName = (row.reviewer_nombre || 'Anónimo').trim();
+  const fullName = (row.reviewer_nombre || 'AnÃ³nimo').trim();
   const parts = fullName.split(/\s+/).filter(Boolean);
   return {
     id: row.id,
-    name: row.is_anon ? 'Anónimo' : fullName,
+    name: row.is_anon ? 'AnÃ³nimo' : fullName,
     initials: row.is_anon ? '?' : ((parts[0]?.charAt(0) || '?') + (parts[1]?.charAt(0) || '')).toUpperCase(),
     date: formatDateLabel(row.created_at),
     rawDate: row.created_at || null,
@@ -926,20 +942,20 @@ function getTopRewardReview(reviews = []) {
 function buildProfileMeta(profile, reviews = []) {
   const displayName = [profile?.name, profile?.lastName].filter(Boolean).join(' ').trim() || 'Perfil';
   const role = (profile?.role || 'Profesional').trim();
-  const city = (profile?.city || 'Argentina').trim();
+  const location = formatProfileLocation(profile, 'Argentina');
   const topReview = getTopRewardReview(reviews);
   const totalReviews = reviews.length;
   const highestReward = topReview?.amount || 0;
   const shareTitle = (profile?.shareTitle || '').trim() || displayName;
-  const shareSubtitle = (profile?.shareSubtitle || '').trim() || [role, city].filter(Boolean).join(' | ');
+  const shareSubtitle = (profile?.shareSubtitle || '').trim() || [role, location].filter(Boolean).join(' | ');
   const shortBio = (profile?.bio || '').trim();
   const shareDescription = (profile?.shareDescription || '').trim();
   const description = shareDescription || (
     shortBio
       ? `${shortBio} Especialidad: ${role}. Recomendaciones visibles y reconocimiento real en Recomendapp.`
       : totalReviews
-        ? `${displayName}, ${role} en ${city}. Mira sus recomendaciones visibles, ${totalReviews} resenas publicadas y reconocimientos de hasta $${highestReward.toLocaleString('es-AR')} en Recomendapp.`
-        : `${displayName}, ${role} en ${city}. Conoce su perfil profesional y deja una recomendacion con reconocimiento real en Recomendapp.`
+        ? `${displayName}, ${role} en ${location}. Mira sus recomendaciones visibles, ${totalReviews} resenas publicadas y reconocimientos de hasta $${highestReward.toLocaleString('es-AR')} en Recomendapp.`
+        : `${displayName}, ${role} en ${location}. Conoce su perfil profesional y deja una recomendacion con reconocimiento real en Recomendapp.`
   );
   const composedTitle = shareSubtitle
     ? `${shareTitle} | ${shareSubtitle} | Recomendapp - Reconoce quien te atendio bien`
@@ -1040,6 +1056,7 @@ function mapProfileCard(row) {
     name: `${row.nombre} ${row.apellido || ''}`.trim(),
     role: row.role || '',
     city: row.city || '',
+    locality: row.locality || '',
     phone: row.telefono || '',
     bio: row.bio || '',
     cat: Array.isArray(row.tags) && row.tags.length ? row.tags : ['General'],
@@ -1372,9 +1389,9 @@ function updateNav() {
         <div class="nav-user" onclick="toggleDD()" id="navAv">${STATE.user.initials}</div>
         <div class="nav-dropdown" id="navDD">
           <button class="dd-item" onclick="nav('profile');closeDD()">Ver mi perfil</button>
-          <button class="dd-item" onclick="nav('settings');closeDD()">Configuración</button>
+          <button class="dd-item" onclick="nav('settings');closeDD()">ConfiguraciÃ³n</button>
           <div class="dd-sep"></div>
-          <button class="dd-item danger" onclick="doLogout()">Cerrar sesión</button>
+          <button class="dd-item danger" onclick="doLogout()">Cerrar sesiÃ³n</button>
         </div>
       </div>`;
   } else {
@@ -1415,20 +1432,15 @@ async function renderMpBrick() {
   const brickContainer = document.getElementById('mp-brick-container');
   if (!brickContainer) return;
   const pk = getMpPublicKey();
-  const hasCredentials = !!STATE.mpConfig.accessToken;
-  if (!hasCredentials) {
-    // Modo demo: sin brick, el bot?n simula
-    brickContainer.innerHTML = `
-      <div class="mp-info-box">
-        <span class="icon">Info</span>
-        <div><strong>Pago con MercadoPago</strong>: al presionar el boton te vamos a redirigir al checkout para completar el pago.
-        <br><span class="auth-link" onclick="nav('settings');settTab(document.querySelector('.s-nav-item:nth-child(2)'),'stPagos')">Revisar credenciales</span></div>
-      </div>`;
-    return;
-  }
   if (mpInstance === null) initMP(pk);
-  brickContainer.innerHTML = '<div id="mp-wallet-brick"></div>';
-  // El brick real se crea al construir la preferencia
+  brickContainer.innerHTML = `
+    <div class="mp-info-box mp-secure-box">
+      <span class="icon">Pago</span>
+      <div>
+        <strong>Pago seguro con MercadoPago</strong>
+        <div class="mp-secure-copy">La resena se publica solo cuando MercadoPago confirma el pago aprobado.</div>
+      </div>
+    </div>`;
 }
 
 async function createMpPreference(reviewDraft = {}) {
@@ -1442,9 +1454,9 @@ async function createMpPreference(reviewDraft = {}) {
         body: {
           amount,
           profileSlug: STATE.viewedProfile?.slug || STATE.user.slug,
-          reviewerName: STATE.isAnon ? 'Anónimo' : ((document.getElementById('fNombre')?.value || '') + ' ' + (document.getElementById('fApellido')?.value || '')).trim(),
-          message: document.getElementById('fMsg')?.value || '',
           reviewerPhone: reviewDraft.reviewerPhone || '',
+          reviewerProvince: reviewDraft.reviewerProvince || '',
+          reviewerLocality: reviewDraft.reviewerLocality || '',
           reviewerAvatarUrl: reviewDraft.reviewerAvatarUrl || '',
           reviewImageUrl: reviewDraft.reviewImageUrl || '',
           reviewerName: reviewDraft.reviewerName || '',
@@ -1641,7 +1653,7 @@ function renderRewardAdmin() {
   const list = document.getElementById('rewardAdminList');
   if (!list) return;
   if (!STATE.rewardItems.length) {
-    list.innerHTML = '<div class="gallery-admin-empty">Todavía no cargaste recompensas por reseña.</div>';
+    list.innerHTML = '<div class="gallery-admin-empty">TodavÃ­a no cargaste recompensas por reseÃ±a.</div>';
     return;
   }
   list.innerHTML = STATE.rewardItems.map(item => `
@@ -1649,7 +1661,7 @@ function renderRewardAdmin() {
       <div class="gallery-admin-thumb" style="${item.imageUrl ? `background-image:url('${item.imageUrl}')` : ''}"></div>
       <div>
         <div class="gallery-admin-title">${item.title}</div>
-        <div class="gallery-admin-meta">${item.description || 'Sin descripción'}<br>${item.showInForm ? 'Visible en el formulario de reseña' : 'No se muestra en el formulario'}<br>${item.downloadUrl ? 'Archivo listo para descarga automática' : 'Sin archivo descargable cargado'}<br>${item.active ? 'Activa y visible cuando corresponda' : 'Oculta'}</div>
+        <div class="gallery-admin-meta">${item.description || 'Sin descripciÃ³n'}<br>${item.showInForm ? 'Visible en el formulario de reseÃ±a' : 'No se muestra en el formulario'}<br>${item.downloadUrl ? 'Archivo listo para descarga automÃ¡tica' : 'Sin archivo descargable cargado'}<br>${item.active ? 'Activa y visible cuando corresponda' : 'Oculta'}</div>
       </div>
       <div class="gallery-admin-actions">
         <button class="btn btn-ghost btn-sm" onclick="editRewardItem('${item.id}')">Editar</button>
@@ -1676,10 +1688,10 @@ function renderPublicRewards(items = STATE.publicRewardItems || []) {
         <div class="gallery-title-row">
           <div class="gallery-title">${item.title}</div>
         </div>
-        <div class="gallery-desc">${item.description || 'Se entrega luego de la aprobación del pago de tu reseña.'}</div>
-        <div class="gallery-state-note">${item.downloadUrl ? 'Incluye archivo promocional descargable al aprobarse tu reseña.' : 'Incluye beneficio visible en el perfil.'}</div>
+        <div class="gallery-desc">${item.description || 'Se entrega luego de la aprobaciÃ³n del pago de tu reseÃ±a.'}</div>
+        <div class="gallery-state-note">${item.downloadUrl ? 'Incluye archivo promocional descargable al aprobarse tu reseÃ±a.' : 'Incluye beneficio visible en el perfil.'}</div>
         <div class="gallery-cta">
-          <button class="btn btn-amber btn-sm" onclick="openReviewForm('${item.id}')">Elegir promo y dejar reseña</button>
+          <button class="btn btn-amber btn-sm" onclick="openReviewForm('${item.id}')">Elegir promo y dejar reseÃ±a</button>
         </div>
       </div>
     </div>`).join('');
@@ -1707,8 +1719,8 @@ function renderMediaCards(items, allowPay = true) {
     const stateNote = locked
       ? 'Se habilita cuando el pago queda aprobado.'
       : item.downloadUrl
-        ? (item.allowDownload ? 'Disponible para descarga directa desde esta misma página.' : 'Disponible para visualización online desde esta misma página.')
-        : 'El perfil todavía no cargó el enlace final de acceso.';
+        ? (item.allowDownload ? 'Disponible para descarga directa desde esta misma pÃ¡gina.' : 'Disponible para visualizaciÃ³n online desde esta misma pÃ¡gina.')
+        : 'El perfil todavÃ­a no cargÃ³ el enlace final de acceso.';
     return `
       <div class="gallery-card">
         <div class="gallery-media" style="${bgStyle}">
@@ -1755,7 +1767,7 @@ function renderMediaVault() {
   if (!grid) return;
   const items = STATE.publicMediaItems || [];
   if (!items.length) {
-    grid.innerHTML = '<div class="gallery-empty">Este perfil todavía no publicó imágenes o combos.</div>';
+    grid.innerHTML = '<div class="gallery-empty">Este perfil todavÃ­a no publicÃ³ imÃ¡genes o combos.</div>';
     return;
   }
   grid.innerHTML = renderMediaCards(items, true);
@@ -1821,7 +1833,7 @@ async function saveRewardItem() {
     data = fallbackResponse.data;
     error = fallbackResponse.error;
     if (!error) {
-      toast('La recompensa se guardó, pero para habilitar descarga automática falta aplicar la migración SQL.', 'info');
+      toast('La recompensa se guardÃ³, pero para habilitar descarga automÃ¡tica falta aplicar la migraciÃ³n SQL.', 'info');
     }
   }
   if (error) return toast(error.message || 'No se pudo guardar la recompensa','error');
@@ -2005,14 +2017,14 @@ async function submitReview() {
   const reviewerAvatarFile = document.getElementById('fReviewerAvatar')?.files?.[0] || null;
   const reviewImageFile = document.getElementById('fReviewImage')?.files?.[0] || null;
   const profileId = STATE.viewedProfile?.id;
-  if (!msg) { toast('Escribí tu reseña antes de continuar','error'); return; }
-  if (!STATE.selectedAmt || STATE.selectedAmt < 100) { toast('Seleccioná un monto válido','error'); return; }
+  if (!msg) { toast('EscribÃ­ tu reseÃ±a antes de continuar','error'); return; }
+  if (!STATE.selectedAmt || STATE.selectedAmt < 100) { toast('SeleccionÃ¡ un monto vÃ¡lido','error'); return; }
 
   if (!profileId) { toast('No se pudo identificar el perfil destino','error'); return; }
   const btn = document.getElementById('submitBtn');
   const btnTxt = document.getElementById('submitBtnText');
   if (!STATE.isAnon && !nombre) {
-    toast('Sumá al menos tu nombre o activá el modo anónimo','error');
+    toast('SumÃ¡ al menos tu nombre o activÃ¡ el modo anÃ³nimo','error');
     return;
   }
   btn.disabled = true;
@@ -2044,7 +2056,7 @@ async function submitReview() {
   const pk = getMpPublicKey();
   if (STATE.selectedPay === 'mercadopago') {
     const pref = await createMpPreference(reviewDraft);
-    if (!pref) { btn.disabled = false; btnTxt.textContent = 'Pagar y publicar reseña'; return; }
+    if (!pref) { btn.disabled = false; btnTxt.textContent = 'Pagar y publicar reseÃ±a'; return; }
 
     // Guardar datos temporales para mostrar en confirmaci?n post-pago
     sessionStorage.setItem('aplauso_pending', JSON.stringify({
@@ -2102,7 +2114,7 @@ async function submitReview() {
         data = fallbackResponse.data;
         error = fallbackResponse.error;
         if (!error) {
-          toast('La reseña se guardó, pero para persistir provincia y localidad falta aplicar la migración SQL.', 'info');
+          toast('La reseÃ±a se guardÃ³, pero para persistir provincia y localidad falta aplicar la migraciÃ³n SQL.', 'info');
         }
       }
 
@@ -2122,8 +2134,8 @@ async function submitReview() {
       document.getElementById('fMsg').value = '';
       resetReviewMediaFields();
       btn.disabled = false;
-      btnTxt.textContent = 'Pagar y publicar reseña';
-      toast(data?.published ? 'Reseña guardada en la base' : 'Reseña guardada pendiente de pago','success');
+      btnTxt.textContent = 'Pagar y publicar reseÃ±a';
+      toast(data?.published ? 'ReseÃ±a guardada en la base' : 'ReseÃ±a guardada pendiente de pago','success');
       const approvedReward = getPrimaryRewardItem(STATE.publicRewardItems);
       renderConfirmRewardBox();
       if (data?.published && approvedReward?.downloadUrl) {
@@ -2133,10 +2145,10 @@ async function submitReview() {
       nav('confirm');
       return;
     } catch(e) {
-      console.error('Error guardando reseña:', e);
+      console.error('Error guardando reseÃ±a:', e);
       btn.disabled = false;
-      btnTxt.textContent = 'Pagar y publicar reseña';
-      toast(e?.message || 'No se pudo guardar la reseña','error');
+      btnTxt.textContent = 'Pagar y publicar reseÃ±a';
+      toast(e?.message || 'No se pudo guardar la reseÃ±a','error');
       return;
     }
   }
@@ -2145,7 +2157,7 @@ async function submitReview() {
   await new Promise(r => setTimeout(r, 1200));
   const newRev = {
     id: Date.now(),
-    name: STATE.isAnon ? 'Anónimo' : (nombre ? nombre + ' ' + (apellido ? apellido.charAt(0)+'.' : '') : 'Visitante'),
+    name: STATE.isAnon ? 'AnÃ³nimo' : (nombre ? nombre + ' ' + (apellido ? apellido.charAt(0)+'.' : '') : 'Visitante'),
     initials: STATE.isAnon ? '?' : ((nombre[0]||'')+(apellido[0]||'')).toUpperCase(),
     date: 'ahora mismo',
     amount: STATE.selectedAmt,
@@ -2161,7 +2173,7 @@ async function submitReview() {
   };
   STATE.reviews.unshift(newRev);
 
-  const displayName = STATE.isAnon ? 'Anónimo' : (nombre + ' ' + apellido).trim() || 'Visitante';
+  const displayName = STATE.isAnon ? 'AnÃ³nimo' : (nombre + ' ' + apellido).trim() || 'Visitante';
   document.getElementById('csAuthor').textContent = displayName;
   document.getElementById('csPago').textContent = STATE.selectedPay === 'mercadopago'
     ? 'MercadoPago'
@@ -2173,8 +2185,8 @@ async function submitReview() {
   document.getElementById('fMsg').value = '';
   resetReviewMediaFields();
   btn.disabled = false;
-  btnTxt.textContent = 'Pagar y publicar reseña';
-  toast('Reseña publicada exitosamente','success');
+  btnTxt.textContent = 'Pagar y publicar reseÃ±a';
+  toast('ReseÃ±a publicada exitosamente','success');
   const approvedReward = getPrimaryRewardItem(STATE.publicRewardItems);
   renderConfirmRewardBox();
   if (approvedReward?.downloadUrl) {
@@ -2213,7 +2225,7 @@ function renderProfile() {
   setCoverNode(document.getElementById('pubCover'), profile.coverUrl);
   document.getElementById('pubName').textContent = profileName;
   document.getElementById('pubRole').textContent = profile.role || 'Profesional';
-  document.getElementById('pubCity').textContent = profile.city ? profile.city + ', AR' : 'Argentina';
+  document.getElementById('pubCity').textContent = formatProfileLocation(profile, 'Argentina');
   document.getElementById('pubVerified').style.display = isVerified ? '' : 'none';
   document.getElementById('pubBio').textContent = profile.bio || 'Perfil en Recomendapp';
   document.getElementById('pubTags').innerHTML = (profile.tags || []).map(tag => `<span class="pub-tag">${tag}</span>`).join('');
@@ -2222,8 +2234,8 @@ function renderProfile() {
   if (false && pubQuickbar) {
     pubQuickbar.innerHTML = `
       <div class="pub-quickbar-actions pub-quickbar-actions-compact">
-        <button class="btn btn-amber btn-sm" onclick="openReviewForm()">Dejar reseña</button>
-        <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas</button>
+        <button class="btn btn-amber btn-sm" onclick="openReviewForm()">Dejar reseÃ±a</button>
+        <button class="btn btn-surface btn-sm" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseÃ±as</button>
         ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
       </div>`;
   }
@@ -2231,8 +2243,8 @@ function renderProfile() {
   if (pubQuickbar) {
     pubQuickbar.innerHTML = `
       <div class="pub-quickbar-copy">
-        <strong>${allReviews.length ? 'Prueba social con reconocimiento real' : 'Perfil listo para recibir una primera reseña potente'}</strong>
-        <span>${allReviews.length ? 'Cada reseña publicada muestra una experiencia concreta y un reconocimiento económico visible. Eso hace que este perfil transmita confianza de forma mucho más rápida.' : 'Una reseña bien escrita y con reconocimiento real puede convertirse en la señal más fuerte para generar confianza desde el primer vistazo.'}</span>
+        <strong>${allReviews.length ? 'Prueba social con reconocimiento real' : 'Perfil listo para recibir una primera reseÃ±a potente'}</strong>
+        <span>${allReviews.length ? 'Cada reseÃ±a publicada muestra una experiencia concreta y un reconocimiento econÃ³mico visible. Eso hace que este perfil transmita confianza de forma mucho mÃ¡s rÃ¡pida.' : 'Una reseÃ±a bien escrita y con reconocimiento real puede convertirse en la seÃ±al mÃ¡s fuerte para generar confianza desde el primer vistazo.'}</span>
       </div>
       <div class="pub-quickbar-actions">
         <button class="btn btn-amber btn-md pub-cta-primary" onclick="openReviewForm()">Dejar mi resena ahora</button>
@@ -2249,7 +2261,7 @@ function renderProfile() {
     setAvatarNode(formProfileAvatar, profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl);
   }
 
-  if (revCountNode) revCountNode.textContent = `${reviews.length} reseñas`;
+  if (revCountNode) revCountNode.textContent = `${reviews.length} reseÃ±as`;
   if (reviewSummary) {
     reviewSummary.innerHTML = `
       <span class="pub-review-pill">${visibleLabel}</span>
@@ -2264,7 +2276,7 @@ function renderProfile() {
   if (pubReviews) {
     pubReviews.innerHTML = reviews.length
       ? reviews.map(review => revCardHTML(review, false)).join('')
-      : `<div class="rev-card"><p class="rev-text">Todavía no hay reseñas publicadas. La primera puede ser la tuya.</p><button class="btn btn-amber btn-sm" onclick="openReviewForm()">Escribir la primera reseña</button></div>`;
+      : `<div class="rev-card"><p class="rev-text">TodavÃ­a no hay reseÃ±as publicadas. La primera puede ser la tuya.</p><button class="btn btn-amber btn-sm" onclick="openReviewForm()">Escribir la primera reseÃ±a</button></div>`;
   }
 
   if (pubReviews && !reviews.length) {
@@ -2350,7 +2362,7 @@ function closeModal() {
 function submitReply() {
   if (sb && STATE.user.id) {
     const text = document.getElementById('replyText').value.trim();
-    if (!text) { toast('Escribí tu respuesta','error'); return; }
+    if (!text) { toast('EscribÃ­ tu respuesta','error'); return; }
     (async () => {
       const { error } = await sb
         .from('reviews')
@@ -2373,7 +2385,7 @@ function submitReply() {
     return;
   }
   const text = document.getElementById('replyText').value.trim();
-  if (!text) { toast('Escribí tu respuesta','error'); return; }
+  if (!text) { toast('EscribÃ­ tu respuesta','error'); return; }
   const rev = STATE.reviews.find(r => r.id === STATE.currentReplyId);
   if (rev) {
     rev.reply = text;
@@ -2404,6 +2416,7 @@ function renderDashboard() {
   const editApellido = document.getElementById('editApellido');
   const editRole = document.getElementById('editRole');
   const editCity = document.getElementById('editCity');
+  const editLocality = document.getElementById('editLocality');
   const editPhone = document.getElementById('editPhone');
   const editBio = document.getElementById('editBio');
   const editTags = document.getElementById('editTags');
@@ -2416,6 +2429,7 @@ function renderDashboard() {
   if (editApellido) editApellido.value = STATE.user.lastName || '';
   if (editRole) editRole.value = STATE.user.role || '';
   if (editCity) editCity.value = STATE.user.city || '';
+  if (editLocality) editLocality.value = STATE.user.locality || '';
   if (editPhone) editPhone.value = STATE.user.phone || '';
   if (editBio) editBio.value = STATE.user.bio || '';
   if (editTags) editTags.value = (STATE.user.tags || []).join(', ');
@@ -2434,7 +2448,7 @@ function renderDashboard() {
   const dt = document.getElementById('dashTitle');
   if (dt) dt.textContent = 'Panel de ' + STATE.user.name;
   const ds = document.getElementById('dashSubtitle');
-  if (ds) ds.textContent = STATE.user.role + ' ? ' + STATE.user.city;
+  if (ds) ds.textContent = formatProfileRoleLocation(STATE.user);
 
   // Metricas
   const total = STATE.reviews.reduce((s,r) => s+r.amount, 0);
@@ -2465,7 +2479,7 @@ function renderDashboard() {
   if (af) af.innerHTML = STATE.reviews.slice(0,4).map(r => `
     <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
       <div class="avatar av-xs" style="background:${r.color||'#4F76B8'}">${r.initials}</div>
-      <div style="flex:1"><div style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">${r.name}</strong> dejó una reseña</div><div style="font-size:11px;color:var(--text3)">${r.date}</div></div>
+      <div style="flex:1"><div style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">${r.name}</strong> dejÃ³ una reseÃ±a</div><div style="font-size:11px;color:var(--text3)">${r.date}</div></div>
       <span class="badge badge-amber" style="font-size:11px">$${(r.amount/1000).toFixed(r.amount%1000?1:0)}k</span>
     </div>`).join('');
 
@@ -2512,7 +2526,7 @@ function renderDashboard() {
       <div class="pay-row">
         <div class="pay-row-left">
           <div class="avatar av-sm" style="background:linear-gradient(135deg,#635D55,#3A3630)">${(p.name || '?').charAt(0)}</div>
-          <div class="pay-row-info"><div class="pay-row-name">${p.name}</div><div class="pay-row-date">${p.date} ? MercadoPago</div></div>
+          <div class="pay-row-info"><div class="pay-row-name">${p.name}</div><div class="pay-row-date">${p.date} Â· MercadoPago</div></div>
         </div>
         <div class="pay-row-amount">+${formatCurrency(p.amount)}</div>
       </div>`).join('');
@@ -2526,7 +2540,7 @@ function renderDashboard() {
 function dashTab(btn, tabId) {
   document.querySelectorAll('.d-tab').forEach(t => t.classList.remove('act'));
   btn.classList.add('act');
-  ['tabReseñas','tabAnalytics','tabPagos','tabPerfil'].forEach(id => {
+  ['tabReseÃ±as','tabAnalytics','tabPagos','tabPerfil'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = id === tabId ? 'block' : 'none';
   });
@@ -2540,6 +2554,7 @@ function saveProfile() {
       const apellido = document.getElementById('editApellido')?.value?.trim() || STATE.user.lastName;
       const role = document.getElementById('editRole')?.value?.trim() || '';
       const city = document.getElementById('editCity')?.value?.trim() || '';
+      const locality = document.getElementById('editLocality')?.value?.trim() || '';
       const telefono = document.getElementById('editPhone')?.value?.trim() || '';
       const bio = document.getElementById('editBio')?.value?.trim() || '';
       const tags = (document.getElementById('editTags')?.value || '').split(',').map(t=>t.trim()).filter(Boolean);
@@ -2559,6 +2574,7 @@ function saveProfile() {
         apellido,
         role,
         city,
+        locality,
         telefono,
         bio,
         tags,
@@ -2577,8 +2593,9 @@ function saveProfile() {
         .eq('id', STATE.user.id)
         .select('*')
         .single();
-      if (error && /share_title|share_subtitle|share_description|share_image_mode|review_prompt_suggestions/i.test(error.message || '')) {
+      if (error && /share_title|share_subtitle|share_description|share_image_mode|review_prompt_suggestions|locality/i.test(error.message || '')) {
         const fallbackPayload = { ...payload };
+        delete fallbackPayload.locality;
         delete fallbackPayload.share_title;
         delete fallbackPayload.share_subtitle;
         delete fallbackPayload.share_description;
@@ -2615,6 +2632,7 @@ function saveProfile() {
   STATE.user.lastName = document.getElementById('editApellido')?.value || STATE.user.lastName;
   STATE.user.role     = document.getElementById('editRole')?.value || STATE.user.role;
   STATE.user.city     = document.getElementById('editCity')?.value || STATE.user.city;
+  STATE.user.locality = document.getElementById('editLocality')?.value || STATE.user.locality;
   STATE.user.phone    = document.getElementById('editPhone')?.value || STATE.user.phone;
   STATE.user.bio      = document.getElementById('editBio')?.value || STATE.user.bio;
   STATE.user.shareTitle = document.getElementById('editShareTitle')?.value || STATE.user.shareTitle;
@@ -2645,14 +2663,18 @@ async function loadSettingsForm() {
   const cbuEl = document.getElementById('stMpCbuCobro');
   const minEl = document.getElementById('stMinAmount');
   const anonEl = document.getElementById('stAllowAnon');
+  const stCity = document.getElementById('stCity');
+  const stLocality = document.getElementById('stLocality');
   if (pkEl) pkEl.value = cfg.publicKey || '';
   if (atEl) atEl.value = cfg.accessToken || '';
-  if (modeEl) modeEl.value = cfg.mode || 'sandbox';
+  if (modeEl) modeEl.value = cfg.mode || 'production';
   if (checkoutLabelEl) checkoutLabelEl.value = cfg.checkoutLabel || 'Recomendapp';
   if (aliasEl) aliasEl.value = STATE.user.mpAlias || '';
   if (cbuEl) cbuEl.value = STATE.user.mpCbu || '';
   if (minEl) minEl.value = Math.round((STATE.user.minAmount || 0) / 100);
   if (anonEl) anonEl.value = String(STATE.user.allowAnon ?? true);
+  if (stCity) stCity.value = STATE.user.city || '';
+  if (stLocality) stLocality.value = STATE.user.locality || '';
   updateMpStatusBadge();
 
   // email settings
@@ -2680,6 +2702,8 @@ async function saveAccountSettings() {
   const nombre = document.getElementById('stNombre')?.value?.trim() || STATE.user.name;
   const apellido = document.getElementById('stApellido')?.value?.trim() || STATE.user.lastName;
   const telefono = document.getElementById('stTelefono')?.value?.trim() || '';
+  const city = document.getElementById('stCity')?.value?.trim() || '';
+  const locality = document.getElementById('stLocality')?.value?.trim() || '';
   const share_title = document.getElementById('stShareTitle')?.value?.trim() || '';
   const share_subtitle = document.getElementById('stShareSubtitle')?.value?.trim() || '';
   const share_description = document.getElementById('stShareDescription')?.value?.trim() || '';
@@ -2689,6 +2713,8 @@ async function saveAccountSettings() {
       nombre,
       apellido,
       telefono,
+      city,
+      locality,
       slug: STATE.user.slug,
       share_title,
       share_subtitle,
@@ -2696,17 +2722,19 @@ async function saveAccountSettings() {
     })
     .eq('id', STATE.user.id)
     .select('*')
-    .single();
+    .maybeSingle();
 
-  if (error && /share_title|share_subtitle|share_description/i.test(error.message || '')) {
+  if (error && /share_title|share_subtitle|share_description|locality/i.test(error.message || '')) {
+    const fallbackPayload = {
+      nombre,
+      apellido,
+      telefono,
+      city,
+      slug: STATE.user.slug,
+    };
     const fallbackResponse = await sb
       .from('profiles')
-      .update({
-        nombre,
-        apellido,
-        telefono,
-        slug: STATE.user.slug,
-      })
+      .update(fallbackPayload)
       .eq('id', STATE.user.id)
       .select('*')
       .single();
@@ -2736,16 +2764,17 @@ async function saveAccountSettings() {
 function updateMpStatusBadge() {
   const badge = document.getElementById('mpStatusBadge');
   if (!badge) return;
-  const pk = getMpPublicKey();
-  if (!pk) {
+  const hasPublicKey = !!String(STATE.mpConfig.publicKey || '').trim();
+  const hasAccessToken = !!String(STATE.mpConfig.accessToken || '').trim();
+  if (!hasPublicKey || !hasAccessToken) {
     badge.className = 'mp-status disconnected';
-    badge.textContent = '?s? Sin configurar';
+    badge.textContent = 'Sin configurar';
   } else if (STATE.mpConfig.mode === 'production' || CONFIG.mpMode === 'production') {
     badge.className = 'mp-status connected';
-    badge.textContent = 'Activo en producci?n';
+    badge.textContent = 'Activo en produccion';
   } else {
     badge.className = 'mp-status configured';
-    badge.textContent = '?Y?? Configurado en sandbox';
+    badge.textContent = 'Configurado en sandbox';
   }
 }
 
@@ -2838,14 +2867,15 @@ async function saveMpCredentials() {
 }
 
 async function testMpConnection() {
-  const pk = getMpPublicKey();
-  if (!pk) { toast('Primero configur? la Public Key','error'); return; }
-  toast('Probando conexión...','info');
+  const pk = document.getElementById('stMpPublicKey')?.value?.trim() || '';
+  const at = document.getElementById('stMpAccessToken')?.value?.trim() || '';
+  if (!pk || !at) { toast('Completa Public Key y Access Token','error'); return; }
+  toast('Probando conexion...','info');
   setTimeout(() => {
-    if (pk.startsWith('APP_USR-') || pk.startsWith('TEST-')) {
-      toast('Public Key v?lida ? Conexi?n OK','success');
+    if ((pk.startsWith('APP_USR-') || pk.startsWith('TEST-')) && at.startsWith('APP_USR-')) {
+      toast('Credenciales con formato valido. Conexion lista para checkout.','success');
     } else {
-      toast('Public Key con formato inv?lido','error');
+      toast('Revisa el formato de las credenciales de MercadoPago','error');
     }
   }, 1000);
 }
@@ -2894,7 +2924,7 @@ function settTab(btn, panelId) {
 }
 
 function confirmDelete() {
-  if (confirm('¿Estás segura de que querés eliminar tu cuenta? Esta acción es irreversible.')) {
+  if (confirm('Â¿EstÃ¡s segura de que querÃ©s eliminar tu cuenta? Esta acciÃ³n es irreversible.')) {
     STATE.loggedIn = false;
     toast('Cuenta eliminada','error');
     setTimeout(() => nav('home'), 800);
@@ -2920,11 +2950,11 @@ function renderSearch(query='') {
     <div class="p-card" onclick="openPublicProfile('${p.slug || ''}')">
       <div class="p-card-top">
         <div class="avatar av-md" style="background:linear-gradient(135deg,${p.color},${p.color}AA)">${p.initials}</div>
-        <div><div class="p-card-name">${p.name}</div><div class="p-card-role">${p.role} ? ${p.city}</div></div>
+        <div><div class="p-card-name">${p.name}</div><div class="p-card-role">${formatProfileRoleLocation(p)}</div></div>
       </div>
       <p class="p-card-bio">${p.bio}</p>
       <div class="p-card-stats">
-        <div class="p-card-stat"><div class="v">${p.revs}</div><div class="l">reseñas</div></div>
+        <div class="p-card-stat"><div class="v">${p.revs}</div><div class="l">reseÃ±as</div></div>
         <div class="p-card-stat"><div class="v" style="color:var(--amber)">$${(p.total/1000).toFixed(0)}k</div><div class="l">recibido</div></div>
       </div>
     </div>`).join('');
@@ -3007,7 +3037,7 @@ function selectPlan(plan) {
    MARQUEE
 ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.? */
 function buildMarquee() {
-  const items = ['Reseñas con impacto real','Recompensa obligatoria','Perfil público profesional','Simple y transparente','MercadoPago integrado','Respuestas del profesional','Compartible al instante','Anónimo opcional','Checkout Pro nativo','sb backend'];
+  const items = ['ReseÃ±as con impacto real','Recompensa obligatoria','Perfil pÃºblico profesional','Simple y transparente','MercadoPago integrado','Respuestas del profesional','Compartible al instante','AnÃ³nimo opcional','Checkout Pro nativo','sb backend'];
   const html = [...items,...items].map(i => `<div class="m-item"><span class="star"></span>${i}</div>`).join('');
   const marqueeInner = document.getElementById('marqueeInner');
   if (!marqueeInner) return;
@@ -3228,7 +3258,7 @@ async function initApp() {
     console.error('No se pudo iniciar la app:', error);
     const root = document.getElementById('views-root');
     if (root) {
-      root.innerHTML = '<div class="view active"><section class="auth-wrap"><div class="auth-right" style="width:100%"><div class="auth-form-box"><h2>No pudimos cargar la app</h2><p class="auth-sub">Revisá que los archivos de vistas estén disponibles en la carpeta views/.</p></div></div></section></div>';
+      root.innerHTML = '<div class="view active"><section class="auth-wrap"><div class="auth-right" style="width:100%"><div class="auth-form-box"><h2>No pudimos cargar la app</h2><p class="auth-sub">RevisÃ¡ que los archivos de vistas estÃ©n disponibles en la carpeta views/.</p></div></div></section></div>';
     }
     setAppLoadingStatus('No pudimos cargar la app');
     setAppReady();
@@ -3236,3 +3266,4 @@ async function initApp() {
 }
 
 initApp();
+
