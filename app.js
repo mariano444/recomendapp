@@ -718,7 +718,24 @@ function renderFormHeader() {
 function getPrimaryRewardItem(items = STATE.publicRewardItems || []) {
   const profileId = STATE.viewedProfile?.id || STATE.user.id || '';
   const selectedId = getSelectedFormRewardId(profileId);
-  return (items || []).find(item => item.active !== false && item.id === selectedId) || null;
+  const activeItems = (items || []).filter(item => item && item.active !== false);
+  if (!activeItems.length) return null;
+  if (selectedId === '__none__') return null;
+  return activeItems.find(item => item.id === selectedId)
+    || activeItems.find(item => item.showInForm)
+    || activeItems[0]
+    || null;
+}
+
+function getFeaturedPublicRewardItems(items = STATE.publicRewardItems || []) {
+  const featured = getPrimaryRewardItem(items);
+  return featured ? [featured] : [];
+}
+
+function getRewardItemsForAdmin() {
+  return (STATE.rewardItems && STATE.rewardItems.length)
+    ? STATE.rewardItems
+    : (STATE.publicRewardItems || []);
 }
 
 function openReviewForm(rewardId = '') {
@@ -729,6 +746,14 @@ function openReviewForm(rewardId = '') {
 }
 
 window.openReviewForm = openReviewForm;
+
+function clearSelectedReward() {
+  const profileId = STATE.viewedProfile?.id || STATE.user.id || '';
+  setSelectedFormRewardId(profileId, '__none__');
+  renderFormRewardSpotlight();
+}
+
+window.clearSelectedReward = clearSelectedReward;
 
 function rewardKindLabel(kind='image') {
   if (kind === 'video') return 'Video';
@@ -2015,11 +2040,12 @@ async function deleteRewardItem(id) {
 function renderRewardAdmin() {
   const list = document.getElementById('rewardAdminList');
   if (!list) return;
-  if (!STATE.rewardItems.length) {
+  const items = getRewardItemsForAdmin();
+  if (!items.length) {
     list.innerHTML = '<div class="gallery-admin-empty">Todavia no cargaste recompensas por resena.</div>';
     return;
   }
-  list.innerHTML = STATE.rewardItems.map(item => `
+  list.innerHTML = items.map(item => `
     <div class="gallery-admin-card">
       <div class="gallery-admin-thumb" style="${item.imageUrl ? `background-image:url('${item.imageUrl}')` : ''}"></div>
       <div>
@@ -2036,10 +2062,14 @@ function renderRewardAdmin() {
 function renderPublicRewards(items = STATE.publicRewardItems || []) {
   const section = document.getElementById('pubRewardsSection');
   const grid = document.getElementById('pubRewardsGrid');
+  const featuredItems = getFeaturedPublicRewardItems(items);
   if (!section || !grid) return;
-  section.style.display = items.length ? '' : 'none';
-  if (!items.length) return;
-  grid.innerHTML = items.map(item => `
+  section.style.display = featuredItems.length ? '' : 'none';
+  if (!featuredItems.length) {
+    grid.innerHTML = '';
+    return;
+  }
+  grid.innerHTML = featuredItems.map(item => `
     <div class="gallery-card">
       <div class="gallery-media" style="${item.imageUrl ? `background-image:url('${item.imageUrl}')` : ''}">
         <div class="gallery-badge-row">
@@ -2079,7 +2109,7 @@ function renderFormRewardSpotlight() {
         <h3>${reward.title}</h3>
         <p>${reward.isSurprise ? (reward.teaser || 'Sorpresa desbloqueable despues del pago aprobado.') : (reward.description || 'Esta recompensa se libera automaticamente cuando el pago queda aprobado.')}</p>
         <div class="form-reward-note">${reward.downloadUrl ? `${rewardKindLabel(reward.rewardKind)} listo para ${reward.deliveryMode === 'view' ? 'ver' : 'descargar'} cuando la resena quede aprobada.` : 'El perfil todavia no cargo el archivo final de esta recompensa.'}<br>${rewardAvailabilityLabel(reward)}</div>
-        <div class="form-reward-actions"><button type="button" class="btn btn-surface btn-sm" onclick="openReviewForm()">Quitar promo</button></div>
+        <div class="form-reward-actions"><button type="button" class="btn btn-surface btn-sm" onclick="clearSelectedReward()">Quitar promo</button></div>
       </div>
     </div>`;
 }
@@ -2613,6 +2643,7 @@ function renderProfile() {
   const allReviews = STATE.publicReviews || [];
   const reviews = getFilteredPublicReviews(allReviews);
   const rewardItems = STATE.publicRewardItems || [];
+  const featuredRewardItems = getFeaturedPublicRewardItems(rewardItems);
   const mediaItems = STATE.publicMediaItems || [];
   const profileName = (profile.name + ' ' + (profile.lastName || '')).trim() || 'Perfil';
   const isVerified = !!profile.verified;
@@ -2689,7 +2720,7 @@ function renderProfile() {
   if (reviewSortSelect) reviewSortSelect.value = STATE.publicReviewSort;
   if (reviewDateFilterSelect) reviewDateFilterSelect.value = STATE.publicReviewDateFilter;
   if (revCountNode) revCountNode.textContent = visibleLabel;
-  if (rewardsSection) rewardsSection.style.display = rewardItems.length ? '' : 'none';
+  if (rewardsSection) rewardsSection.style.display = featuredRewardItems.length ? '' : 'none';
   if (mediaSection) mediaSection.style.display = mediaItems.length ? '' : 'none';
   if (pubReviews) {
     pubReviews.innerHTML = reviews.length
@@ -2701,7 +2732,7 @@ function renderProfile() {
     pubReviews.innerHTML = `<div class="rev-card"><p class="rev-text">No hay resenas que coincidan con estos filtros todavia.</p><button class="btn btn-amber btn-sm" onclick="setPublicReviewDateFilter('all'); setPublicReviewSort('amount_desc')">Ver todas</button></div>`;
   }
 
-  renderPublicRewards(rewardItems);
+  renderPublicRewards(featuredRewardItems);
   renderPublicMediaPreview(mediaItems);
 
   if (document.getElementById('view-media')?.classList.contains('active')) {
