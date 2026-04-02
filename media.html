@@ -1,0 +1,36 @@
+<div class="view" id="view-media">
+<div class="pub-view">
+  <div class="pub-body" style="padding-top:110px">
+    <div class="pub-gallery-head" style="margin-bottom:24px">
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px">Recompensas y contenido</div>
+        <div class="pub-gallery-title">Todo lo que este perfil comparte</div>
+        <div class="pub-gallery-sub">Aca se concentran las recompensas por reseña y tambien el contenido publico o desbloqueable. Desde esta vista podes elegir una recompensa puntual, compartirla o ir al formulario libre.</div>
+      </div>
+      <div class="pub-action-row">
+        <button class="btn btn-surface btn-sm" onclick="nav('profile')"><- Volver al perfil</button>
+        <button class="btn btn-surface btn-sm" onclick="doShareForm('')">Compartir formulario libre</button>
+        <button class="btn btn-amber btn-sm" onclick="nav('form')">Dejar reseña</button>
+      </div>
+    </div>
+
+    <div class="pub-gallery-head" style="margin-bottom:18px">
+      <div>
+        <div class="pub-gallery-title">Recompensas por reseña</div>
+        <div class="pub-gallery-sub">Elegi una recompensa especifica para que el link compartido lleve directo al formulario con esa promo preseleccionada.</div>
+      </div>
+    </div>
+    <div class="pub-gallery-grid" id="rewardVaultGrid"></div>
+
+    <div class="pub-gallery-head" style="margin:34px 0 18px">
+      <div>
+        <div class="pub-gallery-title">Galeria y contenido desbloqueable</div>
+        <div class="pub-gallery-sub">Las piezas publicas se ven al instante. Las privadas se habilitan cuando se aprueba el pago, y despues pueden descargarse o visualizarse segun lo que haya definido el perfil.</div>
+      </div>
+    </div>
+    <div class="pub-gallery-grid" id="mediaVaultGrid"></div>
+  </div>
+</div>
+</div>
+
+<!-- FORM (pago con MercadoPago) -->
