@@ -2194,6 +2194,8 @@ function renderProfile() {
   const mediaSection = document.getElementById('pubMediaSection');
   const pubReviews = document.getElementById('pubReviews');
   const formProfileAvatar = document.getElementById('formProfileAvatar');
+  const highestReward = allReviews.reduce((max, review) => Math.max(max, review.amount || 0), 0);
+  const latestReview = [...allReviews].sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a))[0] || null;
   const visibleLabel = reviews.length === allReviews.length
     ? `${reviews.length} resenas visibles`
     : `${reviews.length} de ${allReviews.length} resenas visibles`;
