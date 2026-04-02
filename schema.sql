@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   slug          TEXT UNIQUE NOT NULL,           -- ej: marcela-andres
   role          TEXT NOT NULL DEFAULT '',
   city          TEXT NOT NULL DEFAULT '',
+  locality      TEXT NOT NULL DEFAULT '',
   telefono      TEXT,
   bio           TEXT NOT NULL DEFAULT '',
   tags          TEXT[] NOT NULL DEFAULT '{}',
@@ -535,14 +536,15 @@ BEGIN
   v_apellido := COALESCE(NEW.raw_user_meta_data->>'apellido', '');
   v_slug    := generate_slug(v_nombre, v_apellido);
 
-  INSERT INTO profiles (id, nombre, apellido, slug, role, city)
+  INSERT INTO profiles (id, nombre, apellido, slug, role, city, locality)
   VALUES (
     NEW.id,
     v_nombre,
     v_apellido,
     v_slug,
     COALESCE(NEW.raw_user_meta_data->>'role', ''),
-    COALESCE(NEW.raw_user_meta_data->>'city', '')
+    COALESCE(NEW.raw_user_meta_data->>'city', ''),
+    COALESCE(NEW.raw_user_meta_data->>'locality', '')
   );
   RETURN NEW;
 END;
