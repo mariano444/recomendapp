@@ -212,6 +212,7 @@ CREATE TABLE IF NOT EXISTS profile_reward_items (
   description   TEXT NOT NULL DEFAULT '',
   image_url     TEXT,
   download_url  TEXT,
+  show_in_form  BOOLEAN NOT NULL DEFAULT FALSE,
   active        BOOLEAN NOT NULL DEFAULT TRUE,
   sort_order    INTEGER NOT NULL DEFAULT 0,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
