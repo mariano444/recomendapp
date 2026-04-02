@@ -132,9 +132,11 @@ function createSbCompat(url, key) {
     const session = getActiveSession();
     const headers = {
       apikey: key,
-      Authorization: `Bearer ${session?.access_token || key}`,
       'Content-Type': 'application/json',
     };
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
+    }
     return headers;
   }
 
