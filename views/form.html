@@ -28,8 +28,13 @@
         </div>
       </div>
       <div id="formRewardSpotlight" style="display:none"></div>
-      <!-- Anonimato -->
-      <p style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px">¿Querés publicar anónimamente?</p>
+
+      <div class="form-section-head compact">
+        <div>
+          <div class="form-section-kicker">Privacidad</div>
+          <div class="form-section-title">Elegí cómo querés aparecer</div>
+        </div>
+      </div>
       <div class="switch-row" onclick="toggleSwitch('anonSwitch','nameSection')" style="margin-bottom:20px">
         <div class="switch-row-left">
           <span class="switch-row-icon">Anon</span>
@@ -45,7 +50,14 @@
         </div>
       </div>
 
-      <div class="field"><label class="field-label">Tu reseña</label><textarea class="field-textarea" id="fMsg" placeholder="Contá tu experiencia. ¿Qué te aportó? ¿Qué destacarías? Sé sincero..."></textarea></div>
+      <div class="form-section-head">
+        <div>
+          <div class="form-section-kicker">Tu reseña</div>
+          <div class="form-section-title">Contá qué te aportó y qué destacarías</div>
+        </div>
+        <div class="form-section-side">Mientras más concreta sea la reseña, más confianza genera.</div>
+      </div>
+      <div class="field"><textarea class="field-textarea field-textarea-lg" id="fMsg" placeholder="Contá tu experiencia. ¿Qué te aportó? ¿Qué destacarías? Sé sincero..."></textarea></div>
       <div class="review-quick-prompts" id="reviewQuickPrompts"></div>
       <div class="field-inline-help">Mientras más concreta sea la reseña, más confianza genera en quien vea este perfil.</div>
       <div class="two-col">
@@ -55,7 +67,7 @@
       <div class="field">
         <label class="field-label">Celular (opcional)</label>
         <input class="field-input" id="fPhone" placeholder="+54 9 11 1234 5678">
-        <div class="field-inline-help" style="margin:8px 0 0">Si queres, podes dejar un numero para que el perfil te identifique mejor. Si publicas en anonimo no se muestra.</div>
+        <div class="field-inline-help" style="margin:8px 0 0">Si querés, podés dejar un número para que el perfil te identifique mejor. Si publicás en anónimo no se muestra.</div>
       </div>
 
       <div class="review-upload-grid">
@@ -65,14 +77,18 @@
           <div class="review-upload-preview review-upload-preview-avatar" id="reviewAvatarPreview" data-empty="Sin foto">Sin foto</div>
         </div>
         <div class="field">
-          <label class="field-label">Imagen para la resena (opcional)</label>
+          <label class="field-label">Imagen para la reseña (opcional)</label>
           <input class="field-input" id="fReviewImage" type="file" accept="image/*" onchange="previewReviewImage(this,'reviewImagePreview')">
           <div class="review-upload-preview" id="reviewImagePreview" data-empty="Sin imagen">Sin imagen</div>
         </div>
       </div>
 
-      <!-- Monto -->
-      <p style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Monto de recompensa</p>
+      <div class="form-section-head compact">
+        <div>
+          <div class="form-section-kicker">Reconocimiento</div>
+          <div class="form-section-title">Elegí el monto de la recompensa</div>
+        </div>
+      </div>
       <div class="amount-grid" id="amtGrid">
         <div class="amt-pill" onclick="selAmt(this,'500')">$500</div>
         <div class="amt-pill sel" onclick="selAmt(this,'1000')">$1.000</div>
@@ -88,12 +104,14 @@
         <input type="number" id="customAmt" placeholder="Ej: 3500" oninput="STATE.selectedAmt=parseInt(this.value)||0">
       </div>
 
-      <!-- Medio de pago -->
-      <p style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Medio de pago</p>
+      <div class="form-section-head compact">
+        <div>
+          <div class="form-section-kicker">Pago</div>
+          <div class="form-section-title">Elegí cómo querés pagar</div>
+        </div>
+      </div>
       <div class="pay-chips" id="payChips">
         <div class="pay-chip sel" onclick="selPay(this,'mercadopago')">MercadoPago / Tarjeta</div>
-        <!--div class="pay-chip" onclick="selPay(this,'transfer')">Transferencia</div>
-        <div class="pay-chip" onclick="selPay(this,'cash')">Efectivo</div-->
       </div>
 
       <div id="transferInfoBox" class="mp-info-box" style="margin-top:14px;display:none">
@@ -101,7 +119,6 @@
         <div id="transferInfoText">Este perfil todavía no configuró sus datos de cobro.</div>
       </div>
 
-      <!-- Contenedor MercadoPago Bricks / info checkout -->
       <div id="mp-brick-container"></div>
 
       <button class="form-submit" id="submitBtn" onclick="submitReview()">
