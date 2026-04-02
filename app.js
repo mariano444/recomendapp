@@ -2346,9 +2346,13 @@ function renderProfile() {
   const mediaSection = document.getElementById('pubMediaSection');
   const pubReviews = document.getElementById('pubReviews');
   const formProfileAvatar = document.getElementById('formProfileAvatar');
+  const pubProofEarned = document.getElementById('pubProofEarned');
+  const pubProofReviews = document.getElementById('pubProofReviews');
+  const pubProofTopReward = document.getElementById('pubProofTopReward');
   const visibleLabel = reviews.length === allReviews.length
     ? `${reviews.length} resenas visibles`
     : `${reviews.length} de ${allReviews.length} resenas visibles`;
+  const topRewardReview = getTopRewardReview(allReviews);
 
   setAvatarNode(document.getElementById('pubAvatarText'), profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl);
   setCoverNode(document.getElementById('pubCover'), profile.coverUrl);
@@ -2381,6 +2385,10 @@ function renderProfile() {
         ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
       </div>`;
   }
+
+  if (pubProofEarned) pubProofEarned.textContent = formatCurrency(Math.round((profile.totalEarned || 0) / 100));
+  if (pubProofReviews) pubProofReviews.textContent = String(allReviews.length || 0);
+  if (pubProofTopReward) pubProofTopReward.textContent = formatCurrency(topRewardReview?.amount || 0);
 
   const csProfileName = document.getElementById('csProfileName');
   if (csProfileName) csProfileName.textContent = profileName;
@@ -2464,9 +2472,9 @@ function revCardHTML(r, isDash) {
       <div class="rev-header">
         <div class="rev-left">
           <div class="rev-av-txt" style="${avStyle}">${r.initials}</div>
-          <div><div class="rev-name">${r.name}</div><div class="rev-date">${r.date}</div>${reviewPhone}${reviewLocationHtml}</div>
+          <div class="rev-author-meta"><div class="rev-name">${r.name}</div><div class="rev-date">${r.date}</div>${reviewPhone}${reviewLocationHtml}</div>
         </div>
-        <div class="rev-right-meta">${topRewardBadge}<div class="rev-amount"> $${r.amount.toLocaleString('es-AR')}</div></div>
+        <div class="rev-right-meta">${topRewardBadge}<div class="rev-amount"><span class="rev-amount-label">Reconocimiento</span> $${r.amount.toLocaleString('es-AR')}</div></div>
       </div>
       <p class="rev-text">${r.text}</p>
       ${reviewImage}
