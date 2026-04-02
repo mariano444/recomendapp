@@ -235,11 +235,22 @@ CREATE TABLE IF NOT EXISTS profile_reward_items (
   description   TEXT NOT NULL DEFAULT '',
   image_url     TEXT,
   download_url  TEXT,
+  reward_kind   TEXT NOT NULL DEFAULT 'image',
+  visibility    TEXT NOT NULL DEFAULT 'visible',
+  delivery_mode TEXT NOT NULL DEFAULT 'download',
+  teaser        TEXT NOT NULL DEFAULT '',
+  is_surprise   BOOLEAN NOT NULL DEFAULT FALSE,
+  stock_total   INTEGER NOT NULL DEFAULT 0,
+  stock_claimed INTEGER NOT NULL DEFAULT 0,
+  available_until TIMESTAMPTZ,
   show_in_form  BOOLEAN NOT NULL DEFAULT FALSE,
   active        BOOLEAN NOT NULL DEFAULT TRUE,
   sort_order    INTEGER NOT NULL DEFAULT 0,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT profile_reward_items_kind_check CHECK (reward_kind IN ('image', 'video', 'audio', 'pdf', 'document', 'promo')),
+  CONSTRAINT profile_reward_items_visibility_check CHECK (visibility IN ('visible', 'blocked')),
+  CONSTRAINT profile_reward_items_delivery_mode_check CHECK (delivery_mode IN ('download', 'view'))
 );
 
 CREATE TRIGGER profile_reward_items_updated_at
