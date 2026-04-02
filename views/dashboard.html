@@ -43,9 +43,13 @@
           <div id="dashTopReview"></div>
         </div>
         <div class="dash-panel">
-          <div class="panel-title">Enlace del perfil</div>
-          <div class="link-copy-row"><span id="profileLinkDisplay">Enlace del perfil</span><button class="link-copy-btn" onclick="doShare()">Copiar</button></div>
-          <button class="btn btn-amber btn-full" style="border-radius:var(--radius);font-size:13px;padding:12px" onclick="nav('form')">Vista del formulario -></button>
+          <div class="panel-title">Enlaces para compartir</div>
+          <div class="link-copy-row"><span id="profileLinkDisplay">Enlace del perfil</span><button class="link-copy-btn" onclick="doShare()">Copiar perfil</button></div>
+          <div class="link-copy-row" style="margin-top:10px"><span id="formLinkDisplay">Enlace del formulario</span><button class="link-copy-btn" onclick="doShareForm()">Copiar form</button></div>
+          <div class="gallery-admin-actions" style="margin-top:14px">
+            <button class="btn btn-amber btn-full" style="border-radius:var(--radius);font-size:13px;padding:12px" onclick="nav('form')">Abrir formulario</button>
+            <button class="btn btn-surface btn-full" style="border-radius:var(--radius);font-size:13px;padding:12px" onclick="nav('profile')">Ver perfil publico</button>
+          </div>
         </div>
         <div class="dash-panel">
           <div class="panel-title">Actividad reciente</div>
