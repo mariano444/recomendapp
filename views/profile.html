@@ -1,0 +1,70 @@
+<div class="view" id="view-profile">
+<div class="pub-view">
+  <div class="pub-cover" id="pubCover"><div class="cov-grad"></div><div class="cov-pattern"></div><div class="cov-dots"></div></div>
+  <div class="pub-body">
+    <div class="pub-top">
+      <div class="pub-avatar-wrap">
+        <div class="pub-avatar" id="pubAvatarText">MA</div>
+        <div class="pub-av-ring"></div>
+      </div>
+      <div class="pub-action-row">
+        <button class="btn btn-surface btn-sm" onclick="doShare()">Compartir</button>
+        <button class="btn btn-ghost btn-sm" onclick="nav('form')">Dejar reseña</button>
+      </div>
+    </div>
+    <div class="pub-name" id="pubName">Cargando perfil...</div>
+    <div class="pub-meta">
+      <span id="pubRole">Psicóloga clínica</span>
+      <div class="meta-dot"></div>
+      <span id="pubCity">Buenos Aires, AR</span>
+      <span class="badge badge-green" id="pubVerified">Verificada</span>
+    </div>
+    <p class="pub-bio" id="pubBio">Acompañamiento terapéutico en adultos y adolescentes. Especializada en TCC y enfoque sistémico. Más de 12 años de experiencia clínica y formación continua.</p>
+    <div class="pub-tags" id="pubTags"></div>
+    <div class="pub-quickbar" id="pubQuickbar"></div>
+    <div class="pub-gallery-wrap" id="pubRewardsSection">
+      <div class="pub-gallery-head">
+        <div>
+          <div class="pub-gallery-title">Recompensas por dejar tu reseña</div>
+          <div class="pub-gallery-sub">Estos premios se entregan cuando tu pago queda aprobado. No tienen precio aparte: son un reconocimiento adicional por tomarte el tiempo de dejar una reseña valiosa.</div>
+        </div>
+      </div>
+      <div class="pub-gallery-grid" id="pubRewardsGrid"></div>
+    </div>
+    <div class="pub-gallery-wrap" id="pubMediaSection">
+      <div class="pub-gallery-head">
+        <div>
+          <div class="pub-gallery-title">Galería y contenido desbloqueable</div>
+          <div class="pub-gallery-sub">Podés publicar imágenes, videos, PDFs u otros archivos. El perfil decide cuáles se ven gratis, cuáles requieren pago y si el contenido se descarga o solo se visualiza desde la página.</div>
+        </div>
+        <button class="btn btn-amber btn-md" onclick="nav('media')">Ver galería completa</button>
+      </div>
+      <div class="pub-gallery-grid" id="pubMediaPreviewGrid"></div>
+    </div>
+    <div class="pub-section-head">
+      <div>
+        <div class="pub-section-title">Reseñas recibidas</div>
+        <div class="pub-section-sub">La prueba social principal del perfil. Acá se ve la experiencia real de quienes ya dejaron su reconocimiento.</div>
+      </div>
+      <div class="pub-review-summary" id="pubReviewSummary"></div>
+      <div class="pub-review-tools">
+        <select class="field-select field-input pub-review-select" id="reviewSortSelect" onchange="setPublicReviewSort(this.value)">
+          <option value="amount_desc">Mayor recompensa</option>
+          <option value="recent">Más recientes</option>
+          <option value="oldest">Más antiguas</option>
+          <option value="amount_asc">Menor recompensa</option>
+        </select>
+        <select class="field-select field-input pub-review-select" id="reviewDateFilterSelect" onchange="setPublicReviewDateFilter(this.value)">
+          <option value="all">Todas las fechas</option>
+          <option value="7d">Últimos 7 días</option>
+          <option value="30d">Últimos 30 días</option>
+        </select>
+        <div style="font-size:12px;color:var(--text3)" id="revCount"></div>
+      </div>
+    </div>
+    <div id="pubReviews"></div>
+</div>
+</div>
+</div>
+
+<!-- MEDIA VAULT -->

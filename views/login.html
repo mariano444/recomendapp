@@ -1,0 +1,38 @@
+<div class="view" id="view-login">
+<div class="auth-wrap">
+  <div class="auth-left">
+    <div class="auth-left-orb"></div>
+    <div class="logo" style="align-self:flex-start"><div class="logo-gem"></div>Recomendapp</div>
+    <div class="auth-left-quote">El reconocimiento<br>que das también<br><em>te define.</em></div>
+    <p class="auth-left-sub">Más de 2.800 profesionales ya reciben reconocimiento real con recompensa en Recomendapp.</p>
+    <div class="auth-testimonial">
+      <p class="auth-test-text">"Desde que tengo mi perfil en Recomendapp, mis clientes me mandan el link a otros. Es la mejor carta de presentación que tuve."</p>
+      <div class="auth-test-author"><div class="avatar av-sm" style="background:linear-gradient(135deg,#5B8FCC,#3A6BAA)">LP</div><div><div class="auth-test-name">Laura Ponce</div><div class="auth-test-role">Nutricionista · Rosario</div></div></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-form-box">
+      <h2>Bienvenido de nuevo</h2>
+      <p class="auth-sub">Ingresá a tu panel de Recomendapp</p>
+      <button class="social-btn" onclick="loginWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z" fill="#EA4335"/></svg>
+        Continuar con Google
+      </button>
+      <div class="divider">o</div>
+      <div class="field"><label class="field-label">Email</label><input class="field-input" type="email" placeholder="tu@email.com" id="loginEmail"></div>
+      <div class="field">
+        <label class="field-label">Contraseña</label>
+        <div class="field-pw-wrap">
+          <input class="field-input" type="password" placeholder="********" id="loginPw">
+          <button class="pw-toggle" onclick="togglePw('loginPw',this)">Pago</button>
+        </div>
+        <div style="text-align:right;margin-top:6px"><span class="auth-link" style="font-size:12px" onclick="nav('forgot')">¿Olvidaste tu contraseña?</span></div>
+      </div>
+      <button class="btn btn-amber btn-full" onclick="doLogin()" style="margin-top:8px">Ingresar</button>
+      <p class="auth-switch">¿No tenés cuenta? <span class="auth-link" onclick="nav('register')">Crear una gratis</span></p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- REGISTER -->
