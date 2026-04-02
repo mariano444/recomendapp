@@ -37,6 +37,28 @@ let viewsLoaded = false;
 let shareInFlight = false;
 const loadedViewIds = new Set();
 
+function loadSelectedFormRewards() {
+  try {
+    const raw = localStorage.getItem('aplauso_form_rewards');
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function getSelectedFormRewardId(profileId='') {
+  const map = loadSelectedFormRewards();
+  return profileId ? map[profileId] || '' : '';
+}
+
+function setSelectedFormRewardId(profileId='', rewardId='') {
+  if (!profileId) return;
+  const map = loadSelectedFormRewards();
+  if (rewardId) map[profileId] = rewardId;
+  else delete map[profileId];
+  try { localStorage.setItem('aplauso_form_rewards', JSON.stringify(map)); } catch {}
+}
+
 function setAppLoadingStatus(message = '') {
   const node = document.getElementById('appPreloaderText');
   if (node && message) node.textContent = message;
@@ -609,7 +631,12 @@ function renderFormHeader() {
 }
 
 function getPrimaryRewardItem(items = STATE.publicRewardItems || []) {
-  return (items || []).find(item => item.active !== false && item.showInForm) || null;
+  const rewardItems = items || [];
+  const explicit = rewardItems.find(item => item.active !== false && item.showInForm);
+  if (explicit) return explicit;
+  const profileId = STATE.viewedProfile?.id || STATE.user.id || '';
+  const selectedId = getSelectedFormRewardId(profileId);
+  return rewardItems.find(item => item.active !== false && item.id === selectedId) || null;
 }
 
 function triggerRewardDownload(rewardItem) {
@@ -1788,6 +1815,7 @@ async function saveRewardItem() {
   }
   if (error) return toast(error.message || 'No se pudo guardar la recompensa','error');
   if (!error && show_in_form) {
+    setSelectedFormRewardId(STATE.user.id, data?.id || STATE.currentRewardEditId || '');
     await sb
       .from('profile_reward_items')
       .update({ show_in_form: false })
@@ -1798,6 +1826,8 @@ async function saveRewardItem() {
       .update({ show_in_form: true })
       .eq('profile_id', STATE.user.id)
       .eq('id', data?.id || STATE.currentRewardEditId || '');
+  } else if (!error && !show_in_form && (data?.id || STATE.currentRewardEditId) === getSelectedFormRewardId(STATE.user.id)) {
+    setSelectedFormRewardId(STATE.user.id, '');
   }
   STATE.rewardItems = await fetchRewardItems(STATE.user.id, true);
   STATE.publicRewardItems = STATE.rewardItems.filter(item => item.active);
@@ -1812,6 +1842,9 @@ async function deleteRewardItem(id) {
   if (!sb || !STATE.user.id) return;
   const { error } = await sb.from('profile_reward_items').delete().eq('id', id).eq('profile_id', STATE.user.id);
   if (error) return toast(error.message || 'No se pudo eliminar la recompensa','error');
+  if (getSelectedFormRewardId(STATE.user.id) === id) {
+    setSelectedFormRewardId(STATE.user.id, '');
+  }
   STATE.rewardItems = await fetchRewardItems(STATE.user.id, true);
   STATE.publicRewardItems = STATE.rewardItems.filter(item => item.active);
   renderRewardAdmin();
@@ -2161,9 +2194,6 @@ function renderProfile() {
   const mediaSection = document.getElementById('pubMediaSection');
   const pubReviews = document.getElementById('pubReviews');
   const formProfileAvatar = document.getElementById('formProfileAvatar');
-  const highestReward = allReviews.reduce((max, review) => Math.max(max, review.amount || 0), 0);
-  const latestReview = [...allReviews].sort((a, b) => getReviewTimestamp(b) - getReviewTimestamp(a))[0] || null;
-  const totalVisibleAmount = allReviews.reduce((sum, review) => sum + (review.amount || 0), 0);
   const visibleLabel = reviews.length === allReviews.length
     ? `${reviews.length} resenas visibles`
     : `${reviews.length} de ${allReviews.length} resenas visibles`;
@@ -2190,18 +2220,8 @@ function renderProfile() {
   if (pubQuickbar) {
     pubQuickbar.innerHTML = `
       <div class="pub-quickbar-copy">
-        <strong>${allReviews.length ? 'Prueba social con reconocimiento visible' : 'Perfil listo para recibir tu primera resena'}</strong>
-        <span>${allReviews.length ? 'Una resena paga no se siente como un comentario liviano: muestra tiempo, decision y valor real. Eso ayuda a que una persona nueva entienda mas rapido por que confiar en este perfil.' : 'Tu resena puede ser la primera senal fuerte de confianza y reconocimiento real para este perfil.'}</span>
-      </div>
-      <div class="pub-quickbar-stats">
-        <div class="pub-quickbar-stat">
-          <strong>${highestReward ? '$' + highestReward.toLocaleString('es-AR') : '$0'}</strong>
-          <span>Mayor recompensa</span>
-        </div>
-        <div class="pub-quickbar-stat">
-          <strong>${latestReview?.date || 'Sin actividad'}</strong>
-          <span>Ultima resena</span>
-        </div>
+        <strong>${allReviews.length ? 'Prueba social con reconocimiento real' : 'Perfil listo para recibir una primera reseña potente'}</strong>
+        <span>${allReviews.length ? 'Cada reseña publicada muestra una experiencia concreta y un reconocimiento económico visible. Eso hace que este perfil transmita confianza de forma mucho más rápida.' : 'Una reseña bien escrita y con reconocimiento real puede convertirse en la señal más fuerte para generar confianza desde el primer vistazo.'}</span>
       </div>
       <div class="pub-quickbar-actions">
         <button class="btn btn-amber btn-md pub-cta-primary" onclick="nav('form')">Dejar mi resena ahora</button>
@@ -2266,7 +2286,7 @@ function revCardHTML(r, isDash) {
   const reviewLocation = [r.locality, r.province].filter(Boolean).join(', ');
   const reviewLocationHtml = reviewLocation ? `<span class="rev-contact rev-location">${reviewLocation}</span>` : '';
   const reviewImage = r.reviewImageUrl ? `<button class="rev-media" type="button" onclick="openImageLightbox('${r.reviewImageUrl}')" style="background-image:url('${r.reviewImageUrl}')"><span class="rev-media-zoom">Ver completa</span></button>` : '';
-  const topRewardBadge = isTopReward ? `<span class="rev-top-badge">Mayor recompensa</span>` : '';
+  const topRewardBadge = isTopReward ? `<span class="rev-top-badge">Mayor recompensa verificada</span>` : '';
 
   if (isDash) return `
     <div class="d-rev-item">
