@@ -472,15 +472,22 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .form-fastlane-copy p { font-size:13px; color:var(--text2); line-height:1.55; }
 .form-fastlane-badges { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
 .form-fastlane-badge { padding:7px 10px; border-radius:999px; background:rgba(12,11,10,.24); border:1px solid rgba(255,255,255,.06); font-size:11px; letter-spacing:.6px; text-transform:uppercase; color:var(--text2); }
-.form-reward-card { display:grid; grid-template-columns:160px 1fr; gap:16px; margin:0 0 20px; padding:16px; border-radius:22px; background:linear-gradient(180deg,rgba(110,151,216,.12),rgba(255,255,255,.02)); border:1px solid rgba(110,151,216,.18); }
+.form-section-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin:0 0 12px; }
+.form-section-head.compact { margin-top:6px; }
+.form-section-kicker { display:inline-flex; font-size:11px; letter-spacing:1.4px; text-transform:uppercase; color:var(--text3); font-weight:800; margin-bottom:6px; }
+.form-section-title { font-family:'Playfair Display',serif; font-size:24px; line-height:1.05; color:var(--text); }
+.form-section-side { max-width:220px; font-size:12px; color:var(--text2); line-height:1.55; text-align:right; }
+.field-textarea-lg { min-height:170px; }
+.form-reward-card { display:grid; grid-template-columns:160px 1fr; gap:16px; margin:0 0 20px; padding:16px; border-radius:22px; background:linear-gradient(180deg,rgba(110,151,216,.12),rgba(255,255,255,.02)); border:1px solid rgba(110,151,216,.18); box-shadow:0 24px 56px rgba(12,11,10,.16); }
 .form-reward-media { min-height:148px; border-radius:18px; background:linear-gradient(135deg,#1d2738,#0f1722); background-size:cover; background-position:center; border:1px solid rgba(255,255,255,.07); }
 .form-reward-kicker { display:inline-flex; margin-bottom:8px; font-size:11px; letter-spacing:1.4px; text-transform:uppercase; color:var(--amber); font-weight:800; }
 .form-reward-copy h3 { font-family:'Playfair Display',serif; font-size:24px; margin-bottom:8px; line-height:1.05; }
 .form-reward-copy p { font-size:13px; color:var(--text2); line-height:1.65; }
 .form-reward-note { margin-top:12px; padding:10px 12px; border-radius:14px; background:rgba(12,11,10,.18); border:1px solid rgba(255,255,255,.06); font-size:12px; color:var(--text2); line-height:1.55; }
+.form-reward-actions { margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; }
 .form-prof-info .name { font-size:15px; font-weight:700; color:var(--text); }
 .form-prof-info .role { font-size:12px; color:var(--text2); margin-top:2px; }
-.form-body { background:var(--bg2); border:1px solid var(--border); border-radius:0 0 var(--radius-xl) var(--radius-xl); padding:32px 36px 40px; }
+.form-body { background:var(--bg2); border:1px solid var(--border); border-radius:0 0 var(--radius-xl) var(--radius-xl); padding:32px 36px 40px; box-shadow:0 30px 80px rgba(12,11,10,.22); }
 .field-inline-help { font-size:12px; color:var(--text3); margin:-6px 0 14px; line-height:1.5; }
 .review-quick-prompts { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 18px; }
 .review-prompt-chip { padding:8px 12px; border-radius:999px; background:var(--bg3); border:1px solid var(--border); color:var(--text2); font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; }
@@ -937,6 +944,8 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
   .review-upload-grid { grid-template-columns:1fr; }
   .form-reward-card { grid-template-columns:1fr; }
   .form-reward-media { min-height:180px; }
+  .form-section-head { flex-direction:column; align-items:flex-start; }
+  .form-section-side { max-width:none; text-align:left; }
   .bottom-nav { display:flex; width:calc(100% - 24px); }
   .confirm-card { padding:40px 28px; }
   .form-body { padding:24px 22px; }
