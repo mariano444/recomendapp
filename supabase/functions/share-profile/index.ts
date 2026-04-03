@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,6 +28,11 @@ type RewardRow = {
   image_url: string | null;
 };
 
+type ShareStats = {
+  totalReviews: number;
+  topRewardAmount: number;
+};
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -43,6 +47,21 @@ function compactText(value: string, max = 220) {
   return cleaned.length > max ? `${cleaned.slice(0, Math.max(0, max - 1)).trim()}…` : cleaned;
 }
 
+async function fetchRest<T>(supabaseUrl: string, apiKey: string, table: string, params: Record<string, string>) {
+  const url = new URL(`${supabaseUrl}/rest/v1/${table}`);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  const response = await fetch(url.toString(), {
+    headers: {
+      apikey: apiKey,
+      Authorization: `Bearer ${apiKey}`,
+    },
+  });
+  if (!response.ok) {
+    return { data: null as T | null, error: await response.text() };
+  }
+  return { data: await response.json() as T, error: null };
+}
+
 function getDisplayName(profile: ProfileRow) {
   const fullName = `${profile.nombre || ""} ${profile.apellido || ""}`.replace(/\s+/g, " ").trim();
   return fullName || "Perfil en Recomendapp";
@@ -55,7 +74,7 @@ function getProfileShareImage(profile: ProfileRow) {
   return profile.cover_url || profile.avatar_url || "";
 }
 
-function buildMeta(profile: ProfileRow, reward: RewardRow | null, shareUrl: string) {
+function buildMeta(profile: ProfileRow, reward: RewardRow | null, stats: ShareStats, shareUrl: string, requestedView: "profile" | "form") {
   const displayName = getDisplayName(profile);
   const role = String(profile.rol || "profesional").trim();
   const city = String(profile.ciudad || "Argentina").trim();
@@ -72,25 +91,46 @@ function buildMeta(profile: ProfileRow, reward: RewardRow | null, shareUrl: stri
       `Deja tu reseña para ${displayName} y accede a esta promo especial en Recomendapp.`,
     );
     return {
-      title: `${rewardTitle} | ${displayName} | Recomendapp`,
-      description: rewardDescription,
+      title: `${rewardTitle} | Promo por dejar tu reseña a ${displayName} | Recomendapp`,
+      description: compactText(
+        `${rewardDescription} ${stats.totalReviews ? `${stats.totalReviews} reseñas reales ya publicadas.` : "Compartilo y converti una buena experiencia en una reseña visible."}`,
+      ),
       image: reward.image_url || getProfileShareImage(profile),
       url: shareUrl,
+      imageAlt: `${rewardTitle} en Recomendapp`,
+    };
+  }
+
+  if (requestedView === "form") {
+    return {
+      title: `Deja tu reseña para ${displayName} | Recomendapp`,
+      description: compactText(
+        `${stats.totalReviews ? `${stats.totalReviews} reseñas reales ya publicadas. ` : ""}Completa el formulario y deja una reseña con reconocimiento visible para ${displayName} en Recomendapp.`,
+      ),
+      image: getProfileShareImage(profile),
+      url: shareUrl,
+      imageAlt: `Formulario de reseña para ${displayName} en Recomendapp`,
     };
   }
 
   return {
     title: subtitle ? `${baseTitle} | ${subtitle} | Recomendapp` : `${baseTitle} | Recomendapp`,
-    description: compactText(fallbackDescription),
+    description: compactText(
+      stats.totalReviews
+        ? `${fallbackDescription} ${stats.totalReviews} reseñas publicadas y reconocimientos de hasta $${stats.topRewardAmount.toLocaleString("es-AR")} visibles en su perfil.`
+        : fallbackDescription,
+    ),
     image: getProfileShareImage(profile),
     url: shareUrl,
+    imageAlt: `${displayName} en Recomendapp`,
   };
 }
 
-function buildHtml(meta: { title: string; description: string; image: string; url: string }) {
+function buildHtml(meta: { title: string; description: string; image: string; url: string; imageAlt?: string }) {
   const title = escapeHtml(meta.title);
   const description = escapeHtml(meta.description);
   const image = escapeHtml(meta.image);
+  const imageAlt = escapeHtml(meta.imageAlt || meta.title);
   const url = escapeHtml(meta.url);
   return `<!DOCTYPE html>
 <html lang="es">
@@ -102,12 +142,16 @@ function buildHtml(meta: { title: string; description: string; image: string; ur
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Recomendapp">
 <meta property="og:url" content="${url}">
 <meta property="og:image" content="${image}">
+<meta property="og:image:alt" content="${imageAlt}">
 <meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${description}">
 <meta name="twitter:image" content="${image}">
+<meta name="twitter:image:alt" content="${imageAlt}">
+<meta name="theme-color" content="#6E97D8">
 <link rel="canonical" href="${url}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Instrument+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
@@ -198,15 +242,17 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabasePublicKey = Deno.env.get("SUPABASE_ANON_KEY") ||
+      Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ||
+      "sb_publishable_McWl7xNoHVDbUdaR51OFew_TdJTJw30";
     const appUrlFromEnv = Deno.env.get("APP_URL") || "https://recomendapp.netlify.app";
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const reqUrl = new URL(req.url);
     const profileId = reqUrl.searchParams.get("profile_id") || "";
     const requestedView = reqUrl.searchParams.get("view") === "form" ? "form" : "profile";
     const rewardParam = reqUrl.searchParams.get("reward");
     const rewardId = rewardParam && rewardParam !== "none" ? rewardParam : "";
+    const debugMode = reqUrl.searchParams.get("debug") === "1";
 
     const fallbackHtml = buildHtml({
       title: "Recomendapp - Reconoce quien te atendio bien",
@@ -221,12 +267,45 @@ serve(async (req) => {
       });
     }
 
-    const profileQuery = supabase
-      .from("profiles")
-      .select("id, slug, nombre, apellido, rol, ciudad, bio, avatar_url, cover_url, share_title, share_subtitle, share_description, share_image_mode");
-    const { data: profile, error: profileError } = /^[0-9a-f-]{36}$/i.test(profileId)
-      ? await profileQuery.eq("id", profileId).maybeSingle<ProfileRow>()
-      : await profileQuery.eq("slug", profileId).maybeSingle<ProfileRow>();
+    const fullProfileSelect = "id,slug,nombre,apellido,rol,ciudad,bio,avatar_url,cover_url,share_title,share_subtitle,share_description,share_image_mode";
+    const legacyProfileSelect = "id,slug,nombre,apellido,rol,ciudad,bio,avatar_url,cover_url";
+    const profileFilterColumn = /^[0-9a-f-]{36}$/i.test(profileId) ? "id" : "slug";
+    let { data: profileRows, error: profileError } = await fetchRest<ProfileRow[]>(
+      supabaseUrl,
+      supabasePublicKey,
+      "profiles",
+      {
+        select: fullProfileSelect,
+        [profileFilterColumn]: `eq.${profileId}`,
+        limit: "1",
+      },
+    );
+    if (profileError && /share_title|share_subtitle|share_description|share_image_mode/i.test(profileError)) {
+      const fallback = await fetchRest<ProfileRow[]>(
+        supabaseUrl,
+        supabasePublicKey,
+        "profiles",
+        {
+          select: legacyProfileSelect,
+          [profileFilterColumn]: `eq.${profileId}`,
+          limit: "1",
+        },
+      );
+      profileRows = fallback.data;
+      profileError = fallback.error;
+    }
+    const profile = profileRows?.[0] || null;
+
+    if (debugMode) {
+      return new Response(JSON.stringify({
+        profileId,
+        profileFilterColumn,
+        profileError,
+        profileRows,
+      }, null, 2), {
+        headers: { ...corsHeaders, "Content-Type": "application/json; charset=utf-8" },
+      });
+    }
 
     if (profileError || !profile) {
       return new Response(buildHtml({
@@ -242,15 +321,51 @@ serve(async (req) => {
 
     let reward: RewardRow | null = null;
     if (requestedView === "form" && rewardId) {
-      const { data } = await supabase
-        .from("profile_reward_items")
-        .select("id, title, description, image_url")
-        .eq("profile_id", profile.id)
-        .eq("id", rewardId)
-        .eq("active", true)
-        .maybeSingle<RewardRow>();
-      reward = data || null;
+      const rewardResponse = await fetchRest<RewardRow[]>(
+        supabaseUrl,
+        supabasePublicKey,
+        "profile_reward_items",
+        {
+          select: "id,title,description,image_url",
+          profile_id: `eq.${profile.id}`,
+          id: `eq.${rewardId}`,
+          active: "eq.true",
+          limit: "1",
+        },
+      );
+      reward = rewardResponse.data?.[0] || null;
     }
+
+    const [reviewsResponse, topRewardResponse] = await Promise.all([
+      fetchRest<Array<{ id: string }>>(
+        supabaseUrl,
+        supabasePublicKey,
+        "reviews",
+        {
+          select: "id",
+          profile_id: `eq.${profile.id}`,
+          published: "eq.true",
+          payment_status: "eq.approved",
+        },
+      ),
+      fetchRest<Array<{ amount_cents: number | null }>>(
+        supabaseUrl,
+        supabasePublicKey,
+        "reviews",
+        {
+          select: "amount_cents",
+          profile_id: `eq.${profile.id}`,
+          published: "eq.true",
+          payment_status: "eq.approved",
+          order: "amount_cents.desc",
+          limit: "1",
+        },
+      ),
+    ]);
+    const stats: ShareStats = {
+      totalReviews: reviewsResponse.data?.length || 0,
+      topRewardAmount: Math.round((topRewardResponse.data?.[0]?.amount_cents || 0) / 100),
+    };
 
     const publicBase = appUrlFromEnv.replace(/\/+$/, "");
     const shareUrl = new URL(`${publicBase}/share/${encodeURIComponent(profile.slug || profile.id)}`);
@@ -258,7 +373,7 @@ serve(async (req) => {
     if (rewardParam === "none") shareUrl.searchParams.set("reward", "none");
     else if (reward?.id) shareUrl.searchParams.set("reward", reward.id);
 
-    const meta = buildMeta(profile, reward, shareUrl.toString());
+    const meta = buildMeta(profile, reward, stats, shareUrl.toString(), requestedView);
     return new Response(buildHtml(meta), {
       headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
     });
