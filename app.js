@@ -794,15 +794,39 @@ function renderFormHeader() {
   const displayName = [profile.name, profile.lastName].filter(Boolean).join(' ').trim() || 'Perfil';
   const role = profile.role || 'Profesional';
   const city = profile.city || 'Ciudad';
+  const reviewCount = (STATE.publicReviews || []).length;
+  const highestReward = getTopRewardReview(STATE.publicReviews || [])?.amount || 0;
+  const selectedReward = getPrimaryRewardItem();
   const nameNode = document.getElementById('formProfileName');
   const metaNode = document.getElementById('formProfileMeta');
   const confirmNode = document.getElementById('csProfileName');
   const avatarNode = document.getElementById('formProfileAvatar');
+  const fastlaneTitleNode = document.getElementById('formFastlaneTitle');
+  const fastlaneTextNode = document.getElementById('formFastlaneText');
+  const fastlaneBadgesNode = document.getElementById('formFastlaneBadges');
   if (nameNode) nameNode.textContent = displayName;
   if (metaNode) metaNode.textContent = `${role} ? ${city}`;
   if (confirmNode) confirmNode.textContent = displayName;
   if (avatarNode) {
     setAvatarNode(avatarNode, profile.initials || initialsFromProfile(profile.name, profile.lastName), profile.avatarUrl || '');
+  }
+  if (fastlaneTitleNode) {
+    fastlaneTitleNode.textContent = selectedReward
+      ? `${selectedReward.title} lista para compartirse`
+      : `Deja una resena valiosa para ${displayName}`;
+  }
+  if (fastlaneTextNode) {
+    fastlaneTextNode.textContent = selectedReward
+      ? clampShareCopy(selectedReward.description || `Completa el formulario y esta promo queda asociada a tu resena para ${displayName}.`, 150)
+      : `Tu reconocimiento se publica con monto visible y ayuda a que ${displayName} transmita confianza mas rapido.`;
+  }
+  if (fastlaneBadgesNode) {
+    fastlaneBadgesNode.innerHTML = [
+      selectedReward ? `Promo activa: ${selectedReward.title}` : 'Sin promo obligatoria',
+      reviewCount ? `${reviewCount} resenas visibles` : 'Perfil listo para una primera resena',
+      highestReward ? `Hasta ${formatCurrency(highestReward)}` : 'Monto libre',
+      'Anonimo disponible',
+    ].map(label => `<span class="form-fastlane-badge">${label}</span>`).join('');
   }
   const requestedRewardId = getRequestedRewardId();
   if (requestedRewardId !== null) {
@@ -1149,6 +1173,36 @@ function buildProfileMeta(profile, reviews = []) {
   };
 }
 
+function clampShareCopy(value, max = 210) {
+  const cleaned = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!cleaned) return '';
+  return cleaned.length > max ? `${cleaned.slice(0, Math.max(0, max - 1)).trim()}...` : cleaned;
+}
+
+function getRewardById(rewardItems = STATE.publicRewardItems || [], rewardId = '') {
+  if (!rewardId) return null;
+  return (rewardItems || []).find(item => item.active !== false && item.id === rewardId) || null;
+}
+
+function buildRewardShareMeta(profile, reward, reviews = []) {
+  const baseMeta = buildProfileMeta(profile, reviews);
+  const rewardTitle = (reward?.title || 'Promo especial').trim();
+  const rewardDescription = (reward?.description || '').trim();
+  const proofLine = baseMeta.totalReviews
+    ? `${baseMeta.totalReviews} resenas reales ya publicadas y reconocimiento visible en el perfil.`
+    : 'Compartilo y converti una buena experiencia en una resena visible con reconocimiento real.';
+  return {
+    ...baseMeta,
+    shareTitle: rewardTitle,
+    shareSubtitle: `Promo por resena para ${baseMeta.displayName}`,
+    description: clampShareCopy(
+      rewardDescription ||
+      `Deja tu resena para ${baseMeta.displayName} y desbloquea esta promo especial en Recomendapp. ${proofLine}`,
+    ),
+    composedTitle: `${rewardTitle} | Promo por dejar tu resena a ${baseMeta.displayName} | Recomendapp`,
+  };
+}
+
 function getProfileShareImage(profile = {}) {
   const mode = String(profile?.shareImageMode || '').trim() || 'cover';
   if (mode === 'none') return '';
@@ -1176,23 +1230,27 @@ function upsertMetaTag(selector, attributes) {
 }
 
 function updateProfileDocumentMeta(profile, reviews = []) {
-  const meta = buildProfileMeta(profile, reviews);
-  const canonicalUrl = profileLinkFromProfile(profile);
   const rewardId = getRequestedPublicView() === 'form'
     ? (getRequestedRewardId() ?? getSelectedFormRewardId(profile?.id || ''))
     : undefined;
+  const activeReward = getRewardById(STATE.publicRewardItems || [], rewardId || '');
+  const meta = activeReward ? buildRewardShareMeta(profile, activeReward, reviews) : buildProfileMeta(profile, reviews);
+  const canonicalUrl = profileLinkFromProfile(profile);
   const shareUrl = profileShareLinkFromProfile(profile, { view: getRequestedPublicView(), rewardId });
-  const shareImage = getActiveFormRewardShareImage(profile) || getProfileShareImage(profile);
+  const shareImage = activeReward?.imageUrl || getActiveFormRewardShareImage(profile) || getProfileShareImage(profile);
   document.title = meta.composedTitle;
   upsertMetaTag('meta[name="description"]', { name: 'description', content: meta.description });
   upsertMetaTag('meta[property="og:title"]', { property: 'og:title', content: meta.composedTitle });
   upsertMetaTag('meta[property="og:description"]', { property: 'og:description', content: meta.description });
+  upsertMetaTag('meta[property="og:site_name"]', { property: 'og:site_name', content: 'Recomendapp' });
   upsertMetaTag('meta[property="og:url"]', { property: 'og:url', content: shareUrl });
   upsertMetaTag('meta[property="og:image"]', { property: 'og:image', content: shareImage });
+  upsertMetaTag('meta[property="og:image:alt"]', { property: 'og:image:alt', content: activeReward ? `${activeReward.title} en Recomendapp` : `${meta.displayName} en Recomendapp` });
   upsertMetaTag('meta[name="twitter:card"]', { name: 'twitter:card', content: shareImage ? 'summary_large_image' : 'summary' });
   upsertMetaTag('meta[name="twitter:title"]', { name: 'twitter:title', content: meta.composedTitle });
   upsertMetaTag('meta[name="twitter:description"]', { name: 'twitter:description', content: meta.description });
   upsertMetaTag('meta[name="twitter:image"]', { name: 'twitter:image', content: shareImage });
+  upsertMetaTag('meta[name="twitter:image:alt"]', { name: 'twitter:image:alt', content: activeReward ? `${activeReward.title} en Recomendapp` : `${meta.displayName} en Recomendapp` });
   let canonical = document.head.querySelector('link[rel="canonical"]');
   if (!canonical) {
     canonical = document.createElement('link');
@@ -2541,6 +2599,16 @@ function renderProfile() {
   const pubProofEarned = document.getElementById('pubProofEarned');
   const pubProofReviews = document.getElementById('pubProofReviews');
   const pubProofTopReward = document.getElementById('pubProofTopReward');
+  const pubProofReviewsNote = document.getElementById('pubProofReviewsNote');
+  const pubProofEarnedNote = document.getElementById('pubProofEarnedNote');
+  const pubProofTopRewardNote = document.getElementById('pubProofTopRewardNote');
+  const pubHeroTitle = document.getElementById('pubHeroTitle');
+  const pubHeroText = document.getElementById('pubHeroText');
+  const pubHeroPoints = document.getElementById('pubHeroPoints');
+  const pubHeroCardTitle = document.getElementById('pubHeroCardTitle');
+  const pubHeroCardText = document.getElementById('pubHeroCardText');
+  const pubHeroActions = document.getElementById('pubHeroActions');
+  const pubHeroMiniProof = document.getElementById('pubHeroMiniProof');
   const visibleLabel = reviews.length === allReviews.length
     ? `${reviews.length} resenas visibles`
     : `${reviews.length} de ${allReviews.length} resenas visibles`;
@@ -2582,6 +2650,74 @@ function renderProfile() {
   if (pubProofEarned) pubProofEarned.textContent = formatCurrency(Math.round((profile.totalEarned || 0) / 100));
   if (pubProofReviews) pubProofReviews.textContent = String(allReviews.length || 0);
   if (pubProofTopReward) pubProofTopReward.textContent = formatCurrency(topRewardReview?.amount || 0);
+  if (pubProofReviewsNote) {
+    pubProofReviewsNote.textContent = allReviews.length
+      ? `${visibleLabel} para reforzar confianza desde el primer vistazo.`
+      : 'Todavia no hay actividad visible. La primera resena puede ser decisiva.';
+  }
+  if (pubProofEarnedNote) {
+    pubProofEarnedNote.textContent = allReviews.length
+      ? 'Cada monto aprobado suma prueba social economica y publica.'
+      : 'Cuando entren las primeras resenas, el reconocimiento total se vera aca.';
+  }
+  if (pubProofTopRewardNote) {
+    pubProofTopRewardNote.textContent = topRewardReview
+      ? `La resena destacada hoy muestra ${formatCurrency(topRewardReview.amount)} de reconocimiento visible.`
+      : 'Todavia no hay una resena destacada con recompensa aprobada.';
+  }
+  if (pubHeroTitle) {
+    pubHeroTitle.textContent = allReviews.length
+      ? `${profileName} ya transmite confianza con prueba social real.`
+      : `${profileName} ya esta listo para recibir una primera resena potente.`;
+  }
+  if (pubHeroText) {
+    pubHeroText.textContent = allReviews.length
+      ? 'Comparti este perfil con una accion simple: ver experiencias reales, elegir una promo si existe y dejar una resena con reconocimiento visible.'
+      : 'Comparti este perfil por WhatsApp o redes para activar la primera resena y transformar una buena experiencia en una senal publica de confianza.';
+  }
+  if (pubHeroPoints) {
+    pubHeroPoints.innerHTML = [
+      {
+        title: allReviews.length ? 'Resenas visibles' : 'Perfil listo',
+        text: allReviews.length ? visibleLabel : 'La primera experiencia publicada puede marcar la diferencia.',
+      },
+      {
+        title: topRewardReview ? 'Reconocimiento alto' : 'Monto flexible',
+        text: topRewardReview ? `La mejor resena visible hoy muestra ${formatCurrency(topRewardReview.amount)}.` : 'Quien resena puede elegir el monto que quiera reconocer.',
+      },
+      {
+        title: rewardItems.length ? 'Promos activas' : 'Accion directa',
+        text: rewardItems.length ? `${rewardItems.length} recompensa${rewardItems.length === 1 ? '' : 's'} disponible${rewardItems.length === 1 ? '' : 's'} para compartir.` : 'El formulario se puede compartir directo y sin friccion.',
+      },
+    ].map(item => `<div class="pub-review-point"><strong>${item.title}</strong><span>${item.text}</span></div>`).join('');
+  }
+  if (pubHeroCardTitle) {
+    pubHeroCardTitle.textContent = rewardItems.length
+      ? 'Comparte una promo puntual o el formulario completo'
+      : 'Comparte el formulario completo y pedi una resena clara';
+  }
+  if (pubHeroCardText) {
+    pubHeroCardText.textContent = rewardItems.length
+      ? 'Elegi una recompensa, envia el link por WhatsApp o redes y deja que la imagen y la promo hagan el trabajo pesado.'
+      : 'El link directo al formulario reduce friccion, acelera la respuesta y mejora la conversion.';
+  }
+  if (pubHeroActions) {
+    pubHeroActions.innerHTML = `
+      <button class="btn btn-amber btn-md" onclick="openReviewForm()">Dejar mi resena ahora</button>
+      ${rewardItems.length ? `<button class="btn btn-surface btn-md" onclick="nav('media')">Elegir promo para compartir</button>` : '<button class="btn btn-surface btn-md" onclick="shareProfileLink()">Copiar link del perfil</button>'}
+      ${hasPhone ? `<button class="btn btn-surface btn-md" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">Hablar por WhatsApp</button>` : ''}
+    `;
+  }
+  if (pubHeroMiniProof) {
+    pubHeroMiniProof.innerHTML = [
+      allReviews.length
+        ? `<div><strong>${allReviews.length} resenas ya publicadas</strong><br>La gente entiende rapido que hay experiencias reales atras de este perfil.</div>`
+        : '<div><strong>Sin resenas publicadas todavia</strong><br>Este es el mejor momento para compartir el formulario y activar la primera.</div>',
+      rewardItems.length
+        ? `<div><strong>${rewardItems.length} promo${rewardItems.length === 1 ? '' : 's'} para compartir</strong><br>Podes enviar una recompensa puntual y llevar directo al formulario con esa promo seleccionada.</div>`
+        : '<div><strong>Formulario simple y directo</strong><br>Sin pasos de mas: escribir, elegir monto y publicar la resena.</div>',
+    ].join('');
+  }
 
   const csProfileName = document.getElementById('csProfileName');
   if (csProfileName) csProfileName.textContent = profileName;
@@ -3617,42 +3753,6 @@ async function saveRewardItem() {
   toast('Recompensa guardada ','success');
 }
 
-async function shareProfileLink(options = {}) {
-  const targetProfile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
-  const targetName = STATE.viewedProfile?.name || STATE.user.name;
-  const view = options.view === 'form' ? 'form' : 'profile';
-  const rewardId = view === 'form'
-    ? (options.rewardId === undefined ? getSelectedFormRewardId(targetProfile.id || '') : options.rewardId)
-    : undefined;
-  const url = profileShareLinkFromProfile(targetProfile, { view, rewardId });
-  const text = view === 'form'
-    ? 'Te comparto el formulario directo para dejar una reseña en Recomendapp'
-    : 'Mira este perfil en Recomendapp';
-  if (navigator.share) {
-    if (shareInFlight) return;
-    shareInFlight = true;
-    try {
-      await navigator.share({
-        title: `${targetName} | Recomendapp`,
-        text,
-        url,
-      });
-    } catch (error) {
-      if (error?.name !== 'AbortError') {
-        console.warn('No se pudo compartir:', error);
-      }
-    } finally {
-      shareInFlight = false;
-    }
-    return;
-  }
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => toast(view === 'form' ? 'Enlace del formulario copiado' : 'Enlace copiado ','success'));
-  } else {
-    toast('Enlace: ' + url,'info');
-  }
-}
-
 function renderPublicMediaPreview(items = STATE.publicMediaItems || []) {
   const section = document.getElementById('pubMediaSection');
   const grid = document.getElementById('pubMediaPreviewGrid');
@@ -3705,21 +3805,26 @@ function renderMediaVault() {
 
 async function shareProfileLink(options = {}) {
   const targetProfile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
-  const targetName = STATE.viewedProfile?.name || STATE.user.name;
   const view = options.view === 'form' ? 'form' : 'profile';
   const rewardId = view === 'form'
     ? (options.rewardId === undefined ? getSelectedFormRewardId(targetProfile.id || '') : options.rewardId)
     : undefined;
+  const selectedReward = view === 'form' ? getRewardById(STATE.publicRewardItems || [], rewardId || '') : null;
+  const meta = selectedReward
+    ? buildRewardShareMeta(targetProfile, selectedReward, STATE.publicReviews || [])
+    : buildProfileMeta(targetProfile, STATE.publicReviews || []);
   const url = profileShareLinkFromProfile(targetProfile, { view, rewardId });
-  const text = view === 'form'
-    ? (rewardId ? 'Te comparto el formulario directo con una recompensa preseleccionada en Recomendapp' : 'Te comparto el formulario directo para dejar una reseña en Recomendapp')
-    : 'Mira este perfil en Recomendapp';
+  const text = selectedReward
+    ? `Te comparto una promo puntual para dejar tu resena a ${meta.displayName} en Recomendapp.`
+    : view === 'form'
+      ? `Te comparto el formulario directo para dejar tu resena a ${meta.displayName} en Recomendapp.`
+      : `Mira el perfil de ${meta.displayName} en Recomendapp.`;
   if (navigator.share) {
     if (shareInFlight) return;
     shareInFlight = true;
     try {
       await navigator.share({
-        title: `${targetName} | Recomendapp`,
+        title: meta.composedTitle,
         text,
         url,
       });
@@ -3733,12 +3838,11 @@ async function shareProfileLink(options = {}) {
     return;
   }
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => toast(view === 'form' ? 'Enlace del formulario copiado' : 'Enlace copiado ','success'));
+    navigator.clipboard.writeText(url).then(() => toast(selectedReward ? 'Enlace de la promo copiado' : view === 'form' ? 'Enlace del formulario copiado' : 'Enlace copiado ','success'));
   } else {
     toast('Enlace: ' + url,'info');
   }
 }
-
 /* ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.?
    PLAN SELECT
 ?.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.??.? */
