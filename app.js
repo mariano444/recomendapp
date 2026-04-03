@@ -1177,11 +1177,11 @@ function upsertMetaTag(selector, attributes) {
 
 function updateProfileDocumentMeta(profile, reviews = []) {
   const meta = buildProfileMeta(profile, reviews);
-  const canonicalUrl = profileLinkFromProfile(profile);
   const rewardId = getRequestedPublicView() === 'form'
     ? (getRequestedRewardId() ?? getSelectedFormRewardId(profile?.id || ''))
     : undefined;
   const shareUrl = profileShareLinkFromProfile(profile, { view: getRequestedPublicView(), rewardId });
+  const canonicalUrl = shareUrl;
   const shareImage = getActiveFormRewardShareImage(profile) || getProfileShareImage(profile);
   document.title = meta.composedTitle;
   upsertMetaTag('meta[name="description"]', { name: 'description', content: meta.description });
