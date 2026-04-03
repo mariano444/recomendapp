@@ -609,6 +609,14 @@ function getRequestedPublicView() {
   return new URLSearchParams(window.location.search).get('view') === 'form' ? 'form' : 'profile';
 }
 
+function getRequestedProfileSlug() {
+  const querySlug = new URLSearchParams(window.location.search).get('slug');
+  if (querySlug) return querySlug;
+  if (CONFIG.profileSlug) return CONFIG.profileSlug;
+  const match = window.location.pathname.match(/^\/share\/([^/?#]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
 function replaceProfileHistoryState(slug, viewId = 'profile', rewardId = null) {
   const query = new URLSearchParams();
   if (slug) query.set('slug', slug);
@@ -1488,7 +1496,7 @@ async function hydrateUser(session, navigateToDashboard = false) {
     await loadStoredMpConfig(true);
   }
 
-  const requestedSlug = new URLSearchParams(window.location.search).get('slug');
+  const requestedSlug = getRequestedProfileSlug();
   if (requestedSlug && requestedSlug !== STATE.user.slug) {
     await loadViewedProfileBySlug(requestedSlug, false);
   } else {
@@ -1506,7 +1514,7 @@ async function hydrateUser(session, navigateToDashboard = false) {
 
 async function bootstrapSupabaseData() {
   if (!sb) return;
-  const requestedSlug = new URLSearchParams(window.location.search).get('slug') || CONFIG.profileSlug;
+  const requestedSlug = getRequestedProfileSlug();
   const requestedView = getRequestedPublicView();
   const requestedRewardId = getRequestedRewardId();
   const { data: { session } } = await sb.auth.getSession();
@@ -1545,7 +1553,7 @@ async function ensureViewsLoaded(viewIds = []) {
 
 async function loadViews() {
   if (viewsLoaded) return;
-  const requestedSlug = new URLSearchParams(window.location.search).get('slug') || CONFIG.profileSlug;
+  const requestedSlug = getRequestedProfileSlug();
   await ensureViewsLoaded(requestedSlug ? ['profile', 'form'] : INITIAL_VIEW_IDS);
   viewsLoaded = true;
 }
