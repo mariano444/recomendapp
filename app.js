@@ -795,7 +795,6 @@ function renderFormHeader() {
   const role = profile.role || 'Profesional';
   const city = profile.city || 'Ciudad';
   const reviewCount = (STATE.publicReviews || []).length;
-  const highestReward = getTopRewardReview(STATE.publicReviews || [])?.amount || 0;
   const selectedReward = getPrimaryRewardItem();
   const nameNode = document.getElementById('formProfileName');
   const metaNode = document.getElementById('formProfileMeta');
@@ -822,11 +821,9 @@ function renderFormHeader() {
   }
   if (fastlaneBadgesNode) {
     fastlaneBadgesNode.innerHTML = [
-      selectedReward ? `Promo activa: ${selectedReward.title}` : 'Sin promo obligatoria',
+      selectedReward ? `Promo activa: ${selectedReward.title}` : '',
       reviewCount ? `${reviewCount} resenas visibles` : 'Perfil listo para una primera resena',
-      highestReward ? `Hasta ${formatCurrency(highestReward)}` : 'Monto libre',
-      'Anonimo disponible',
-    ].map(label => `<span class="form-fastlane-badge">${label}</span>`).join('');
+    ].filter(Boolean).map(label => `<span class="form-fastlane-badge">${label}</span>`).join('');
   }
   const requestedRewardId = getRequestedRewardId();
   if (requestedRewardId !== null) {
@@ -891,9 +888,8 @@ function renderFormRewardSpotlight() {
         <span class="form-reward-kicker">Recompensa por reseña aprobada</span>
         <h3>${reward.title}</h3>
         <p>${reward.description || 'Esta promo se libera automáticamente cuando el pago queda aprobado.'}</p>
-        <div class="form-reward-note">${reward.downloadUrl ? 'Se mostrará en la confirmación y se intentará descargar automáticamente.' : 'El perfil todavía no cargó el archivo final de esta promo.'}</div>
+        ${reward.downloadUrl ? '<div class="form-reward-note">Se mostrara en la confirmacion y se intentara descargar automaticamente.</div>' : ''}
         <div class="form-reward-actions"><button type="button" class="btn btn-surface btn-sm" onclick="openReviewForm()">Quitar promo</button></div>
-      </div>
     </div>`;
   const profile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
   if (profile?.id || profile?.slug) updateProfileDocumentMeta(profile, STATE.publicReviews || []);
