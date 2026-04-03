@@ -1,1 +1,1 @@
-/share/:id  https://avwqmeberbjadrrlvaaa.supabase.co/functions/v1/share-profile?profile_id=:id  200
+/share/:id  https://avwqmeberbjadrrlvaaa.supabase.co/functions/v1/share-profile-v2?profile_id=:id  200
