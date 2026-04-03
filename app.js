@@ -855,6 +855,8 @@ function renderFormRewardSpotlight() {
   if (!reward) {
     wrap.style.display = 'none';
     wrap.innerHTML = '';
+    const profile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
+    if (profile?.id || profile?.slug) updateProfileDocumentMeta(profile, STATE.publicReviews || []);
     return;
   }
   wrap.style.display = '';
@@ -869,6 +871,8 @@ function renderFormRewardSpotlight() {
         <div class="form-reward-actions"><button type="button" class="btn btn-surface btn-sm" onclick="openReviewForm()">Quitar promo</button></div>
       </div>
     </div>`;
+  const profile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
+  if (profile?.id || profile?.slug) updateProfileDocumentMeta(profile, STATE.publicReviews || []);
 }
 
 function renderReviewPromptChips() {
@@ -1152,6 +1156,16 @@ function getProfileShareImage(profile = {}) {
   return profile?.coverUrl || profile?.avatarUrl || '';
 }
 
+function getActiveFormRewardShareImage(profile = STATE.viewedProfile || STATE.user || {}, rewardItems = STATE.publicRewardItems || []) {
+  if (getRequestedPublicView() !== 'form') return '';
+  const profileId = profile?.id || '';
+  const requestedRewardId = getRequestedRewardId();
+  const selectedRewardId = requestedRewardId !== null ? requestedRewardId : getSelectedFormRewardId(profileId);
+  if (selectedRewardId === '') return '';
+  const reward = (rewardItems || []).find(item => item.active !== false && item.id === selectedRewardId);
+  return reward?.imageUrl || '';
+}
+
 function upsertMetaTag(selector, attributes) {
   let node = document.head.querySelector(selector);
   if (!node) {
@@ -1164,8 +1178,11 @@ function upsertMetaTag(selector, attributes) {
 function updateProfileDocumentMeta(profile, reviews = []) {
   const meta = buildProfileMeta(profile, reviews);
   const canonicalUrl = profileLinkFromProfile(profile);
-  const shareUrl = profileShareLinkFromProfile(profile);
-  const shareImage = getProfileShareImage(profile);
+  const rewardId = getRequestedPublicView() === 'form'
+    ? (getRequestedRewardId() ?? getSelectedFormRewardId(profile?.id || ''))
+    : undefined;
+  const shareUrl = profileShareLinkFromProfile(profile, { view: getRequestedPublicView(), rewardId });
+  const shareImage = getActiveFormRewardShareImage(profile) || getProfileShareImage(profile);
   document.title = meta.composedTitle;
   upsertMetaTag('meta[name="description"]', { name: 'description', content: meta.description });
   upsertMetaTag('meta[property="og:title"]', { property: 'og:title', content: meta.composedTitle });
@@ -3652,6 +3669,7 @@ function renderPublicMediaPreview(items = STATE.publicMediaItems || []) {
 function renderMediaVault() {
   const grid = document.getElementById('mediaVaultGrid');
   if (!grid) return;
+  const mediaHead = document.getElementById('mediaVaultSectionHead');
   let rewardGrid = document.getElementById('rewardVaultGrid');
   if (!rewardGrid) {
     const section = document.createElement('div');
@@ -3673,6 +3691,8 @@ function renderMediaVault() {
   }
   const rewards = STATE.publicRewardItems || [];
   const items = STATE.publicMediaItems || [];
+  if (mediaHead) mediaHead.style.display = items.length ? '' : 'none';
+  grid.style.display = items.length ? '' : 'none';
   if (rewardGrid) {
     rewardGrid.innerHTML = rewards.length
       ? renderRewardCards(rewards, { showShare: true })
@@ -3680,7 +3700,7 @@ function renderMediaVault() {
   }
   grid.innerHTML = items.length
     ? renderMediaCards(items, true)
-    : '<div class="gallery-empty">Este perfil todavia no publico imagenes o combos.</div>';
+    : '';
 }
 
 async function shareProfileLink(options = {}) {
