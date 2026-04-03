@@ -29,6 +29,11 @@ type RewardRow = {
   image_url: string | null;
 };
 
+type ShareStats = {
+  totalReviews: number;
+  topRewardAmount: number;
+};
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -55,7 +60,7 @@ function getProfileShareImage(profile: ProfileRow) {
   return profile.cover_url || profile.avatar_url || "";
 }
 
-function buildMeta(profile: ProfileRow, reward: RewardRow | null, shareUrl: string) {
+function buildMeta(profile: ProfileRow, reward: RewardRow | null, stats: ShareStats, shareUrl: string) {
   const displayName = getDisplayName(profile);
   const role = String(profile.rol || "profesional").trim();
   const city = String(profile.ciudad || "Argentina").trim();
@@ -72,25 +77,34 @@ function buildMeta(profile: ProfileRow, reward: RewardRow | null, shareUrl: stri
       `Deja tu reseña para ${displayName} y accede a esta promo especial en Recomendapp.`,
     );
     return {
-      title: `${rewardTitle} | ${displayName} | Recomendapp`,
-      description: rewardDescription,
+      title: `${rewardTitle} | Promo por dejar tu reseña a ${displayName} | Recomendapp`,
+      description: compactText(
+        `${rewardDescription} ${stats.totalReviews ? `${stats.totalReviews} reseñas reales ya publicadas.` : "Compartilo y converti una buena experiencia en una reseña visible."}`,
+      ),
       image: reward.image_url || getProfileShareImage(profile),
       url: shareUrl,
+      imageAlt: `${rewardTitle} en Recomendapp`,
     };
   }
 
   return {
     title: subtitle ? `${baseTitle} | ${subtitle} | Recomendapp` : `${baseTitle} | Recomendapp`,
-    description: compactText(fallbackDescription),
+    description: compactText(
+      stats.totalReviews
+        ? `${fallbackDescription} ${stats.totalReviews} reseñas publicadas y reconocimientos de hasta $${stats.topRewardAmount.toLocaleString("es-AR")} visibles en su perfil.`
+        : fallbackDescription,
+    ),
     image: getProfileShareImage(profile),
     url: shareUrl,
+    imageAlt: `${displayName} en Recomendapp`,
   };
 }
 
-function buildHtml(meta: { title: string; description: string; image: string; url: string }) {
+function buildHtml(meta: { title: string; description: string; image: string; url: string; imageAlt?: string }) {
   const title = escapeHtml(meta.title);
   const description = escapeHtml(meta.description);
   const image = escapeHtml(meta.image);
+  const imageAlt = escapeHtml(meta.imageAlt || meta.title);
   const url = escapeHtml(meta.url);
   return `<!DOCTYPE html>
 <html lang="es">
@@ -102,12 +116,16 @@ function buildHtml(meta: { title: string; description: string; image: string; ur
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Recomendapp">
 <meta property="og:url" content="${url}">
 <meta property="og:image" content="${image}">
+<meta property="og:image:alt" content="${imageAlt}">
 <meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${description}">
 <meta name="twitter:image" content="${image}">
+<meta name="twitter:image:alt" content="${imageAlt}">
+<meta name="theme-color" content="#6E97D8">
 <link rel="canonical" href="${url}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Instrument+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
@@ -252,13 +270,35 @@ serve(async (req) => {
       reward = data || null;
     }
 
+    const [{ count: totalReviews }, topRewardResponse] = await Promise.all([
+      supabase
+        .from("reviews")
+        .select("id", { count: "exact", head: true })
+        .eq("profile_id", profile.id)
+        .eq("published", true)
+        .eq("payment_status", "approved"),
+      supabase
+        .from("reviews")
+        .select("amount_cents")
+        .eq("profile_id", profile.id)
+        .eq("published", true)
+        .eq("payment_status", "approved")
+        .order("amount_cents", { ascending: false })
+        .limit(1)
+        .maybeSingle<{ amount_cents: number | null }>(),
+    ]);
+    const stats: ShareStats = {
+      totalReviews: totalReviews || 0,
+      topRewardAmount: Math.round((topRewardResponse.data?.amount_cents || 0) / 100),
+    };
+
     const publicBase = appUrlFromEnv.replace(/\/+$/, "");
     const shareUrl = new URL(`${publicBase}/share/${encodeURIComponent(profile.slug || profile.id)}`);
     if (requestedView === "form") shareUrl.searchParams.set("view", "form");
     if (rewardParam === "none") shareUrl.searchParams.set("reward", "none");
     else if (reward?.id) shareUrl.searchParams.set("reward", reward.id);
 
-    const meta = buildMeta(profile, reward, shareUrl.toString());
+    const meta = buildMeta(profile, reward, stats, shareUrl.toString());
     return new Response(buildHtml(meta), {
       headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
     });
