@@ -5,29 +5,17 @@
       <div class="avatar av-md" id="formProfileAvatar" style="background:linear-gradient(135deg,#4F76B8,#94B8F0)">MA</div>
       <div class="form-prof-info">
         <div class="name" id="formProfileName">Perfil</div>
-        <div class="role" id="formProfileMeta">Profesional · Ciudad</div>
+        <div class="role" id="formProfileMeta">Profesional Â· Ciudad</div>
       </div>
     </div>
     <div class="form-body">
       <div class="form-top-actions">
         <button class="btn btn-surface btn-sm" type="button" onclick="goToPublicProfile()">Ver perfil publico</button>
-        <button class="btn btn-amber btn-sm" type="button" onclick="doShareForm()">Compartir formulario</button>
-      </div>
-      <div class="form-fastlane">
-        <div class="form-fastlane-copy">
-          <h3>Deja una reseña valiosa en menos de 1 minuto</h3>
-          <p>Conta que hizo bien esta persona, elegi el monto y paga seguro con Mercado Pago. Se publica automaticamente cuando el pago queda aprobado.</p>
-        </div>
-        <div class="form-fastlane-badges">
-          <span class="form-fastlane-badge">Rapido</span>
-          <span class="form-fastlane-badge">Seguro</span>
-          <span class="form-fastlane-badge">Con impacto real</span>
-        </div>
       </div>
       <div class="mp-info-box form-credibility-box">
         <span class="icon">Info</span>
         <div>
-          <strong>La reseña paga genera mas credibilidad.</strong><br>
+          <strong>La reseÃ±a paga genera mas credibilidad.</strong><br>
           Hace visible un reconocimiento real, ayuda a que otras personas confien mas rapido y motiva a este perfil a seguir mejorando.
         </div>
       </div>
@@ -42,7 +30,7 @@
       <div class="switch-row" onclick="toggleSwitch('anonSwitch','nameSection')" style="margin-bottom:20px">
         <div class="switch-row-left">
           <span class="switch-row-icon">Anon</span>
-          <div><div class="switch-row-title">Publicar anonimamente</div><div class="switch-row-sub">Tu reseña aparecera sin nombre ni apellido</div></div>
+          <div><div class="switch-row-title">Publicar anonimamente</div><div class="switch-row-sub">Tu reseÃ±a aparecera sin nombre ni apellido</div></div>
         </div>
         <div class="switch-track" id="anonSwitch"><div class="switch-knob"></div></div>
       </div>
@@ -56,14 +44,14 @@
 
       <div class="form-section-head">
         <div>
-          <div class="form-section-kicker">Tu reseña</div>
+          <div class="form-section-kicker">Tu reseÃ±a</div>
           <div class="form-section-title">Conta que te aporto y que destacarias</div>
         </div>
-        <div class="form-section-side">Mientras mas concreta sea la reseña, mas confianza genera.</div>
+        <div class="form-section-side">Mientras mas concreta sea la reseÃ±a, mas confianza genera.</div>
       </div>
-      <div class="field"><textarea class="field-textarea field-textarea-lg" id="fMsg" placeholder="Conta tu experiencia. ¿Que te aporto? ¿Que destacarias? Se sincero..."></textarea></div>
+      <div class="field"><textarea class="field-textarea field-textarea-lg" id="fMsg" placeholder="Conta tu experiencia. Â¿Que te aporto? Â¿Que destacarias? Se sincero..."></textarea></div>
       <div class="review-quick-prompts" id="reviewQuickPrompts"></div>
-      <div class="field-inline-help">Mientras mas concreta sea la reseña, mas confianza genera en quien vea este perfil.</div>
+      <div class="field-inline-help">Mientras mas concreta sea la reseÃ±a, mas confianza genera en quien vea este perfil.</div>
       <div class="two-col">
         <div class="field"><label class="field-label">Provincia (opcional)</label><input class="field-input" id="fProvince" placeholder="Buenos Aires"></div>
         <div class="field"><label class="field-label">Localidad (opcional)</label><input class="field-input" id="fLocality" placeholder="San Justo"></div>
@@ -81,7 +69,7 @@
           <div class="review-upload-preview review-upload-preview-avatar" id="reviewAvatarPreview" data-empty="Sin foto">Sin foto</div>
         </div>
         <div class="field">
-          <label class="field-label">Imagen para la reseña (opcional)</label>
+          <label class="field-label">Imagen para la reseÃ±a (opcional)</label>
           <input class="field-input" id="fReviewImage" type="file" accept="image/*" onchange="previewReviewImage(this,'reviewImagePreview')">
           <div class="review-upload-preview" id="reviewImagePreview" data-empty="Sin imagen">Sin imagen</div>
         </div>
@@ -128,16 +116,16 @@
       <div id="mp-brick-container"></div>
 
       <button class="form-submit" id="submitBtn" onclick="submitReview()">
-        <span id="submitBtnText">Pagar y publicar reseña</span>
+        <span id="submitBtnText">Pagar y publicar reseÃ±a</span>
       </button>
-      <div class="form-speed-note">Tip: si queres hacerlo todavia mas rapido, podes dejar tu reseña en modo anonimo y elegir uno de los montos sugeridos.</div>
+      <div class="form-speed-note">Tip: si queres hacerlo todavia mas rapido, podes dejar tu reseÃ±a en modo anonimo y elegir uno de los montos sugeridos.</div>
       <div class="form-public-reviews">
         <div class="form-public-reviews-head">
           <div>
             <div class="form-section-kicker">Prueba social</div>
-            <div class="form-section-title">Reseñas publicadas</div>
+            <div class="form-section-title">ReseÃ±as publicadas</div>
           </div>
-          <div class="form-public-reviews-meta" id="formReviewsMeta">Cargando reseñas...</div>
+          <div class="form-public-reviews-meta" id="formReviewsMeta">Cargando reseÃ±as...</div>
         </div>
         <div class="pub-reviews-grid" id="formPublicReviews"></div>
         <div class="review-scroll-sentinel" id="formReviewsSentinel" aria-hidden="true"></div>
