@@ -6,6 +6,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const securityHeaders = {
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "img-src 'self' data: blob: https:",
+    "script-src 'self' https://sdk.mercadopago.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "connect-src 'self' https://*.supabase.co https://api.mercadopago.com https://sdk.mercadopago.com",
+    "frame-src https://sdk.mercadopago.com https://www.mercadopago.com https://www.mercadopago.com.ar",
+    "frame-ancestors *",
+  ].join("; "),
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+};
+
 type ProfileRow = {
   id: string;
   slug: string;
@@ -117,7 +133,7 @@ function buildHtml(meta: { title: string; description: string; image: string; ur
 <body>
 
 <nav class="topnav" id="topnav">
-  <div class="logo" onclick="nav('home')">
+  <div class="logo" data-nav-target="home" role="button" tabindex="0" aria-label="Ir al inicio">
     <div class="logo-gem"></div>
     Recomendapp
   </div>
@@ -130,14 +146,14 @@ function buildHtml(meta: { title: string; description: string; image: string; ur
   <div class="modal">
     <h3>Responder reseña</h3>
     <p class="modal-sub">Tu respuesta será visible públicamente en el perfil</p>
-    <div id="modalRevPreview" style="background:var(--surface);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;font-size:13px;color:var(--text2);line-height:1.6;font-style:italic;"></div>
+    <div id="modalRevPreview" class="modal-rev-preview"></div>
     <div class="field">
       <label class="field-label">Tu respuesta</label>
       <textarea class="field-textarea" id="replyText" placeholder="Escribí tu respuesta..."></textarea>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost btn-md" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-amber btn-md" onclick="submitReply()">Publicar respuesta</button>
+      <button class="btn btn-ghost btn-md" data-action="close-reply-modal">Cancelar</button>
+      <button class="btn btn-amber btn-md" data-action="submit-reply">Publicar respuesta</button>
     </div>
   </div>
 </div>
@@ -159,7 +175,7 @@ function buildHtml(meta: { title: string; description: string; image: string; ur
       <label class="field-label">Access Token</label>
       <div class="field-pw-wrap">
         <input class="field-input" id="mpAccessTokenInput" placeholder="APP_USR-xxxxxxxxxxxx" type="password">
-        <button class="pw-toggle" onclick="togglePw('mpAccessTokenInput',this)">Ver</button>
+        <button class="pw-toggle" data-action="toggle-password" data-target-input="mpAccessTokenInput">Ver</button>
       </div>
       <div class="field-hint">Secreto. Nunca exponerlo en el frontend</div>
     </div>
@@ -171,15 +187,15 @@ function buildHtml(meta: { title: string; description: string; image: string; ur
       </select>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost btn-md" onclick="closeMpModal()">Cancelar</button>
-      <button class="btn btn-amber btn-md" onclick="saveMpConfig()">Guardar y activar</button>
+      <button class="btn btn-ghost btn-md" data-action="close-mp-modal">Cancelar</button>
+      <button class="btn btn-amber btn-md" data-action="save-mp-config">Guardar y activar</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="imageLightbox">
   <div class="modal modal-image">
-    <button class="lightbox-close" onclick="closeImageLightbox()">Cerrar</button>
+    <button class="lightbox-close" data-action="close-image-lightbox">Cerrar</button>
     <div class="lightbox-stage">
       <img id="lightboxImage" alt="Imagen ampliada">
     </div>
@@ -217,7 +233,7 @@ serve(async (req) => {
 
     if (!profileId) {
       return new Response(fallbackHtml, {
-        headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
+        headers: { ...corsHeaders, ...securityHeaders, "Content-Type": "text/html; charset=utf-8" },
       });
     }
 
@@ -236,7 +252,7 @@ serve(async (req) => {
         url: appUrlFromEnv,
       }), {
         status: 404,
-        headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
+        headers: { ...corsHeaders, ...securityHeaders, "Content-Type": "text/html; charset=utf-8" },
       });
     }
 
@@ -260,7 +276,7 @@ serve(async (req) => {
 
     const meta = buildMeta(profile, reward, shareUrl.toString());
     return new Response(buildHtml(meta), {
-      headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
+      headers: { ...corsHeaders, ...securityHeaders, "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (error) {
     console.error("share-profile error", error);
