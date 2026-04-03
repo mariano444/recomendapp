@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,6 +45,21 @@ function escapeHtml(value: string) {
 function compactText(value: string, max = 220) {
   const cleaned = value.replace(/\s+/g, " ").trim();
   return cleaned.length > max ? `${cleaned.slice(0, Math.max(0, max - 1)).trim()}…` : cleaned;
+}
+
+async function fetchRest<T>(supabaseUrl: string, apiKey: string, table: string, params: Record<string, string>) {
+  const url = new URL(`${supabaseUrl}/rest/v1/${table}`);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  const response = await fetch(url.toString(), {
+    headers: {
+      apikey: apiKey,
+      Authorization: `Bearer ${apiKey}`,
+    },
+  });
+  if (!response.ok) {
+    return { data: null as T | null, error: await response.text() };
+  }
+  return { data: await response.json() as T, error: null };
 }
 
 function getDisplayName(profile: ProfileRow) {
@@ -228,15 +242,17 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabasePublicKey = Deno.env.get("SUPABASE_ANON_KEY") ||
+      Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ||
+      "sb_publishable_McWl7xNoHVDbUdaR51OFew_TdJTJw30";
     const appUrlFromEnv = Deno.env.get("APP_URL") || "https://recomendapp.netlify.app";
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const reqUrl = new URL(req.url);
     const profileId = reqUrl.searchParams.get("profile_id") || "";
     const requestedView = reqUrl.searchParams.get("view") === "form" ? "form" : "profile";
     const rewardParam = reqUrl.searchParams.get("reward");
     const rewardId = rewardParam && rewardParam !== "none" ? rewardParam : "";
+    const debugMode = reqUrl.searchParams.get("debug") === "1";
 
     const fallbackHtml = buildHtml({
       title: "Recomendapp - Reconoce quien te atendio bien",
@@ -251,12 +267,45 @@ serve(async (req) => {
       });
     }
 
-    const profileQuery = supabase
-      .from("profiles")
-      .select("id, slug, nombre, apellido, rol, ciudad, bio, avatar_url, cover_url, share_title, share_subtitle, share_description, share_image_mode");
-    const { data: profile, error: profileError } = /^[0-9a-f-]{36}$/i.test(profileId)
-      ? await profileQuery.eq("id", profileId).maybeSingle<ProfileRow>()
-      : await profileQuery.eq("slug", profileId).maybeSingle<ProfileRow>();
+    const fullProfileSelect = "id,slug,nombre,apellido,rol,ciudad,bio,avatar_url,cover_url,share_title,share_subtitle,share_description,share_image_mode";
+    const legacyProfileSelect = "id,slug,nombre,apellido,rol,ciudad,bio,avatar_url,cover_url";
+    const profileFilterColumn = /^[0-9a-f-]{36}$/i.test(profileId) ? "id" : "slug";
+    let { data: profileRows, error: profileError } = await fetchRest<ProfileRow[]>(
+      supabaseUrl,
+      supabasePublicKey,
+      "profiles",
+      {
+        select: fullProfileSelect,
+        [profileFilterColumn]: `eq.${profileId}`,
+        limit: "1",
+      },
+    );
+    if (profileError && /share_title|share_subtitle|share_description|share_image_mode/i.test(profileError)) {
+      const fallback = await fetchRest<ProfileRow[]>(
+        supabaseUrl,
+        supabasePublicKey,
+        "profiles",
+        {
+          select: legacyProfileSelect,
+          [profileFilterColumn]: `eq.${profileId}`,
+          limit: "1",
+        },
+      );
+      profileRows = fallback.data;
+      profileError = fallback.error;
+    }
+    const profile = profileRows?.[0] || null;
+
+    if (debugMode) {
+      return new Response(JSON.stringify({
+        profileId,
+        profileFilterColumn,
+        profileError,
+        profileRows,
+      }, null, 2), {
+        headers: { ...corsHeaders, "Content-Type": "application/json; charset=utf-8" },
+      });
+    }
 
     if (profileError || !profile) {
       return new Response(buildHtml({
@@ -272,36 +321,50 @@ serve(async (req) => {
 
     let reward: RewardRow | null = null;
     if (requestedView === "form" && rewardId) {
-      const { data } = await supabase
-        .from("profile_reward_items")
-        .select("id, title, description, image_url")
-        .eq("profile_id", profile.id)
-        .eq("id", rewardId)
-        .eq("active", true)
-        .maybeSingle<RewardRow>();
-      reward = data || null;
+      const rewardResponse = await fetchRest<RewardRow[]>(
+        supabaseUrl,
+        supabasePublicKey,
+        "profile_reward_items",
+        {
+          select: "id,title,description,image_url",
+          profile_id: `eq.${profile.id}`,
+          id: `eq.${rewardId}`,
+          active: "eq.true",
+          limit: "1",
+        },
+      );
+      reward = rewardResponse.data?.[0] || null;
     }
 
-    const [{ count: totalReviews }, topRewardResponse] = await Promise.all([
-      supabase
-        .from("reviews")
-        .select("id", { count: "exact", head: true })
-        .eq("profile_id", profile.id)
-        .eq("published", true)
-        .eq("payment_status", "approved"),
-      supabase
-        .from("reviews")
-        .select("amount_cents")
-        .eq("profile_id", profile.id)
-        .eq("published", true)
-        .eq("payment_status", "approved")
-        .order("amount_cents", { ascending: false })
-        .limit(1)
-        .maybeSingle<{ amount_cents: number | null }>(),
+    const [reviewsResponse, topRewardResponse] = await Promise.all([
+      fetchRest<Array<{ id: string }>>(
+        supabaseUrl,
+        supabasePublicKey,
+        "reviews",
+        {
+          select: "id",
+          profile_id: `eq.${profile.id}`,
+          published: "eq.true",
+          payment_status: "eq.approved",
+        },
+      ),
+      fetchRest<Array<{ amount_cents: number | null }>>(
+        supabaseUrl,
+        supabasePublicKey,
+        "reviews",
+        {
+          select: "amount_cents",
+          profile_id: `eq.${profile.id}`,
+          published: "eq.true",
+          payment_status: "eq.approved",
+          order: "amount_cents.desc",
+          limit: "1",
+        },
+      ),
     ]);
     const stats: ShareStats = {
-      totalReviews: totalReviews || 0,
-      topRewardAmount: Math.round((topRewardResponse.data?.amount_cents || 0) / 100),
+      totalReviews: reviewsResponse.data?.length || 0,
+      topRewardAmount: Math.round((topRewardResponse.data?.[0]?.amount_cents || 0) / 100),
     };
 
     const publicBase = appUrlFromEnv.replace(/\/+$/, "");
