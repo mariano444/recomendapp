@@ -246,11 +246,12 @@ serve(async (req) => {
 
     if (profileError || !profile) {
       return new Response(buildHtml({
-        title: "Recomendapp - Reconoce quien te atendio bien",
-        description: "Descubri perfiles con recomendaciones visibles, reseñas reales y reconocimiento economico en Recomendapp.",
+        title: "Perfil no encontrado | Recomendapp",
+        description: "No pudimos encontrar el perfil compartido.",
         image: "",
-        url: reqUrl.toString(),
+        url: appUrlFromEnv,
       }), {
+        status: 404,
         headers: { ...corsHeaders, ...securityHeaders, "Content-Type": "text/html; charset=utf-8" },
       });
     }
