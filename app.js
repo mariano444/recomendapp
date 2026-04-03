@@ -620,11 +620,14 @@ function getRequestedPublicView() {
 
 function replaceProfileHistoryState(slug, viewId = 'profile', rewardId = null) {
   const query = new URLSearchParams();
+  const activeProfile = STATE.viewedProfile?.id ? STATE.viewedProfile : STATE.user;
+  const version = encodeURIComponent(String(activeProfile?.updatedAt || '').trim());
   if (viewId === 'form') {
     query.set('view', 'form');
     if (rewardId === '') query.set('reward', 'none');
     else if (rewardId) query.set('reward', rewardId);
   }
+  if (version) query.set('v', version);
   const nextBase = slug
     ? `/share/${encodeURIComponent(slug)}`
     : window.location.pathname;
