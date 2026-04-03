@@ -87,11 +87,22 @@ function buildMeta(profile: ProfileRow, reward: RewardRow | null, shareUrl: stri
   };
 }
 
-function buildHtml(meta: { title: string; description: string; image: string; url: string }) {
+function buildAppViewUrl(appBase: string, profile: ProfileRow, reward: RewardRow | null, requestedView: string) {
+  const appUrl = new URL(appBase);
+  appUrl.searchParams.set("slug", profile.slug || profile.id);
+  if (requestedView === "form") {
+    appUrl.searchParams.set("view", "form");
+    if (reward?.id) appUrl.searchParams.set("reward", reward.id);
+  }
+  return appUrl.toString();
+}
+
+function buildHtml(meta: { title: string; description: string; image: string; url: string }, appViewUrl: string) {
   const title = escapeHtml(meta.title);
   const description = escapeHtml(meta.description);
   const image = escapeHtml(meta.image);
   const url = escapeHtml(meta.url);
+  const appUrl = escapeHtml(appViewUrl);
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -109,86 +120,14 @@ function buildHtml(meta: { title: string; description: string; image: string; ur
 <meta name="twitter:description" content="${description}">
 <meta name="twitter:image" content="${image}">
 <link rel="canonical" href="${url}">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Instrument+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-<script src="https://sdk.mercadopago.com/js/v2"></script>
-<link rel="stylesheet" href="/styles.css">
+<meta http-equiv="refresh" content="0; url=${appUrl}">
 </head>
 <body>
-
-<nav class="topnav" id="topnav">
-  <div class="logo" onclick="nav('home')">
-    <div class="logo-gem"></div>
-    Recomendapp
-  </div>
-  <div class="nav-right" id="navRight"></div>
-</nav>
-
-<div class="toast-container" id="toastContainer"></div>
-
-<div class="modal-overlay" id="replyModal">
-  <div class="modal">
-    <h3>Responder reseña</h3>
-    <p class="modal-sub">Tu respuesta será visible públicamente en el perfil</p>
-    <div id="modalRevPreview" style="background:var(--surface);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;font-size:13px;color:var(--text2);line-height:1.6;font-style:italic;"></div>
-    <div class="field">
-      <label class="field-label">Tu respuesta</label>
-      <textarea class="field-textarea" id="replyText" placeholder="Escribí tu respuesta..."></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost btn-md" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-amber btn-md" onclick="submitReply()">Publicar respuesta</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="mpConfigModal">
-  <div class="modal">
-    <h3>Configurar MercadoPago</h3>
-    <p class="modal-sub">Ingresá tus credenciales para activar los pagos reales en tu perfil.</p>
-    <div class="mp-info-box">
-      <span class="icon">Info</span>
-      <div>Encontrá tus credenciales en <strong>mercadopago.com.ar</strong> -> Tu cuenta -> Credenciales. Usá las credenciales de <strong>Producción</strong> para pagos reales.</div>
-    </div>
-    <div class="field">
-      <label class="field-label">Public Key</label>
-      <input class="field-input" id="mpPublicKeyInput" placeholder="APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" type="text">
-      <div class="field-hint">Empieza con APP_USR- y es visible en el frontend</div>
-    </div>
-    <div class="field">
-      <label class="field-label">Access Token</label>
-      <div class="field-pw-wrap">
-        <input class="field-input" id="mpAccessTokenInput" placeholder="APP_USR-xxxxxxxxxxxx" type="password">
-        <button class="pw-toggle" onclick="togglePw('mpAccessTokenInput',this)">Ver</button>
-      </div>
-      <div class="field-hint">Secreto. Nunca exponerlo en el frontend</div>
-    </div>
-    <div class="field">
-      <label class="field-label">Modo</label>
-      <select class="field-select field-input" id="mpModeSelect">
-        <option value="sandbox">Sandbox (pruebas)</option>
-        <option value="production">Producción (pagos reales)</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost btn-md" onclick="closeMpModal()">Cancelar</button>
-      <button class="btn btn-amber btn-md" onclick="saveMpConfig()">Guardar y activar</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="imageLightbox">
-  <div class="modal modal-image">
-    <button class="lightbox-close" onclick="closeImageLightbox()">Cerrar</button>
-    <div class="lightbox-stage">
-      <img id="lightboxImage" alt="Imagen ampliada">
-    </div>
-  </div>
-</div>
-
-<main id="views-root"></main>
-
-<script src="/app.js"></script>
+<main>
+  <h1>${title}</h1>
+  <p>${description}</p>
+  <p><a href="${appUrl}">Abrir perfil en Recomendapp</a></p>
+</main>
 </body>
 </html>`;
 }
@@ -213,7 +152,7 @@ serve(async (req) => {
       description: "Descubri perfiles con recomendaciones visibles, reseñas reales y reconocimiento economico en Recomendapp.",
       image: "",
       url: appUrlFromEnv,
-    });
+    }, appUrlFromEnv);
 
     if (!profileId) {
       return new Response(fallbackHtml, {
@@ -229,12 +168,12 @@ serve(async (req) => {
       : await profileQuery.eq("slug", profileId).maybeSingle<ProfileRow>();
 
     if (profileError || !profile) {
-      return new Response(buildHtml({
-        title: "Perfil no encontrado | Recomendapp",
-        description: "No pudimos encontrar el perfil compartido.",
-        image: "",
-        url: appUrlFromEnv,
-      }), {
+        return new Response(buildHtml({
+          title: "Perfil no encontrado | Recomendapp",
+          description: "No pudimos encontrar el perfil compartido.",
+          image: "",
+          url: appUrlFromEnv,
+        }, appUrlFromEnv), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
       });
@@ -259,7 +198,8 @@ serve(async (req) => {
     else if (reward?.id) shareUrl.searchParams.set("reward", reward.id);
 
     const meta = buildMeta(profile, reward, shareUrl.toString());
-    return new Response(buildHtml(meta), {
+    const appViewUrl = buildAppViewUrl(publicBase, profile, reward, requestedView);
+    return new Response(buildHtml(meta, appViewUrl), {
       headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (error) {
