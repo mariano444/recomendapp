@@ -45,39 +45,6 @@ type RewardRow = {
   image_url: string | null;
 };
 
-function isPreviewBot(userAgent: string) {
-  const ua = String(userAgent || "").toLowerCase();
-  return [
-    "facebookexternalhit",
-    "facebot",
-    "twitterbot",
-    "linkedinbot",
-    "slackbot",
-    "whatsapp",
-    "telegrambot",
-    "discordbot",
-    "skypeuripreview",
-    "googlebot",
-    "bingbot",
-    "embedly",
-    "quora link preview",
-    "pinterest",
-    "applebot",
-  ].some((token) => ua.includes(token));
-}
-
-function buildAppRedirectUrl(baseUrl: string, profileId: string, reqUrl: URL) {
-  const redirectUrl = new URL(baseUrl);
-  redirectUrl.searchParams.set("slug", profileId);
-  const view = reqUrl.searchParams.get("view");
-  const reward = reqUrl.searchParams.get("reward");
-  const version = reqUrl.searchParams.get("v");
-  if (view) redirectUrl.searchParams.set("view", view);
-  if (reward) redirectUrl.searchParams.set("reward", reward);
-  if (version) redirectUrl.searchParams.set("v", version);
-  return redirectUrl.toString();
-}
-
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -256,9 +223,6 @@ serve(async (req) => {
     const requestedView = reqUrl.searchParams.get("view") === "form" ? "form" : "profile";
     const rewardParam = reqUrl.searchParams.get("reward");
     const rewardId = rewardParam && rewardParam !== "none" ? rewardParam : "";
-    const userAgent = req.headers.get("user-agent") || "";
-    const isBotRequest = isPreviewBot(userAgent);
-    const appRedirectUrl = profileId ? buildAppRedirectUrl(appUrlFromEnv, profileId, reqUrl) : appUrlFromEnv;
 
     const fallbackHtml = buildHtml({
       title: "Recomendapp - Reconoce quien te atendio bien",
@@ -271,10 +235,6 @@ serve(async (req) => {
       return new Response(fallbackHtml, {
         headers: { ...corsHeaders, ...securityHeaders, "Content-Type": "text/html; charset=utf-8" },
       });
-    }
-
-    if (!isBotRequest) {
-      return Response.redirect(appRedirectUrl, 302);
     }
 
     const profileQuery = supabase
