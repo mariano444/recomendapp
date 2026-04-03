@@ -582,6 +582,15 @@ function profileShareLink(slug) {
   return `${base}/share/${encodeURIComponent(slug)}`;
 }
 
+function getRequestedProfileIdentifier() {
+  const params = new URLSearchParams(window.location.search);
+  const querySlug = params.get('slug');
+  if (querySlug) return querySlug;
+  const match = String(window.location.pathname || '').match(/\/share\/([^/?#]+)/i);
+  if (match?.[1]) return decodeURIComponent(match[1]);
+  return CONFIG.profileSlug || '';
+}
+
 function profileShareId(profile = {}) {
   return profile.id || profile.slug || '';
 }
@@ -611,13 +620,15 @@ function getRequestedPublicView() {
 
 function replaceProfileHistoryState(slug, viewId = 'profile', rewardId = null) {
   const query = new URLSearchParams();
-  if (slug) query.set('slug', slug);
   if (viewId === 'form') {
     query.set('view', 'form');
     if (rewardId === '') query.set('reward', 'none');
     else if (rewardId) query.set('reward', rewardId);
   }
-  const nextPath = `${window.location.pathname}${query.toString() ? `?${query.toString()}` : ''}`;
+  const nextBase = slug
+    ? `/share/${encodeURIComponent(slug)}`
+    : window.location.pathname;
+  const nextPath = `${nextBase}${query.toString() ? `?${query.toString()}` : ''}`;
   history.replaceState({}, '', nextPath);
 }
 
@@ -817,7 +828,8 @@ function renderFormHeader() {
   if (fastlaneTextNode) {
     fastlaneTextNode.textContent = selectedReward
       ? clampShareCopy(selectedReward.description || `Completa el formulario y esta promo queda asociada a tu resena para ${displayName}.`, 150)
-      : `Tu reconocimiento se publica con monto visible y ayuda a que ${displayName} transmita confianza mas rapido.`;
+      : '';
+    fastlaneTextNode.style.display = fastlaneTextNode.textContent ? '' : 'none';
   }
   if (fastlaneBadgesNode) {
     fastlaneBadgesNode.innerHTML = [
@@ -1560,7 +1572,7 @@ async function hydrateUser(session, navigateToDashboard = false) {
 
 async function bootstrapSupabaseData() {
   if (!sb) return;
-  const requestedSlug = new URLSearchParams(window.location.search).get('slug') || CONFIG.profileSlug;
+  const requestedSlug = getRequestedProfileIdentifier();
   const requestedView = getRequestedPublicView();
   const requestedRewardId = getRequestedRewardId();
   const { data: { session } } = await sb.auth.getSession();
@@ -1599,7 +1611,7 @@ async function ensureViewsLoaded(viewIds = []) {
 
 async function loadViews() {
   if (viewsLoaded) return;
-  const requestedSlug = new URLSearchParams(window.location.search).get('slug') || CONFIG.profileSlug;
+  const requestedSlug = getRequestedProfileIdentifier();
   await ensureViewsLoaded(requestedSlug ? ['profile', 'form'] : INITIAL_VIEW_IDS);
   viewsLoaded = true;
 }
