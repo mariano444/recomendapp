@@ -240,6 +240,8 @@ serve(async (req) => {
     const requestedView = reqUrl.searchParams.get("view") === "form" ? "form" : "profile";
     const rewardParam = reqUrl.searchParams.get("reward");
     const rewardId = rewardParam && rewardParam !== "none" ? rewardParam : "";
+    const userAgent = req.headers.get("user-agent") || "";
+    const isBotRequest = isPreviewBot(userAgent);
     const appRedirectUrl = profileId ? buildAppRedirectUrl(appUrlFromEnv, profileId, reqUrl) : appUrlFromEnv;
 
     const fallbackHtml = buildHtml({
@@ -255,6 +257,10 @@ serve(async (req) => {
       });
     }
 
+    if (!isBotRequest) {
+      return Response.redirect(appRedirectUrl, 302);
+    }
+
     const profileQuery = supabase
       .from("profiles")
       .select("id, slug, nombre, apellido, rol, ciudad, bio, avatar_url, cover_url, share_title, share_subtitle, share_description, share_image_mode");
@@ -268,7 +274,7 @@ serve(async (req) => {
         description: "Descubri perfiles con recomendaciones visibles, reseñas reales y reconocimiento economico en Recomendapp.",
         image: "",
         url: reqUrl.toString(),
-      }, appRedirectUrl), {
+      }), {
         headers: { ...corsHeaders, ...securityHeaders, "Content-Type": "text/html; charset=utf-8" },
       });
     }
@@ -292,7 +298,7 @@ serve(async (req) => {
     else if (reward?.id) shareUrl.searchParams.set("reward", reward.id);
 
     const meta = buildMeta(profile, reward, shareUrl.toString());
-    return new Response(buildHtml(meta, appRedirectUrl), {
+    return new Response(buildHtml(meta), {
       headers: { ...corsHeaders, ...securityHeaders, "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (error) {
