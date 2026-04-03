@@ -45,6 +45,27 @@ type RewardRow = {
   image_url: string | null;
 };
 
+function isPreviewBot(userAgent: string) {
+  const ua = String(userAgent || "").toLowerCase();
+  return [
+    "facebookexternalhit",
+    "facebot",
+    "twitterbot",
+    "linkedinbot",
+    "slackbot",
+    "whatsapp",
+    "telegrambot",
+    "discordbot",
+    "skypeuripreview",
+    "googlebot",
+    "bingbot",
+    "embedly",
+    "quora link preview",
+    "pinterest",
+    "applebot",
+  ].some((token) => ua.includes(token));
+}
+
 function buildAppRedirectUrl(baseUrl: string, profileId: string, reqUrl: URL) {
   const redirectUrl = new URL(baseUrl);
   redirectUrl.searchParams.set("slug", profileId);
@@ -115,12 +136,11 @@ function buildMeta(profile: ProfileRow, reward: RewardRow | null, shareUrl: stri
   };
 }
 
-function buildHtml(meta: { title: string; description: string; image: string; url: string }, redirectUrl = "") {
+function buildHtml(meta: { title: string; description: string; image: string; url: string }) {
   const title = escapeHtml(meta.title);
   const description = escapeHtml(meta.description);
   const image = escapeHtml(meta.image);
   const url = escapeHtml(meta.url);
-  const redirect = escapeHtml(redirectUrl);
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -131,16 +151,13 @@ function buildHtml(meta: { title: string; description: string; image: string; ur
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Recomendapp">
 <meta property="og:url" content="${url}">
 <meta property="og:image" content="${image}">
-<meta property="og:image:secure_url" content="${image}">
 <meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${description}">
 <meta name="twitter:image" content="${image}">
 <link rel="canonical" href="${url}">
-${redirect ? `<meta http-equiv="refresh" content="0;url=${redirect}">` : ""}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Instrument+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://sdk.mercadopago.com/js/v2"></script>
@@ -220,7 +237,6 @@ ${redirect ? `<meta http-equiv="refresh" content="0;url=${redirect}">` : ""}
 
 <main id="views-root"></main>
 
-${redirect ? `<noscript><p><a href="${redirect}">Continuar a Recomendapp</a></p></noscript>` : ""}
 <script src="/app.js"></script>
 </body>
 </html>`;
