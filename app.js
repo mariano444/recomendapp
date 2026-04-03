@@ -2757,6 +2757,34 @@ function submitReply() {
     renderProfile();
   }
 }
+document.addEventListener('click', e => {
+  const actionEl = e.target.closest('[data-action], [data-nav-target]');
+  if (!actionEl) return;
+
+  const navTarget = actionEl.getAttribute('data-nav-target');
+  if (navTarget) {
+    nav(navTarget);
+    return;
+  }
+
+  const action = actionEl.getAttribute('data-action');
+  if (action === 'close-reply-modal') closeModal();
+  if (action === 'submit-reply') submitReply();
+  if (action === 'close-mp-modal') closeMpModal();
+  if (action === 'save-mp-config') saveMpConfig();
+  if (action === 'close-image-lightbox') closeImageLightbox();
+  if (action === 'toggle-password') {
+    const inputId = actionEl.getAttribute('data-target-input');
+    if (inputId) togglePw(inputId, actionEl);
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const navTrigger = e.target.closest?.('[data-nav-target]');
+  if (!navTrigger) return;
+  e.preventDefault();
+  nav(navTrigger.getAttribute('data-nav-target'));
+});
 document.getElementById('replyModal').addEventListener('click', e => { if (e.target === document.getElementById('replyModal')) closeModal(); });
 document.getElementById('imageLightbox')?.addEventListener('click', e => {
   if (e.target === document.getElementById('imageLightbox')) closeImageLightbox();
