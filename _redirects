@@ -1,3 +1,11 @@
+/share/:id  slug=:slug view=:view reward=:reward v=:v  /?slug=:slug&view=:view&reward=:reward&v=:v  301!
+/share/:id  slug=:slug view=:view reward=:reward       /?slug=:slug&view=:view&reward=:reward       301!
+/share/:id  slug=:slug view=:view v=:v                 /?slug=:slug&view=:view&v=:v                 301!
+/share/:id  slug=:slug reward=:reward v=:v             /?slug=:slug&reward=:reward&v=:v             301!
+/share/:id  slug=:slug view=:view                      /?slug=:slug&view=:view                       301!
+/share/:id  slug=:slug reward=:reward                  /?slug=:slug&reward=:reward                   301!
+/share/:id  slug=:slug v=:v                            /?slug=:slug&v=:v                             301!
+/share/:id  slug=:slug                                 /?slug=:slug                                  301!
 /  slug=:slug view=:view reward=:reward v=:v  /share/:slug?view=:view&reward=:reward&v=:v  301!
 /  slug=:slug view=:view reward=:reward       /share/:slug?view=:view&reward=:reward       301!
 /  slug=:slug view=:view v=:v                 /share/:slug?view=:view&v=:v                 301!
