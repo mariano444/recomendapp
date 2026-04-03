@@ -483,16 +483,17 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 /* �.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.�
    FORM
 �.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.� */
-.form-view { min-height:100vh; padding:100px 24px 80px; display:flex; align-items:flex-start; justify-content:center; position:relative; }
+.form-view { min-height:100vh; padding:100px 24px 96px; display:flex; align-items:flex-start; justify-content:center; position:relative; }
 .form-view::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:800px; height:500px; pointer-events:none; background:radial-gradient(ellipse,rgba(110,151,216,.06) 0%,transparent 70%); }
-.form-wrap { width:100%; max-width:600px; }
+.form-wrap { width:100%; max-width:720px; }
 .form-profile-header { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-xl) var(--radius-xl) 0 0; padding:20px 28px; display:flex; align-items:center; gap:14px; border-bottom:none; }
-.form-fastlane { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px; padding:16px 18px; border-radius:var(--radius-lg); background:linear-gradient(180deg,rgba(110,151,216,.10),rgba(110,151,216,.03)); border:1px solid rgba(110,151,216,.18); }
+.form-fastlane { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px; padding:18px 20px; border-radius:24px; background:linear-gradient(160deg,rgba(110,151,216,.16),rgba(255,255,255,.03)); border:1px solid rgba(110,151,216,.22); box-shadow:0 22px 48px rgba(12,11,10,.14); position:relative; overflow:hidden; }
+.form-fastlane::after { content:''; position:absolute; inset:auto -48px -56px auto; width:180px; height:180px; border-radius:50%; background:radial-gradient(circle,rgba(148,184,240,.22),transparent 68%); pointer-events:none; }
 .form-top-actions { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
 .form-fastlane-copy h3 { font-size:17px; margin-bottom:4px; }
 .form-fastlane-copy p { font-size:13px; color:var(--text2); line-height:1.55; }
-.form-fastlane-badges { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
-.form-fastlane-badge { padding:7px 10px; border-radius:999px; background:rgba(12,11,10,.24); border:1px solid rgba(255,255,255,.06); font-size:11px; letter-spacing:.6px; text-transform:uppercase; color:var(--text2); }
+.form-fastlane-badges { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; max-width:340px; position:relative; z-index:1; }
+.form-fastlane-badge { padding:8px 11px; border-radius:999px; background:rgba(12,11,10,.34); border:1px solid rgba(255,255,255,.08); font-size:11px; letter-spacing:.6px; text-transform:uppercase; color:#edf3ff; backdrop-filter:blur(10px); }
 .form-section-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin:0 0 12px; }
 .form-section-head.compact { margin-top:6px; }
 .form-section-kicker { display:inline-flex; font-size:11px; letter-spacing:1.4px; text-transform:uppercase; color:var(--text3); font-weight:800; margin-bottom:6px; }
@@ -508,7 +509,7 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .form-reward-actions { margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; }
 .form-prof-info .name { font-size:15px; font-weight:700; color:var(--text); }
 .form-prof-info .role { font-size:12px; color:var(--text2); margin-top:2px; }
-.form-body { background:var(--bg2); border:1px solid var(--border); border-radius:0 0 var(--radius-xl) var(--radius-xl); padding:32px 36px 40px; box-shadow:0 30px 80px rgba(12,11,10,.22); }
+.form-body { background:linear-gradient(180deg,rgba(23,21,19,.98),rgba(18,16,14,.98)); border:1px solid var(--border); border-radius:0 0 var(--radius-xl) var(--radius-xl); padding:32px 36px 40px; box-shadow:0 30px 80px rgba(12,11,10,.22); backdrop-filter:blur(16px); }
 .field-inline-help { font-size:12px; color:var(--text3); margin:-6px 0 14px; line-height:1.5; }
 .review-quick-prompts { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 18px; }
 .review-prompt-chip { padding:8px 12px; border-radius:999px; background:var(--bg3); border:1px solid var(--border); color:var(--text2); font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; }
@@ -561,6 +562,8 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .mp-info-box { background:rgba(91,159,232,.08); border:1px solid rgba(91,159,232,.2); border-radius:var(--radius); padding:14px 18px; margin-bottom:20px; font-size:13px; color:var(--blue); display:flex; align-items:flex-start; gap:10px; }
 .mp-info-box .icon { flex-shrink:0; font-size:16px; }
 .form-credibility-box { margin-top:0; margin-bottom:20px; }
+.pub-proof-strip-profile { margin:0 0 22px; }
+.pub-proof-strip-profile .pub-proof-card { min-height:148px; }
 
 /* �.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.��.�
    CONFIRMATION
@@ -1028,12 +1031,28 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
   .form-profile-header {
     padding:18px 18px 16px;
   }
+  .form-view {
+    padding:88px 14px 124px;
+  }
+  .form-wrap {
+    max-width:none;
+  }
   .form-fastlane {
     flex-direction:column;
     align-items:flex-start;
+    padding:16px;
+    border-radius:22px;
+  }
+  .form-fastlane-copy h3 {
+    font-size:16px;
   }
   .form-fastlane-badges {
     justify-content:flex-start;
+    max-width:none;
+  }
+  .form-fastlane-badge {
+    font-size:10px;
+    letter-spacing:.5px;
   }
   .gallery-admin-card {
     grid-template-columns:1fr;
@@ -1041,6 +1060,10 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
   .gallery-admin-thumb {
     width:100%;
     height:180px;
+  }
+  .gallery-cta .btn,
+  .pub-review-actions .btn {
+    width:100%;
   }
   .pay-chips {
     flex-direction:column;
@@ -1465,5 +1488,11 @@ body.app-loading {
 
   .pub-proof-card {
     min-height: auto;
+  }
+  .form-body {
+    padding:22px 18px 28px;
+  }
+  .form-submit {
+    min-height:54px;
   }
 }
