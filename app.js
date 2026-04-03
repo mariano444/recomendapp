@@ -1491,12 +1491,13 @@ async function bootstrapSupabaseData() {
   if (!sb) return;
   const requestedSlug = new URLSearchParams(window.location.search).get('slug') || CONFIG.profileSlug;
   const requestedView = getRequestedPublicView();
+  const requestedRewardId = getRequestedRewardId();
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     await hydrateUser(session, false);
-    if (requestedSlug) await nav(requestedView);
+    if (requestedSlug) await nav(requestedView, { preserveRewardSelection: true, rewardId: requestedRewardId ?? undefined });
   } else if (requestedSlug) {
-    await nav(requestedView);
+    await nav(requestedView, { preserveRewardSelection: true, rewardId: requestedRewardId ?? undefined });
     await loadViewedProfileBySlug(requestedSlug, false);
   }
 }
@@ -1566,7 +1567,7 @@ async function nav(viewId, options = {}) {
   if ((viewId === 'profile' || viewId === 'form') && (STATE.viewedProfile?.id || STATE.user.id || CONFIG.profileSlug)) {
     const profileId = STATE.viewedProfile?.id || STATE.user.id || '';
     const selectedRewardId = viewId === 'form'
-      ? (options.rewardId !== undefined ? options.rewardId : getSelectedFormRewardId(profileId))
+      ? (options.rewardId !== undefined ? options.rewardId : (getSelectedFormRewardId(profileId) || getRequestedRewardId()))
       : null;
     replaceProfileHistoryState((STATE.viewedProfile?.id || STATE.user.id || CONFIG.profileSlug || ''), viewId, selectedRewardId);
   }
@@ -3633,6 +3634,19 @@ async function shareProfileLink(options = {}) {
   } else {
     toast('Enlace: ' + url,'info');
   }
+}
+
+function renderPublicMediaPreview(items = STATE.publicMediaItems || []) {
+  const section = document.getElementById('pubMediaSection');
+  const grid = document.getElementById('pubMediaPreviewGrid');
+  if (!section || !grid) return;
+  const rewards = STATE.publicRewardItems || [];
+  section.style.display = (items.length || rewards.length) ? '' : 'none';
+  if (!items.length) {
+    grid.innerHTML = '';
+    return;
+  }
+  grid.innerHTML = renderMediaCards(items.slice(0, 3), false);
 }
 
 function renderMediaVault() {
