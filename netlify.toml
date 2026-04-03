@@ -3,6 +3,6 @@
 
 [[redirects]]
   from = "/share/:id"
-  to = "https://avwqmeberbjadrrlvaaa.supabase.co/functions/v1/share-profile?profile_id=:id"
+  to = "https://avwqmeberbjadrrlvaaa.supabase.co/functions/v1/share-profile-v2?profile_id=:id"
   status = 200
   force = true
