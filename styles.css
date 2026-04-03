@@ -678,6 +678,7 @@ input, textarea, select { font-family:'Instrument Sans',sans-serif; }
 .modal h3 { font-family:'Playfair Display',serif; font-size:22px; font-weight:700; margin-bottom:6px; }
 .modal .modal-sub { font-size:13px; color:var(--text2); margin-bottom:24px; }
 .modal-actions { display:flex; gap:10px; margin-top:24px; justify-content:flex-end; }
+.modal-rev-preview { background:var(--surface); border-radius:var(--radius); padding:14px 18px; margin-bottom:18px; font-size:13px; color:var(--text2); line-height:1.6; font-style:italic; }
 
 /* SEARCH */
 .search-view { padding-top:80px; min-height:100vh; }
