@@ -60,7 +60,7 @@ function getProfileShareImage(profile: ProfileRow) {
   return profile.cover_url || profile.avatar_url || "";
 }
 
-function buildMeta(profile: ProfileRow, reward: RewardRow | null, stats: ShareStats, shareUrl: string) {
+function buildMeta(profile: ProfileRow, reward: RewardRow | null, stats: ShareStats, shareUrl: string, requestedView: "profile" | "form") {
   const displayName = getDisplayName(profile);
   const role = String(profile.rol || "profesional").trim();
   const city = String(profile.ciudad || "Argentina").trim();
@@ -84,6 +84,18 @@ function buildMeta(profile: ProfileRow, reward: RewardRow | null, stats: ShareSt
       image: reward.image_url || getProfileShareImage(profile),
       url: shareUrl,
       imageAlt: `${rewardTitle} en Recomendapp`,
+    };
+  }
+
+  if (requestedView === "form") {
+    return {
+      title: `Deja tu reseña para ${displayName} | Recomendapp`,
+      description: compactText(
+        `${stats.totalReviews ? `${stats.totalReviews} reseñas reales ya publicadas. ` : ""}Completa el formulario y deja una reseña con reconocimiento visible para ${displayName} en Recomendapp.`,
+      ),
+      image: getProfileShareImage(profile),
+      url: shareUrl,
+      imageAlt: `Formulario de reseña para ${displayName} en Recomendapp`,
     };
   }
 
@@ -298,7 +310,7 @@ serve(async (req) => {
     if (rewardParam === "none") shareUrl.searchParams.set("reward", "none");
     else if (reward?.id) shareUrl.searchParams.set("reward", reward.id);
 
-    const meta = buildMeta(profile, reward, stats, shareUrl.toString());
+    const meta = buildMeta(profile, reward, stats, shareUrl.toString(), requestedView);
     return new Response(buildHtml(meta), {
       headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
     });
