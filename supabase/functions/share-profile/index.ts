@@ -45,39 +45,6 @@ type RewardRow = {
   image_url: string | null;
 };
 
-function isPreviewBot(userAgent: string) {
-  const ua = String(userAgent || "").toLowerCase();
-  return [
-    "facebookexternalhit",
-    "facebot",
-    "twitterbot",
-    "linkedinbot",
-    "slackbot",
-    "whatsapp",
-    "telegrambot",
-    "discordbot",
-    "skypeuripreview",
-    "googlebot",
-    "bingbot",
-    "embedly",
-    "quora link preview",
-    "pinterest",
-    "applebot",
-  ].some((token) => ua.includes(token));
-}
-
-function buildAppRedirectUrl(baseUrl: string, profileId: string, reqUrl: URL) {
-  const redirectUrl = new URL(baseUrl);
-  redirectUrl.searchParams.set("slug", profileId);
-  const view = reqUrl.searchParams.get("view");
-  const reward = reqUrl.searchParams.get("reward");
-  const version = reqUrl.searchParams.get("v");
-  if (view) redirectUrl.searchParams.set("view", view);
-  if (reward) redirectUrl.searchParams.set("reward", reward);
-  if (version) redirectUrl.searchParams.set("v", version);
-  return redirectUrl.toString();
-}
-
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -151,10 +118,8 @@ function buildHtml(meta: { title: string; description: string; image: string; ur
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Recomendapp">
 <meta property="og:url" content="${url}">
 <meta property="og:image" content="${image}">
-<meta property="og:image:secure_url" content="${image}">
 <meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${description}">
@@ -258,9 +223,6 @@ serve(async (req) => {
     const requestedView = reqUrl.searchParams.get("view") === "form" ? "form" : "profile";
     const rewardParam = reqUrl.searchParams.get("reward");
     const rewardId = rewardParam && rewardParam !== "none" ? rewardParam : "";
-    const userAgent = req.headers.get("user-agent") || "";
-    const isBotRequest = isPreviewBot(userAgent);
-    const appRedirectUrl = profileId ? buildAppRedirectUrl(appUrlFromEnv, profileId, reqUrl) : appUrlFromEnv;
 
     const fallbackHtml = buildHtml({
       title: "Recomendapp - Reconoce quien te atendio bien",
@@ -275,10 +237,6 @@ serve(async (req) => {
       });
     }
 
-    if (!isBotRequest) {
-      return Response.redirect(appRedirectUrl, 302);
-    }
-
     const profileQuery = supabase
       .from("profiles")
       .select("id, slug, nombre, apellido, rol, ciudad, bio, avatar_url, cover_url, share_title, share_subtitle, share_description, share_image_mode");
@@ -288,11 +246,12 @@ serve(async (req) => {
 
     if (profileError || !profile) {
       return new Response(buildHtml({
-        title: "Recomendapp - Reconoce quien te atendio bien",
-        description: "Descubri perfiles con recomendaciones visibles, reseñas reales y reconocimiento economico en Recomendapp.",
+        title: "Perfil no encontrado | Recomendapp",
+        description: "No pudimos encontrar el perfil compartido.",
         image: "",
-        url: reqUrl.toString(),
+        url: appUrlFromEnv,
       }), {
+        status: 404,
         headers: { ...corsHeaders, ...securityHeaders, "Content-Type": "text/html; charset=utf-8" },
       });
     }
