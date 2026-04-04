@@ -6,18 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const securityHeaders = {
-  "Content-Security-Policy": [
-    "default-src 'none'",
-    "img-src https: data:",
-    "style-src 'unsafe-inline'",
-    "base-uri 'none'",
-    "form-action 'none'",
-    "frame-ancestors *",
-  ].join("; "),
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-};
-
 type ProfileRow = {
   id: string;
   slug: string;
@@ -52,7 +40,7 @@ function escapeHtml(value: string) {
 
 function compactText(value: string, max = 220) {
   const cleaned = value.replace(/\s+/g, " ").trim();
-  return cleaned.length > max ? `${cleaned.slice(0, Math.max(0, max - 1)).trim()}...` : cleaned;
+  return cleaned.length > max ? `${cleaned.slice(0, Math.max(0, max - 1)).trim()}…` : cleaned;
 }
 
 function getDisplayName(profile: ProfileRow) {
@@ -67,34 +55,21 @@ function getProfileShareImage(profile: ProfileRow) {
   return profile.cover_url || profile.avatar_url || "";
 }
 
-function buildAppRedirectUrl(baseUrl: string, profileId: string, reqUrl: URL) {
-  const redirectUrl = new URL(baseUrl);
-  redirectUrl.searchParams.set("slug", profileId);
-  const view = reqUrl.searchParams.get("view");
-  const reward = reqUrl.searchParams.get("reward");
-  const version = reqUrl.searchParams.get("v");
-  if (view) redirectUrl.searchParams.set("view", view);
-  if (reward) redirectUrl.searchParams.set("reward", reward);
-  if (version) redirectUrl.searchParams.set("v", version);
-  return redirectUrl.toString();
-}
-
 function buildMeta(profile: ProfileRow, reward: RewardRow | null, shareUrl: string) {
   const displayName = getDisplayName(profile);
   const role = String(profile.rol || "profesional").trim();
   const city = String(profile.ciudad || "Argentina").trim();
   const baseTitle = String(profile.share_title || "").trim() || displayName;
   const subtitle = String(profile.share_subtitle || "").trim();
-  const fallbackDescription =
-    String(profile.share_description || "").trim() ||
+  const fallbackDescription = String(profile.share_description || "").trim() ||
     String(profile.bio || "").trim() ||
-    `${displayName}, ${role} en ${city}. Descubri su perfil y deja una resena con reconocimiento real en Recomendapp.`;
+    `${displayName}, ${role} en ${city}. Descubri su perfil y deja una reseña con reconocimiento real en Recomendapp.`;
 
   if (reward) {
     const rewardTitle = String(reward.title || "Promo especial").trim();
     const rewardDescription = compactText(
       String(reward.description || "").trim() ||
-      `Deja tu resena para ${displayName} y accede a esta promo especial en Recomendapp.`,
+      `Deja tu reseña para ${displayName} y accede a esta promo especial en Recomendapp.`,
     );
     return {
       title: `${rewardTitle} | ${displayName} | Recomendapp`,
@@ -112,13 +87,22 @@ function buildMeta(profile: ProfileRow, reward: RewardRow | null, shareUrl: stri
   };
 }
 
-function buildHtml(meta: { title: string; description: string; image: string; url: string }, redirectUrl = "") {
+function buildAppViewUrl(appBase: string, profile: ProfileRow, reward: RewardRow | null, requestedView: string) {
+  const appUrl = new URL(appBase);
+  appUrl.searchParams.set("slug", profile.slug || profile.id);
+  if (requestedView === "form") {
+    appUrl.searchParams.set("view", "form");
+    if (reward?.id) appUrl.searchParams.set("reward", reward.id);
+  }
+  return appUrl.toString();
+}
+
+function buildHtml(meta: { title: string; description: string; image: string; url: string }, appViewUrl: string) {
   const title = escapeHtml(meta.title);
   const description = escapeHtml(meta.description);
   const image = escapeHtml(meta.image);
   const url = escapeHtml(meta.url);
-  const redirect = escapeHtml(redirectUrl);
-
+  const appUrl = escapeHtml(appViewUrl);
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -129,29 +113,21 @@ function buildHtml(meta: { title: string; description: string; image: string; ur
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Recomendapp">
 <meta property="og:url" content="${url}">
 <meta property="og:image" content="${image}">
-<meta property="og:image:secure_url" content="${image}">
-<meta property="og:image:alt" content="${title}">
 <meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${description}">
 <meta name="twitter:image" content="${image}">
 <link rel="canonical" href="${url}">
-${redirect ? `<meta http-equiv="refresh" content="0;url=${redirect}">` : ""}
-<style>
-  body{margin:0;padding:24px;font:16px/1.5 Arial,sans-serif;background:#111;color:#f4efe6}
-  .wrap{max-width:720px;margin:0 auto}
-  a{color:#9fc2ff}
-</style>
+<meta http-equiv="refresh" content="0; url=${appUrl}">
 </head>
 <body>
-<div class="wrap">
+<main>
   <h1>${title}</h1>
   <p>${description}</p>
-  ${redirect ? `<p>Abriendo perfil... Si no redirige, <a href="${redirect}">continuar</a>.</p>` : ""}
-</div>
+  <p><a href="${appUrl}">Abrir perfil en Recomendapp</a></p>
+</main>
 </body>
 </html>`;
 }
@@ -170,37 +146,36 @@ serve(async (req) => {
     const requestedView = reqUrl.searchParams.get("view") === "form" ? "form" : "profile";
     const rewardParam = reqUrl.searchParams.get("reward");
     const rewardId = rewardParam && rewardParam !== "none" ? rewardParam : "";
-    const appRedirectUrl = profileId ? buildAppRedirectUrl(appUrlFromEnv, profileId, reqUrl) : appUrlFromEnv;
 
     const fallbackHtml = buildHtml({
       title: "Recomendapp - Reconoce quien te atendio bien",
-      description: "Descubri perfiles con recomendaciones visibles, resenas reales y reconocimiento economico en Recomendapp.",
+      description: "Descubri perfiles con recomendaciones visibles, reseñas reales y reconocimiento economico en Recomendapp.",
       image: "",
       url: appUrlFromEnv,
-    });
+    }, appUrlFromEnv);
 
     if (!profileId) {
       return new Response(fallbackHtml, {
-        headers: { ...corsHeaders, ...securityHeaders, "Content-Type": "text/html; charset=utf-8" },
+        headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
       });
     }
 
     const profileQuery = supabase
       .from("profiles")
       .select("id, slug, nombre, apellido, rol, ciudad, bio, avatar_url, cover_url, share_title, share_subtitle, share_description, share_image_mode");
-
-    const { data: profile } = /^[0-9a-f-]{36}$/i.test(profileId)
+    const { data: profile, error: profileError } = /^[0-9a-f-]{36}$/i.test(profileId)
       ? await profileQuery.eq("id", profileId).maybeSingle<ProfileRow>()
       : await profileQuery.eq("slug", profileId).maybeSingle<ProfileRow>();
 
-    if (!profile) {
-      return new Response(buildHtml({
-        title: "Recomendapp - Reconoce quien te atendio bien",
-        description: "Descubri perfiles con recomendaciones visibles, resenas reales y reconocimiento economico en Recomendapp.",
-        image: "",
-        url: reqUrl.toString(),
-      }, appRedirectUrl), {
-        headers: { ...corsHeaders, ...securityHeaders, "Content-Type": "text/html; charset=utf-8" },
+    if (profileError || !profile) {
+        return new Response(buildHtml({
+          title: "Perfil no encontrado | Recomendapp",
+          description: "No pudimos encontrar el perfil compartido.",
+          image: "",
+          url: appUrlFromEnv,
+        }, appUrlFromEnv), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
       });
     }
 
@@ -223,8 +198,9 @@ serve(async (req) => {
     else if (reward?.id) shareUrl.searchParams.set("reward", reward.id);
 
     const meta = buildMeta(profile, reward, shareUrl.toString());
-    return new Response(buildHtml(meta, appRedirectUrl), {
-      headers: { ...corsHeaders, ...securityHeaders, "Content-Type": "text/html; charset=utf-8" },
+    const appViewUrl = buildAppViewUrl(publicBase, profile, reward, requestedView);
+    return new Response(buildHtml(meta, appViewUrl), {
+      headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8" },
     });
   } catch (error) {
     console.error("share-profile error", error);
