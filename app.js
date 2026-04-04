@@ -875,7 +875,7 @@ function renderFormRewardSpotlight() {
         <span class="form-reward-kicker">Recompensa por reseña aprobada</span>
         <h3>${reward.title}</h3>
         <p>${reward.description || 'Esta promo se libera automáticamente cuando el pago queda aprobado.'}</p>
-        <div class="form-reward-note">${reward.downloadUrl ? 'Se mostrará en la confirmación y se intentará descargar automáticamente.' : 'El perfil todavía no cargó el archivo final de esta promo.'}</div>
+        <div class="form-reward-note">${reward.downloadUrl ? 'Se mostrará en la confirmación y se intentará descargar automáticamente.' : 'La entrega de esta promo se coordina después de la aprobación.'}</div>
         <div class="form-reward-actions"><button type="button" class="btn btn-surface btn-sm" onclick="openReviewForm()">Quitar promo</button></div>
       </div>
     </div>`;
@@ -2580,10 +2580,9 @@ function renderProfile() {
         <span>${allReviews.length ? 'Cada reseña publicada muestra una experiencia concreta y un reconocimiento económico visible. Eso hace que este perfil transmita confianza de forma mucho más rápida.' : 'Una reseña bien escrita y con reconocimiento real puede convertirse en la señal más fuerte para generar confianza desde el primer vistazo.'}</span>
       </div>
       <div class="pub-quickbar-actions">
-        <button class="btn btn-amber btn-md pub-cta-primary" onclick="openReviewForm()">Dejar mi resena ahora</button>
-        <button class="btn btn-surface btn-md pub-cta-secondary" onclick="nav('media')">Ver recompensas</button>
-        <button class="btn btn-surface btn-md pub-cta-secondary" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver prueba social</button>
-        ${hasPhone ? `<button class="btn btn-surface btn-sm" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">WhatsApp</button>` : ''}
+        <button class="btn btn-amber btn-md pub-cta-primary" onclick="openReviewForm()">Dejar una reseña</button>
+        <button class="btn btn-surface btn-md pub-cta-secondary" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas reales</button>
+        ${hasPhone ? `<button class="btn btn-surface btn-md pub-cta-secondary" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">Hablar por WhatsApp</button>` : ''}
       </div>`;
   }
 
