@@ -2581,6 +2581,7 @@ function renderProfile() {
       </div>
       <div class="pub-quickbar-actions">
         <button class="btn btn-amber btn-md pub-cta-primary" onclick="openReviewForm()">Dejar una reseña</button>
+        <button class="btn btn-surface btn-md pub-cta-secondary" onclick="nav('media')">Ver recompensas y galería</button>
         <button class="btn btn-surface btn-md pub-cta-secondary" onclick="document.getElementById('pubReviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reseñas reales</button>
         ${hasPhone ? `<button class="btn btn-surface btn-md pub-cta-secondary" onclick="window.open('${whatsAppLink(phone)}','_blank','noopener')">Hablar por WhatsApp</button>` : ''}
       </div>`;
